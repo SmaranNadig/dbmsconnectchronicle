@@ -1,5 +1,16 @@
 # ConnectomeChronicle
 
+The interactive workspace includes a release-aware neuron explorer, visual
+ConnectomeDiff, explainable change-quality analysis, correspondence review,
+durable jobs, and snapshot-aware shard generations. Read
+**[PROJECT_GUIDE.md](PROJECT_GUIDE.md)** for the concise explanation, tab guide,
+methodology, interpretation and setup.
+
+**Synthetic demo on Windows:** with Python 3.12, uv, Node.js and Docker Desktop
+available, run `powershell -File scripts/start-demo.ps1`. It creates separate demo
+databases and explicitly synthetic releases. The original public-data results
+below are historical; current fixture reports are labelled separately.
+
 A temporal, federated and distributed database for the evolution of neural
 connectomes — RVCE DBMS (CD252IA), Team 03.
 
@@ -7,8 +18,9 @@ ConnectomeChronicle ingests public *Drosophila* connectome releases
 (hemibrain, FlyWire), keeps every source identifier and source line traceable,
 stores the data **bitemporally** (which release a fact is valid in, and when
 the database recorded it), and compares releases with **ConnectomeDiff**. All
-of this logic lives in PostgreSQL (constraints, triggers, SQL functions);
-Python only moves files into staging tables.
+of the relational integrity, temporal reconstruction and diff logic lives in
+PostgreSQL (constraints, triggers and SQL functions). Python handles source
+adapters, analysis, query routing, background jobs and the API.
 
 It combines three kinds of database work in one system:
 
@@ -52,7 +64,7 @@ be checked.
 ## Prerequisites
 
 - Windows, macOS or Linux with **Docker Desktop** running
-- **Python 3.11+**
+- **Python 3.12** (pinned in `.python-version`)
 - ~2 GB free disk for raw data, more for the database volume
 
 ## Setup
@@ -60,7 +72,7 @@ be checked.
 ```bash
 python -m venv .venv
 .venv/Scripts/activate          # Windows (Git Bash: source .venv/Scripts/activate)
-pip install -r requirements.txt
+pip install -r requirements.lock
 cp .env.example .env            # then set real passwords in .env
 docker compose up -d --wait     # coordinator, 3 shards, MongoDB
 alembic upgrade head            # create schemas cc and er (migrations 0001-0010)

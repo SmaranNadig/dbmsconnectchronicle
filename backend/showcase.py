@@ -5,7 +5,6 @@ compared with the coordinator.
 """
 from __future__ import annotations
 
-import threading
 import time
 
 import psycopg
@@ -140,6 +139,9 @@ SOURCES = {
     "backend/distributed/deploy.py": "sharding: copy each strategy to the 3 shards and verify",
     "backend/distributed/router.py": "sharding: query router (scatter-gather) and coordinator baseline",
     "backend/console.py": "this dashboard's read-only SQL and MongoDB consoles",
+    "backend/workspace.py": "release-aware search, bounded graphs, event explanations and exports",
+    "backend/analysis.py": "reproducible anomaly features and correspondence ranking",
+    "backend/jobs.py": "persisted operations and bounded local workers",
 }
 
 
@@ -159,7 +161,9 @@ SAMPLE_DOC = "hemibrain:1688868386"
 def mongo_overview() -> dict:
     mdb = mongo_db()
     coll = mdb[COLLECTION]
-    stats = mdb.command("collStats", COLLECTION)
+    stats = mdb.command("collStats", COLLECTION) if COLLECTION in mdb.list_collection_names() else {
+        'count':0,'size':0,'storageSize':0,'totalIndexSize':0}
+    sample = coll.find_one({}, sort=[('_id',1)])
     with _conn() as conn:
         syncs = conn.execute("""
             SELECT d.code AS dataset, r.version_label AS release, s.documents_written, s.records_written,
@@ -170,51 +174,37 @@ def mongo_overview() -> dict:
                                          WHERE status = 'completed' GROUP BY release_id)
             ORDER BY d.dataset_id, r.release_order""").fetchall()
         pg_row = conn.execute("""SELECT dataset_neuron_id, source_neuron_id, metadata_doc_id FROM dataset_neuron
-                                 WHERE metadata_doc_id = %s""", (SAMPLE_DOC,)).fetchone()
+                                 WHERE metadata_doc_id = %s""", (sample['_id'] if sample else None,)).fetchone()
     return {
         "server_version": mdb.client.server_info()["version"], "database": mdb.name, "collection": COLLECTION,
         "documents": stats["count"], "data_bytes": stats["size"], "storage_bytes": stats["storageSize"],
         "avg_document_bytes": stats.get("avgObjSize"), "index_bytes": stats["totalIndexSize"],
         "indexes": [{"name": k, "keys": v["key"], "unique": bool(v.get("unique"))}
                     for k, v in coll.index_information().items()],
-        "syncs": syncs, "sample_id": SAMPLE_DOC, "sample_postgres_row": pg_row,
-        "sample": coll.find_one({"_id": SAMPLE_DOC}),
+        "syncs": syncs, "sample_id": sample['_id'] if sample else None, "sample_postgres_row": pg_row,
+        "sample": sample,
     }
 
 
 # ------------------------------------------------------------ distribution
-_routers: dict = {}
-_lock = threading.Lock()
-
-
-def _targets(strategy: str):
-    # building a router loads the placement map; keep one per strategy
-    from backend.distributed.router import Coordinator, Router
-    if strategy not in _routers:
-        _routers[strategy] = Router(strategy)
-    if "coordinator" not in _routers:
-        _routers["coordinator"] = Coordinator()
-    return _routers[strategy], _routers["coordinator"]
-
-
 def warm_routers() -> None:
-    """Build the routers ahead of the first request (loading the placement maps
-    and the coordinator baseline takes several seconds). Started in the
-    background by the API when CC_WARM_ROUTERS=1; errors only mean the first
-    query will build them instead."""
-    for strategy in ("anatomical", "hash", "community"):
+    # Validate and release resources; requests build fresh snapshot-aware routers.
+    from backend.distributed.router import Router
+    for strategy in ('hash','anatomical','community'):
         try:
-            with _lock:
-                _targets(strategy)
-        except Exception:  # noqa: BLE001 - e.g. no verified deployment in this database
+            router = Router(strategy)
+            router.close()
+        except Exception:
             return
 
 
 def routed_query(strategy: str, kind: str, release: int, neuron: int | None = None,
                  region: str | None = None) -> dict:
     from backend.distributed.router import Router
-    with _lock:
-        router, coord = _targets(strategy)
+    router, coord = Router(strategy), None
+    try:
+        from backend.distributed.router import Coordinator
+        coord = Coordinator()
         if kind in ("neighbours_out", "neighbours_in", "two_hop") and neuron not in router.owner:
             raise ValueError("that neuron is not in the deployed partition")
         call = {"neighbours_out": lambda t: t.neighbours(neuron, release, "out"),
@@ -226,6 +216,13 @@ def routed_query(strategy: str, kind: str, release: int, neuron: int | None = No
         shard_info = dict(router.last)
         base = call(coord)
         base_info = dict(coord.last)
+        from backend.revisions import source_revision
+        if source_revision(router.log_conn) != router.source_revision:
+            raise RuntimeError('Source data changed during this query; rebuild shards and retry')
+    finally:
+        router.close()
+        if coord is not None:
+            coord.close()
     template = {"neighbours_out": Router.NEIGHBOURS.format(me="pre_neuron_id", other="post_neuron_id"),
                 "neighbours_in": Router.NEIGHBOURS.format(me="post_neuron_id", other="pre_neuron_id"),
                 "two_hop": Router.TWO_HOP, "region": Router.REGION, "summary": Router.SUMMARY}[kind]

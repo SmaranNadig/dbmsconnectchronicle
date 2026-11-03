@@ -15,12 +15,12 @@ from datetime import datetime
 from typing import Literal
 
 from bson import json_util
-from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query, Header
 from psycopg.rows import dict_row
 from psycopg_pool import ConnectionPool
 from pydantic import BaseModel, Field
 
-from backend import console, showcase
+from backend import console, showcase, workspace
 from backend.config import PROJECT_ROOT, get_settings
 from backend.metadata import mongo_db
 
@@ -35,11 +35,18 @@ async def lifespan(_: FastAPI):
                           kwargs={"options": "-c search_path=cc,public", "row_factory": dict_row})
     if os.environ.get("CC_WARM_ROUTERS") == "1":
         threading.Thread(target=showcase.warm_routers, daemon=True).start()
+    from backend.jobs import start_workers, stop_workers
+    start_workers()
     yield
+    stop_workers()
     pool.close()
 
 
 app = FastAPI(title="ConnectomeChronicle API", version="0.1.0", lifespan=lifespan)
+from backend import analysis  # registers model and matching routes on the workspace router
+app.include_router(workspace.router)
+from backend.jobs import router as jobs_router
+app.include_router(jobs_router)
 
 
 def db():
@@ -65,7 +72,7 @@ def _neuron_or_404(conn, neuron_id: int) -> dict:
 
 def _release_id(conn, dataset: str, label: str) -> int:
     row = conn.execute("""SELECT release_id FROM release JOIN dataset USING (dataset_id)
-                          WHERE code = %s AND version_label = %s""", (dataset, label)).fetchone()
+                          WHERE code = %s AND version_label = %s AND ingestion_status='loaded'""", (dataset, label)).fetchone()
     if not row:
         raise HTTPException(404, f"release {dataset} {label} not found")
     return row["release_id"]
@@ -145,6 +152,9 @@ def overview(conn=Depends(db)):
             [{"$group": {"_id": "$dataset", "n": {"$sum": 1}}}])}
     except Exception as exc:  # noqa: BLE001
         out["mongo_documents"] = {"unavailable": type(exc).__name__}
+    synthetic = ["synthetic" in d["name"].lower() or "fixture" in d["name"].lower() for d in out["datasets"]]
+    out["data_mode"] = "synthetic" if synthetic and all(synthetic) else "mixed" if any(synthetic) else "public" if synthetic else "empty"
+    out["database"] = get_settings().postgres_db
     return out
 
 
@@ -160,23 +170,15 @@ def regions(release: int, limit: int = Query(15, ge=1, le=100), conn=Depends(db)
 
 @app.get("/api/v1/neurons")
 def neurons(dataset: str, source_id: str | None = None, cell_type: str | None = None,
+            release: str | None = None, as_of: datetime | None = None, region: str | None = None,
             p: dict = Depends(page), conn=Depends(db)):
-    """Search current neurons by original id or current cell type."""
-    return conn.execute("""
-        SELECT dn.dataset_neuron_id, dn.source_neuron_id,
-               (SELECT annotation_value FROM annotation a WHERE a.dataset_neuron_id = dn.dataset_neuron_id
-                  AND a.annotation_key = 'cell_type' AND upper_inf(a.tx) AND upper_inf(a.valid_rel)) AS cell_type
-        FROM dataset_neuron dn JOIN dataset d USING (dataset_id)
-        WHERE d.code = %(ds)s
-          AND (%(sid)s::text IS NULL OR dn.source_neuron_id = %(sid)s)
-          AND (%(ct)s::text IS NULL OR EXISTS (SELECT 1 FROM annotation a WHERE a.dataset_neuron_id = dn.dataset_neuron_id
-                 AND a.annotation_key = 'cell_type' AND a.annotation_value = %(ct)s AND upper_inf(a.tx)))
-        ORDER BY dn.dataset_neuron_id LIMIT %(limit)s OFFSET %(offset)s""",
-        {"ds": dataset, "sid": source_id, "ct": cell_type, **p}).fetchall()
+    """Existence, filter and returned type share the same release and knowledge time."""
+    return workspace.search_neurons(conn, dataset, source_id, cell_type, release, as_of, region, **p)
 
 
 @app.get("/api/v1/neurons/{neuron_id}")
 def neuron(neuron_id: int, release: str | None = None, as_of: datetime | None = None, conn=Depends(db)):
+    as_of = workspace.instant(as_of)
     n = _neuron_or_404(conn, neuron_id)
     rel = _release_id(conn, n["dataset"], release) if release else None
     states = conn.execute("""
@@ -206,6 +208,7 @@ def _source_records(doc_id: str | None) -> dict:
 @app.get("/api/v1/neurons/{neuron_id}/connections")
 def neuron_connections(neuron_id: int, release: str, as_of: datetime | None = None,
                        min_weight: int = Query(1, ge=0), p: dict = Depends(page), conn=Depends(db)):
+    as_of = workspace.instant(as_of)
     n = _neuron_or_404(conn, neuron_id)
     return conn.execute("""SELECT * FROM connections_at_release(%s, %s, coalesce(%s, now()), %s)
                            ORDER BY synapse_count DESC LIMIT %s OFFSET %s""",
@@ -265,7 +268,8 @@ class Review(BaseModel):
 
 
 @app.post("/api/v1/mappings/{mapping_id}/review")
-def review(mapping_id: int, body: Review, conn=Depends(db)):
+def review(mapping_id: int, body: Review, conn=Depends(db), x_review_token: str | None = Header(None)):
+    workspace.require_review_token(x_review_token)
     try:
         conn.execute("SELECT review_mapping(%s, %s, %s)", (mapping_id, body.decision, body.reviewer))
         conn.commit()
@@ -281,12 +285,28 @@ class DiffRequest(BaseModel):
     release_a: str
     release_b: str
     as_of: datetime | None = None
+    refresh: bool = False
 
 
 @app.post("/api/v1/diffs")
 def create_diff(body: DiffRequest, conn=Depends(db)):
+    ts = workspace.instant(body.as_of)
+    conn.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ')
     a, b = _release_id(conn, body.dataset, body.release_a), _release_id(conn, body.dataset, body.release_b)
-    run = conn.execute("SELECT run_temporal_diff(%s, %s, coalesce(%s, now())) AS id", (a, b, body.as_of)).fetchone()["id"]
+    if a == b:
+        raise HTTPException(422, "select two different releases")
+    conn.execute('SELECT pg_advisory_xact_lock(hashtextextended(%s,0))',(f'diff:{a}:{b}',))
+    # A stable knowledge revision makes default requests reusable without changing explicit as_of semantics.
+    from backend.revisions import source_revision
+    revision = source_revision(conn)
+    if body.as_of is None and not body.refresh:
+        existing = conn.execute('''SELECT diff_run_id FROM diff_run WHERE release_a=%s AND release_b=%s
+            AND status='succeeded' AND stats->>'source_revision'=%s ORDER BY diff_run_id DESC LIMIT 1''', (a,b,revision)).fetchone()
+        if existing:
+            return get_diff(existing['diff_run_id'],conn)
+    run = conn.execute("SELECT run_temporal_diff(%s, %s, %s) AS id", (a, b, ts)).fetchone()["id"]
+    if body.as_of is None:
+        conn.execute("UPDATE diff_run SET stats=stats || jsonb_build_object('source_revision',%s::text) WHERE diff_run_id=%s",(revision,run))
     conn.commit()
     return get_diff(run, conn)
 
@@ -348,7 +368,7 @@ def distribution(conn=Depends(db)):
         SELECT p.code AS strategy, d.shard_id, d.neurons, d.connections, d.mirrors, d.bytes_on_shard,
                d.seconds, d.verified, d.deployed_at
         FROM shard_deployment d JOIN partition_strategy p USING (strategy_id)
-        WHERE d.deployment_id IN (SELECT max(deployment_id) FROM shard_deployment GROUP BY strategy_id, shard_id)
+        WHERE d.batch_id IN (SELECT batch_id FROM active_deployment)
         ORDER BY p.strategy_id, d.shard_id""").fetchall()
     strategies = conn.execute("SELECT code, description, parameters FROM partition_strategy "
                               "ORDER BY strategy_id").fetchall()
@@ -365,6 +385,14 @@ def distribution(conn=Depends(db)):
             s["cut_fraction"] = round(s["mirrors"] / s["owned"], 4)
             s["storage_overhead"] = round((s["owned"] + s["mirrors"]) / s["owned"], 3)
             s["max_share"] = round(max(x["connections"] for x in s["shards"]) / s["owned"], 4)
+    from backend.revisions import source_revision, placement_revision
+    revision = source_revision(conn)
+    for row in conn.execute('''SELECT p.code,p.strategy_id,b.batch_id,b.source_revision,b.placement_revision
+        FROM active_deployment a JOIN deployment_batch b USING(batch_id) JOIN partition_strategy p ON p.strategy_id=a.strategy_id''').fetchall():
+        code,sid,bid,src,placement = (row[k] for k in ('code','strategy_id','batch_id','source_revision','placement_revision'))
+        if code in per:
+            per[code]['generation'] = bid
+            per[code]['fresh'] = src.strip()==revision and placement.strip()==placement_revision(conn,sid)
     return {"strategies": strategies, "deployments": dict(per),
             "shards": conn.execute("SELECT shard_id, name, host, port FROM shard ORDER BY shard_id").fetchall()}
 
@@ -374,11 +402,14 @@ TEST_REPORT = PROJECT_ROOT / "results" / "tests" / "junit.xml"
 
 
 @app.get("/api/v1/benchmarks/latest")
-def latest_benchmark():
+def latest_benchmark(conn=Depends(db)):
     files = sorted(BENCH_DIR.glob("bench_*.json"))
     if not files:
         raise HTTPException(404, "no benchmark has been run")
-    return {"file": files[-1].name, **json.loads(files[-1].read_text(encoding="utf-8"))}
+    from backend.revisions import source_revision
+    report = json.loads(files[-1].read_text(encoding="utf-8"))
+    return {"file": files[-1].name, **report, "report_origin": "saved benchmark",
+            "matches_current_data": report.get('data_revision') == source_revision(conn)}
 
 
 @app.get("/api/v1/tests/latest")
@@ -486,4 +517,4 @@ def distributed_query(body: RoutedQuery, conn=Depends(db)):
     try:
         return showcase.routed_query(body.strategy, body.kind, body.release, neuron, body.region)
     except (ValueError, RuntimeError) as e:
-        raise HTTPException(400, str(e)) from e
+        raise HTTPException(409, str(e)) from e

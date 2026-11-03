@@ -29,6 +29,7 @@ import psycopg
 
 from backend.db import connect
 from backend.distributed.deploy import shard_conn
+from backend.revisions import source_revision, placement_revision
 
 
 def _size(rows) -> int:
@@ -54,25 +55,23 @@ class _Logged:
 
 class Router(_Logged):
     def __init__(self, strategy: str):
-        self.schema = f"p_{strategy}"
         self.target = f"shards:{strategy}"
         self.log_conn = connect(autocommit=True)
         self.strategy_id = self.log_conn.execute(
             "SELECT strategy_id FROM partition_strategy WHERE code = %s", (strategy,)).fetchone()[0]
-        if not self.log_conn.execute("""SELECT bool_and(verified) FROM shard_deployment
-                                        WHERE strategy_id = %s""", (self.strategy_id,)).fetchone()[0]:
-            raise RuntimeError(f"strategy {strategy} has no verified deployment")
-        self.owner = dict(self.log_conn.execute(
-            "SELECT dataset_neuron_id, shard_id FROM partition_assignment WHERE strategy_id = %s",
-            (self.strategy_id,)).fetchall())
-        self.region_shards: dict[str, set[int]] = defaultdict(set)
-        for code, shard in self.log_conn.execute(
-                """SELECT DISTINCT r.code, pa.shard_id FROM neuron_latest_region r
-                   JOIN partition_assignment pa USING (dataset_neuron_id) WHERE pa.strategy_id = %s""",
-                (self.strategy_id,)).fetchall():
-            self.region_shards[code].add(shard)
+        batch = self.log_conn.execute('''SELECT b.batch_id,b.source_revision,b.placement_revision FROM active_deployment a
+            JOIN deployment_batch b USING(batch_id) WHERE a.strategy_id=%s AND b.status='verified' ''',(self.strategy_id,)).fetchone()
+        if not batch or batch[1].strip() != source_revision(self.log_conn) or batch[2].strip() != placement_revision(self.log_conn,self.strategy_id):
+            self.log_conn.close()
+            raise RuntimeError(f'{strategy} deployment is missing or stale; recompute placement and deploy it')
+        self.batch_id,self.source_revision = batch[0],batch[1].strip()
+        self.schema = f'p_{strategy}_g{self.batch_id}'
         shard_ids = [r[0] for r in self.log_conn.execute("SELECT shard_id FROM shard ORDER BY shard_id").fetchall()]
         self.shards = {k: shard_conn(k, autocommit=True) for k in shard_ids}
+        self.owner = dict(self.shards[shard_ids[0]].execute(f'SELECT dataset_neuron_id,owner_shard FROM {self.schema}.neuron'))
+        self.region_shards: dict[str,set[int]] = defaultdict(set)
+        for code,shard in self.shards[shard_ids[0]].execute(f'SELECT DISTINCT primary_region,owner_shard FROM {self.schema}.neuron WHERE primary_region IS NOT NULL'):
+            self.region_shards[code].add(shard)
         self.pool = ThreadPoolExecutor(len(self.shards))
 
     def close(self) -> None:

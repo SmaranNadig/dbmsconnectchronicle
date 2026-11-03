@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+from urllib.parse import quote
 from functools import lru_cache
 from pathlib import Path
 
@@ -34,10 +35,11 @@ class Settings(BaseSettings):
     mongo_password: str = ""
     mongo_db: str = "connectome_meta"
     mongo_port: int = 57017
+    cc_review_token: str = ''
 
     def pg_dsn(self, port: int | None = None, db: str | None = None) -> str:
         return (
-            f"postgresql://{self.postgres_user}:{self.postgres_password}"
+            f"postgresql://{quote(self.postgres_user,safe='')}:{quote(self.postgres_password,safe='')}"
             f"@{self.postgres_host}:{port or self.coordinator_port}/{db or self.postgres_db}"
         )
 
@@ -48,7 +50,7 @@ class Settings(BaseSettings):
     @property
     def mongo_uri(self) -> str:
         return (
-            f"mongodb://{self.mongo_user}:{self.mongo_password}"
+            f"mongodb://{quote(self.mongo_user,safe='')}:{quote(self.mongo_password,safe='')}"
             f"@{self.postgres_host}:{self.mongo_port}/?authSource=admin"
         )
 

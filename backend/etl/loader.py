@@ -346,6 +346,18 @@ MERGE_SQL = {
 
 
 def ingest_release(dataset: str, release: str, release_dir=None) -> LoadResult:
+    # Hold a session-level dataset lease across registration, atomic load and failure logging.
+    # A concurrent retry cannot mistake a live run for an interrupted one.
+    with connect(autocommit=True) as lease:
+        key = 'ingest:' + dataset
+        lease.execute('SELECT pg_advisory_lock(hashtextextended(%s,0))', (key,))
+        try:
+            return _ingest_release_locked(dataset, release, release_dir)
+        finally:
+            lease.execute('SELECT pg_advisory_unlock(hashtextextended(%s,0))', (key,))
+
+
+def _ingest_release_locked(dataset: str, release: str, release_dir=None) -> LoadResult:
     adapter = get_adapter(dataset, release, release_dir)
     adapter.validate()
 
