@@ -42,3 +42,6 @@ Thumbs.db
 
 # Originals of the ER diagrams; the copies used by the site are in frontend/public/
 WhatsApp Image *.jpeg
+
+# Course documents (kept locally, not published)
+*.pdf
