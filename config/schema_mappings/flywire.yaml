@@ -1,0 +1,61 @@
+# Schema mapping: FlyWire Codex exports (FAFB materializations 630 and 783).
+# Release 630 ships cell_type / hemibrain_type inside classification.csv;
+# release 783 moved them to consolidated_cell_types.csv and
+# fw_and_hemibrain_types.csv. Columns absent from a release are skipped and
+# reported in the ingestion run statistics.
+dataset: flywire
+id_pattern: '^[0-9]+$'
+
+neuron_files:
+  - file: neurons.csv.gz
+    id_column: root_id
+    defines_neurons: true
+    annotations:
+      group: neuropil_group
+      nt_type: nt_type
+  - file: classification.csv.gz
+    id_column: root_id
+    # 630 lists one root id (720575940609340228) that is absent from its
+    # neurons.csv; such rows are dropped and reported in the run statistics
+    unknown_neuron_policy: skip
+    annotations:
+      flow: flow
+      super_class: super_class
+      class: class
+      sub_class: sub_class
+      cell_type: cell_type
+      hemibrain_type: hemibrain_type
+      hemilineage: hemilineage
+      side: side
+      nerve: nerve
+  - file: consolidated_cell_types.csv.gz
+    id_column: root_id
+    optional: true
+    annotations:
+      primary_type: cell_type
+      additional_type(s): additional_types
+  - file: fw_and_hemibrain_types.csv.gz
+    id_column: root_id
+    optional: true
+    annotations:
+      hemibrain_type: hemibrain_type
+
+connections:
+  file: connections.csv.gz
+  pre_column: pre_root_id
+  post_column: post_root_id
+  weight_column: syn_count
+  # one row per (pre, post, neuropil); the canonical connection is the pair
+  # total, keeping every contributing source line for provenance
+  duplicate_pairs: sum
+
+# The same connection file, per neuropil, read for brain-region synapse counts.
+region_connections:
+  file: connections.csv.gz
+  pre_column: pre_root_id
+  post_column: post_root_id
+  region_column: neuropil
+  weight_column: syn_count
+  code_pattern: '^(?P<code>.+?)(_(?P<side>[LR]))?$'
+  rename:
+    UNASGD: UNASSIGNED

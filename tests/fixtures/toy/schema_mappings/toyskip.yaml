@@ -1,0 +1,20 @@
+# synthetic test fixture: classes.csv names neuron 77, absent from neurons.csv
+dataset: toyskip
+id_pattern: '^[0-9]+$'
+neuron_files:
+  - file: neurons.csv
+    id_column: id
+    defines_neurons: true
+    annotations:
+      type: cell_type
+  - file: classes.csv
+    id_column: id
+    unknown_neuron_policy: skip
+    annotations:
+      class: class
+connections:
+  file: edges.csv
+  pre_column: pre
+  post_column: post
+  weight_column: w
+  duplicate_pairs: error

@@ -1,0 +1,72 @@
+# Catalog of verified public sources (checked 2026-11-03 by listing the
+# public Google Cloud Storage buckets and opening each file).
+# release_order is the order releases were published within a dataset; it is
+# the valid-time axis used by the temporal store. Calendar release dates are
+# left null unless confirmed from an official release note.
+
+datasets:
+  hemibrain:
+    name: "Janelia FlyEM hemibrain"
+    organism: "Drosophila melanogaster (female, partial central brain)"
+    source_url: "https://www.janelia.org/project-team/flyem/hemibrain"
+    description: "Synapse-level connectome of most of the central brain of one female fly; traced-neuron adjacency exports"
+    organization: "Janelia Research Campus, FlyEM project"
+    repository: "neuPrint exports in the public Google Cloud Storage bucket gs://hemibrain"
+    data_formats: ["csv in tar.gz"]
+    license: "CC-BY-4.0 (per Janelia FlyEM hemibrain data release; verify before redistribution)"
+    adapter: hemibrain
+    releases:
+      v1.0:
+        release_order: 1
+        files:
+          - url: "https://storage.googleapis.com/hemibrain/v1.0/conn_summary.tgz"
+            filename: "conn_summary.tgz"
+      v1.1:
+        release_order: 2
+        files:
+          - url: "https://storage.googleapis.com/hemibrain/v1.1/exported-traced-adjacencies-v1.1.tar.gz"
+            filename: "exported-traced-adjacencies-v1.1.tar.gz"
+      v1.2:
+        release_order: 3
+        files:
+          - url: "https://storage.googleapis.com/hemibrain/v1.2/exported-traced-adjacencies-v1.2.tar.gz"
+            filename: "exported-traced-adjacencies-v1.2.tar.gz"
+
+  flywire:
+    name: "FlyWire whole-brain connectome (FAFB), via FlyWire Codex"
+    organism: "Drosophila melanogaster (female, whole brain)"
+    source_url: "https://codex.flywire.ai"
+    description: "Whole-brain connectome of one adult female fly (FAFB electron-microscopy volume); Codex table exports"
+    organization: "FlyWire Consortium (Princeton University)"
+    repository: "FlyWire Codex exports in gs://flywire-data/codex"
+    data_formats: ["csv.gz"]
+    license: "See FlyWire Codex terms of use; cite Dorkenwald et al. 2024 and Schlegel et al. 2024"
+    adapter: flywire
+    releases:
+      "630":
+        release_order: 1
+        files:
+          - {url: "https://storage.googleapis.com/flywire-data/codex/data/fafb/630/neurons.csv.gz", filename: "neurons.csv.gz"}
+          - {url: "https://storage.googleapis.com/flywire-data/codex/data/fafb/630/connections.csv.gz", filename: "connections.csv.gz"}
+          - {url: "https://storage.googleapis.com/flywire-data/codex/data/fafb/630/classification.csv.gz", filename: "classification.csv.gz"}
+      "783":
+        release_order: 2
+        files:
+          - {url: "https://storage.googleapis.com/flywire-data/codex/data/fafb/783/neurons.csv.gz", filename: "neurons.csv.gz"}
+          - {url: "https://storage.googleapis.com/flywire-data/codex/data/fafb/783/connections.csv.gz", filename: "connections.csv.gz"}
+          - {url: "https://storage.googleapis.com/flywire-data/codex/data/fafb/783/classification.csv.gz", filename: "classification.csv.gz"}
+          - {url: "https://storage.googleapis.com/flywire-data/codex/data/fafb/783/consolidated_cell_types.csv.gz", filename: "consolidated_cell_types.csv.gz"}
+          - {url: "https://storage.googleapis.com/flywire-data/codex/data/fafb/783/fw_and_hemibrain_types.csv.gz", filename: "fw_and_hemibrain_types.csv.gz"}
+
+  reference:
+    name: "Schlegel et al. 2024 FlyWire annotations (incl. hemibrain_type)"
+    organism: "Drosophila melanogaster"
+    source_url: "https://github.com/flyconnectome/flywire_annotations"
+    license: "See repository; cite Schlegel et al. 2024 (Nature)"
+    adapter: null
+    releases:
+      schlegel2024:
+        release_order: 1
+        files:
+          - url: "https://raw.githubusercontent.com/flyconnectome/flywire_annotations/main/supplemental_files/Supplemental_file1_neuron_annotations.tsv"
+            filename: "Supplemental_file1_neuron_annotations.tsv"

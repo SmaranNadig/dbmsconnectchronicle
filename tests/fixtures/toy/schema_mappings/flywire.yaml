@@ -1,0 +1,17 @@
+# synthetic test fixture mapping (named like the real source so the
+# entity-resolution functions can be tested; lives only in the test database)
+dataset: flywire
+id_pattern: '^[0-9]+$'
+neuron_files:
+  - file: neurons.csv
+    id_column: id
+    defines_neurons: true
+    annotations:
+      hemibrain_type: hemibrain_type
+      side: side
+connections:
+  file: edges.csv
+  pre_column: pre
+  post_column: post
+  weight_column: w
+  duplicate_pairs: error

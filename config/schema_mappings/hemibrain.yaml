@@ -1,0 +1,41 @@
+# Schema mapping: Janelia hemibrain "exported-traced-adjacencies" CSVs.
+# Files live inside the release archive; `file` matches the member's basename.
+# Column order differs between releases (v1.0: bodyId,instance,type;
+# v1.1+: bodyId,type,instance) - columns are always mapped by name.
+dataset: hemibrain
+id_pattern: '^[0-9]+$'
+
+neuron_files:
+  - file: traced-neurons.csv
+    id_column: bodyId
+    defines_neurons: true
+    annotations:
+      type: cell_type
+      instance: instance
+
+connections:
+  file: traced-total-connections.csv
+  pre_column: bodyId_pre
+  post_column: bodyId_post
+  weight_column: weight
+  duplicate_pairs: error      # one row per neuron pair in this export
+
+# Synapses per neuron pair split by primary ROI. ROI codes are 'NAME(L|R)' or
+# 'NAME' for unpaired regions; `rename` maps hemibrain names to the shared
+# vocabulary (FlyWire neuropil names) in cc.brain_region.
+region_connections:
+  file: traced-roi-connections.csv
+  pre_column: bodyId_pre
+  post_column: bodyId_post
+  region_column: roi
+  weight_column: weight
+  code_pattern: '^(?P<code>.+?)(\((?P<side>[LR])\))?$'
+  rename:
+    CA: MB_CA
+    PED: MB_PED
+    aL: MB_VL
+    "a'L": MB_VL
+    bL: MB_ML
+    "b'L": MB_ML
+    gL: MB_ML
+    NotPrimary: UNASSIGNED

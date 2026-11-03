@@ -1,0 +1,24 @@
+# synthetic test fixture mapping
+dataset: toyfly
+id_pattern: '^[0-9]+$'
+neuron_files:
+  - file: neurons.csv
+    id_column: id
+    defines_neurons: true
+    annotations:
+      type: cell_type
+connections:
+  file: edges.csv
+  pre_column: pre
+  post_column: post
+  weight_column: w
+  duplicate_pairs: error
+region_connections:
+  file: edges_roi.csv
+  pre_column: pre
+  post_column: post
+  region_column: roi
+  weight_column: w
+  code_pattern: '^(?P<code>.+?)(\((?P<side>[LR])\))?$'
+  rename:
+    "a'L": MB_VL

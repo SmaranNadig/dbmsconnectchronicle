@@ -1,0 +1,44 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Secrets: copy .env.example to .env locally
+.env
+.env.*
+!.env.example
+
+# Downloaded datasets (about 240 MB) and derived files: re-create with
+# `python scripts/download_datasets.py --dataset all` (checksums in data/metadata/dataset_manifest.json)
+data/raw/
+data/processed/
+*.tar.gz
+*.tgz
+*.csv.gz
+*.feather
+*.parquet
+
+# Database dumps and local volumes
+.dbdata/
+*.dump
+*.backup
+
+# Models and large result artefacts
+results/**/*.joblib
+results/**/*.pt
+
+# Node
+node_modules/
+frontend/dist/
+
+# Local tool and editor settings
+.claude/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.log
+
+# Originals of the ER diagrams; the copies used by the site are in frontend/public/
+WhatsApp Image *.jpeg
