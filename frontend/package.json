@@ -1,0 +1,17 @@
+{
+  "name": "connectome-chronicle-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Project dashboard for ConnectomeChronicle: plain HTML/JS served by Express, live data from the FastAPI backend",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "4.22.3",
+    "http-proxy-middleware": "3.0.10"
+  }
+}

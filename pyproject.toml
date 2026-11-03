@@ -1,0 +1,10 @@
+[project]
+name = "connectome-chronicle"
+version = "0.1.0"
+description = "A temporal, federated and distributed database for the evolution of neural connectomes"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# every run leaves a JUnit report; the dashboard shows the last one
+addopts = "-ra --junitxml=results/tests/junit.xml"

@@ -1,0 +1,28 @@
+# Synthetic test fixture catalog (see README.md). Not biological data.
+datasets:
+  toyfly:
+    name: "Synthetic toy connectome (test fixture)"
+    releases:
+      r1: {release_order: 1, files: []}
+      r2: {release_order: 2, files: []}
+      r3: {release_order: 3, files: []}
+  toyorphan:
+    name: "Synthetic fixture with an orphan edge"
+    releases:
+      r1: {release_order: 1, files: []}
+  toydup:
+    name: "Synthetic fixture with a duplicate pair"
+    releases:
+      r1: {release_order: 1, files: []}
+  hemibrain:
+    name: "Synthetic stand-in for hemibrain (test fixture)"
+    releases:
+      t1: {release_order: 1, files: []}
+  flywire:
+    name: "Synthetic stand-in for FlyWire (test fixture)"
+    releases:
+      t1: {release_order: 1, files: []}
+  toyskip:
+    name: "Synthetic fixture: annotation row for an unknown neuron, policy skip"
+    releases:
+      r1: {release_order: 1, files: []}

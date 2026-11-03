@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ConnectomeChronicle</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap top-row">
+    <div>
+      <h1>ConnectomeChronicle</h1>
+      <p class="sub">A temporal, federated and distributed database for evolving fly-brain connectomes ·
+        RVCE DBMS (CD252IA) · Team 03</p>
+    </div>
+    <div id="health" class="health">checking API…</div>
+  </div>
+  <nav class="wrap tabs">
+    <a href="#overview">Overview</a>
+    <a href="#console">Query console</a>
+    <a href="#concepts">DBMS concepts</a>
+    <a href="#sql">SQL implementation</a>
+    <a href="#nosql">NoSQL implementation</a>
+    <a href="#distributed">Distributed</a>
+    <a href="#results">Results</a>
+  </nav>
+</header>
+
+<main class="wrap">
+
+  <!-- ============================================================ overview -->
+  <section id="overview">
+    <h2>What this project is</h2>
+    <p class="lede">Scientists publish maps of a fruit fly's brain wiring (a <b>connectome</b>: neurons and the
+      synapses between them) as a series of releases. Each release corrects the last. We built a database that loads
+      every release <b>without overwriting the old ones</b>, so any past version can be queried, and every fact can be
+      traced to the file and line it came from. Releases can be compared, and the data is spread over several
+      database servers.</p>
+
+    <div class="arch">
+      <div class="node">
+        <b>PostgreSQL · coordinator</b>
+        <span>Relational core: <span id="n-tables">normalised</span> tables with keys and constraints, bitemporal history, views, PL/pgSQL functions</span>
+      </div>
+      <div class="link">key<br>metadata_doc_id</div>
+      <div class="node">
+        <b>MongoDB · document store</b>
+        <span>One document per neuron with every original source row; columns differ between datasets</span>
+      </div>
+      <div class="link">copy +<br>route</div>
+      <div class="node">
+        <b>3 PostgreSQL shards</b>
+        <span>Same data split by 3 strategies (hash, brain region, graph community), with a query router</span>
+      </div>
+    </div>
+
+    <div class="kpis" id="kpis"></div>
+
+    <h3>Datasets (real, public)</h3>
+    <div id="datasets"></div>
+
+    <div class="guide">
+      <b>Evaluating in 5 minutes</b>
+      <ol>
+        <li>Open <a href="#concepts">DBMS concepts</a>. Each card says where a concept lives in our database; <i>Try it</i> runs a real query.</li>
+        <li>Press <b>Run the 9 violation tests</b>: PostgreSQL itself rejects bad data (constraints and a trigger).</li>
+        <li>Type your own SQL or MongoDB query in the <a href="#console">Query console</a>. It is read-only, so nothing can be broken.</li>
+        <li>See the actual code in <a href="#sql">SQL implementation</a> and <a href="#nosql">NoSQL implementation</a>.</li>
+        <li>Send one query to the <a href="#distributed">3 shards</a> and check that it matches the single server.</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ============================================================ console -->
+  <section id="console">
+    <h2>Query console</h2>
+    <p class="note">Runs against the real database. SQL runs as role <code>cc_reader</code> (SELECT only) inside a
+      read-only transaction that is rolled back, with a 10 s limit and at most 500 rows. MongoDB allows
+      <code>find</code>, <code>count</code> and <code>aggregate</code> only.</p>
+    <div class="seg" role="tablist">
+      <button type="button" class="on" data-mode="sql">SQL · PostgreSQL</button>
+      <button type="button" data-mode="mongo">NoSQL · MongoDB</button>
+    </div>
+
+    <div id="sql-pane">
+      <div class="row">
+        <label class="grow">Example <select id="sql-example"></select></label>
+      </div>
+      <textarea id="sql-text" spellcheck="false" rows="9" aria-label="SQL query"></textarea>
+      <div class="row">
+        <button type="button" id="sql-run">Run ▸</button>
+        <button type="button" class="ghost" id="sql-plan">EXPLAIN (plan only)</button>
+        <button type="button" class="ghost" id="sql-analyze">EXPLAIN ANALYZE (runs it)</button>
+        <span class="note" id="sql-meta"></span>
+      </div>
+      <div id="sql-out"></div>
+    </div>
+
+    <div id="mongo-pane" hidden>
+      <div class="row">
+        <label class="grow">Example <select id="mongo-example"></select></label>
+        <label>Operation <select id="mongo-op"><option>find</option><option>count</option><option>aggregate</option></select></label>
+        <label>Limit <input id="mongo-limit" type="number" min="1" max="50" value="5" size="4"></label>
+      </div>
+      <div class="grid2 tight">
+        <label class="stack" id="mongo-filter-l">Filter (JSON) <textarea id="mongo-filter" spellcheck="false" rows="4"></textarea></label>
+        <label class="stack" id="mongo-proj-l">Projection (JSON, optional) <textarea id="mongo-proj" spellcheck="false" rows="4"></textarea></label>
+        <label class="stack wide" id="mongo-pipe-l" hidden>Pipeline (JSON array of stages) <textarea id="mongo-pipe" spellcheck="false" rows="7"></textarea></label>
+      </div>
+      <div class="row">
+        <button type="button" id="mongo-run">Run ▸</button>
+        <span class="note">collection <code>connectome_meta.neuron_source_record</code></span>
+        <span class="note" id="mongo-meta"></span>
+      </div>
+      <div id="mongo-out"></div>
+    </div>
+  </section>
+
+  <!-- ============================================================ concepts -->
+  <section id="concepts">
+    <h2>DBMS concepts, shown on real data</h2>
+    <p class="note">Each card gives the concept, where it is used in this database, and live evidence. <i>Try it</i>
+      loads a working query into the console and runs it.</p>
+    <div class="concepts" id="concept-cards"></div>
+    <div id="integrity" class="panel" hidden>
+      <h3>Integrity test: bad writes sent to PostgreSQL</h3>
+      <p class="note">Each statement runs in its own transaction, is rejected by the database (not by our code),
+        and is rolled back. Nothing is written.</p>
+      <div id="integrity-out"></div>
+    </div>
+  </section>
+
+  <!-- ============================================================ SQL implementation -->
+  <section id="sql">
+    <h2>SQL implementation (PostgreSQL 16)</h2>
+    <p class="lede">The schema is built by 10 plain SQL migrations, applied in order with Alembic. On the left is the
+      source. On the right is what PostgreSQL's own system catalog says exists right now.</p>
+    <div class="impl">
+      <div>
+        <h3>Source code</h3>
+        <div class="files" id="sql-files"></div>
+      </div>
+      <div>
+        <h3 id="code-title">Select a file</h3>
+        <div id="code-view" class="codebox"><p class="note">Pick a migration on the left to read it.</p></div>
+      </div>
+    </div>
+    <h3>Live system catalog</h3>
+    <div class="row">
+      <div class="seg small" id="cat-tabs"></div>
+      <label>Filter <input id="cat-filter" placeholder="e.g. connection" size="18"></label>
+    </div>
+    <div id="cat-out" class="scroll"></div>
+  </section>
+
+  <!-- ============================================================ NoSQL implementation -->
+  <section id="nosql">
+    <h2>NoSQL implementation (MongoDB 7)</h2>
+    <p class="lede">The two datasets publish different columns (hemibrain has 3 per neuron; FlyWire has 21, spread
+      over several files per release), and a column can appear or vanish between releases. Forcing these into fixed
+      relational columns would mean many empty columns or frequent schema changes. So the original rows go into
+      MongoDB as <b>one document per neuron</b>, and the cleaned, typed facts stay in PostgreSQL.</p>
+    <div class="kpis" id="mongo-kpis"></div>
+    <div class="grid2">
+      <div>
+        <h3>Document structure</h3>
+<pre class="json">{
+  "_id": "hemibrain:1688868386",        <span class="cm">// = dataset_neuron.metadata_doc_id in PostgreSQL</span>
+  "dataset": "hemibrain",
+  "source_neuron_id": "1688868386",
+  "dataset_neuron_id": 41903,            <span class="cm">// PostgreSQL primary key</span>
+  "releases": {                          <span class="cm">// one entry per release the neuron is in</span>
+    "&lt;release_id&gt;": {
+      "release": "v1.2", "ingestion_run_id": 4, "synced_at": "…",
+      "records": [ {                     <span class="cm">// every source row about this neuron</span>
+        "file": "…/traced-neurons.csv", "sha256": "…", "line": 20241,
+        "fields": { …all columns exactly as published… }
+      } ]
+    }
+  }
+}</pre>
+        <h3>Indexes</h3>
+        <div id="mongo-indexes"></div>
+      </div>
+      <div>
+        <h3>How the two stores stay consistent</h3>
+        <ol class="steps">
+          <li>A release is loaded into PostgreSQL in one transaction. Each neuron row gets <code>metadata_doc_id</code>.</li>
+          <li><code>metadata sync</code> reads the same source files and upserts one document per neuron
+            (<code>$set releases.&lt;id&gt;</code>), so re-running it is idempotent.</li>
+          <li>Each sync is logged in the PostgreSQL table <code>metadata_sync</code> (status, counts).</li>
+          <li><code>metadata check</code> compares both stores: the same neuron ids, and the same rows per release.</li>
+        </ol>
+        <h3>Syncs recorded in PostgreSQL</h3>
+        <div id="mongo-syncs"></div>
+        <div class="row">
+          <button type="button" class="ghost" data-source="backend/metadata.py">View the sync code (metadata.py)</button>
+          <button type="button" class="ghost" data-mongo-example="m-one">Open this document in the console</button>
+        </div>
+      </div>
+    </div>
+    <h3>The same neuron in both stores</h3>
+    <div class="grid2" id="cross-store"></div>
+  </section>
+
+  <!-- ============================================================ distributed -->
+  <section id="distributed">
+    <h2>Distributed database: 3 shards</h2>
+    <div class="concepts three">
+      <div class="concept"><h4>Horizontal fragmentation</h4><p>Each neuron, with its connections, belongs to exactly one
+        shard. Three ways of choosing the shard are compared below.</p></div>
+      <div class="concept"><h4>Replication</h4><p>A connection between neurons on two different shards is stored on both
+        (a <i>mirror</i>). The small release and neuron tables are copied to every shard.</p></div>
+      <div class="concept"><h4>Query routing</h4><p>The router sends a query only to the shards that can hold the answer,
+        runs them in parallel and merges the results. Every query is logged.</p></div>
+    </div>
+    <div id="strategies"></div>
+
+    <h3>Run a query on the shards</h3>
+    <form class="row" id="route-form">
+      <label>Strategy <select id="r-strategy"><option value="anatomical">anatomical</option><option value="hash">hash</option><option value="community">community</option></select></label>
+      <label>Query <select id="r-kind">
+        <option value="neighbours_out">outgoing partners of a neuron</option>
+        <option value="two_hop">partners of partners (2 hops)</option>
+        <option value="region">all connections of a brain region</option>
+        <option value="summary">totals for a whole release</option>
+      </select></label>
+      <label>Release <select id="r-release"></select></label>
+      <label id="r-neuron-l">Neuron id <input id="r-neuron" value="1688868386" size="20"></label>
+      <label id="r-region-l" hidden>Region <select id="r-region"><option>EB</option><option>FB</option><option>AL_R</option><option>SLP_R</option><option>ME_R</option><option>LO_R</option></select></label>
+      <button type="submit">Run on shards ▸</button>
+    </form>
+    <div id="route-out"></div>
+  </section>
+
+  <!-- ============================================================ results -->
+  <section id="results">
+    <h2>Results and verification</h2>
+    <div id="tests-head"></div>
+    <h3>Benchmark: single server vs 3 shards (median latency)</h3>
+    <div id="bench-head"></div>
+    <div class="multiples" id="bench-charts"></div>
+    <h3>Requirements (SRS) status</h3>
+    <div id="requirements"></div>
+  </section>
+</main>
+
+<footer class="wrap note">Every number on this page is read live from PostgreSQL, MongoDB, the latest benchmark
+  file or the latest test run. The only hand-written content is the explanations and the requirement status.</footer>
+
+<div id="tip" class="tip" hidden></div>
+<script type="module" src="app.js"></script>
+</body>
+</html>

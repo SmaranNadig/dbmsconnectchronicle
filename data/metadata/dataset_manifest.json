@@ -1,0 +1,112 @@
+{
+  "files": {
+    "flywire/630/classification.csv.gz": {
+      "dataset": "flywire",
+      "downloaded_at": "2026-11-03T10:00:59+00:00",
+      "release": "630",
+      "server_last_modified": "Thu, 05 Dec 2024 19:52:23 GMT",
+      "sha256": "b2cf34ef76f5750e647334b56c73ae7f49c96f0fee3371e8a52d26c835a3b499",
+      "size_bytes": 1011550,
+      "url": "https://storage.googleapis.com/flywire-data/codex/data/fafb/630/classification.csv.gz"
+    },
+    "flywire/630/connections.csv.gz": {
+      "dataset": "flywire",
+      "downloaded_at": "2026-11-03T10:00:56+00:00",
+      "release": "630",
+      "server_last_modified": "Thu, 05 Dec 2024 19:52:23 GMT",
+      "sha256": "68144490b8585fb6b1bf5979d923a3b1081b435cd52b7f82daed1beb6b84781a",
+      "size_bytes": 26124953,
+      "url": "https://storage.googleapis.com/flywire-data/codex/data/fafb/630/connections.csv.gz"
+    },
+    "flywire/630/neurons.csv.gz": {
+      "dataset": "flywire",
+      "downloaded_at": "2026-11-03T10:00:49+00:00",
+      "release": "630",
+      "server_last_modified": "Thu, 05 Dec 2024 19:52:34 GMT",
+      "sha256": "a0be4670993d86cea0a4724ba24f874c9d867a24f4e248ff30dcf9b6565d81bb",
+      "size_bytes": 1572661,
+      "url": "https://storage.googleapis.com/flywire-data/codex/data/fafb/630/neurons.csv.gz"
+    },
+    "flywire/783/classification.csv.gz": {
+      "dataset": "flywire",
+      "downloaded_at": "2026-11-03T10:01:15+00:00",
+      "release": "783",
+      "server_last_modified": "Tue, 24 Feb 2026 15:00:05 GMT",
+      "sha256": "e946b552f4056dfc977707be0674609832c3f64332a22d69dc0d9615e7aae663",
+      "size_bytes": 934402,
+      "url": "https://storage.googleapis.com/flywire-data/codex/data/fafb/783/classification.csv.gz"
+    },
+    "flywire/783/connections.csv.gz": {
+      "dataset": "flywire",
+      "downloaded_at": "2026-11-03T10:01:13+00:00",
+      "release": "783",
+      "server_last_modified": "Thu, 05 Dec 2024 19:53:36 GMT",
+      "sha256": "d49dd692e59e153aa3c83f5257bfc0eff51247b86d7bb183386c6d1622c70fc9",
+      "size_bytes": 50289304,
+      "url": "https://storage.googleapis.com/flywire-data/codex/data/fafb/783/connections.csv.gz"
+    },
+    "flywire/783/consolidated_cell_types.csv.gz": {
+      "dataset": "flywire",
+      "downloaded_at": "2026-11-03T10:01:18+00:00",
+      "release": "783",
+      "server_last_modified": "Tue, 24 Feb 2026 14:59:50 GMT",
+      "sha256": "8aba246d71dc40361677493629972ce3883048c3d02010adc42bda22962a1a2d",
+      "size_bytes": 901707,
+      "url": "https://storage.googleapis.com/flywire-data/codex/data/fafb/783/consolidated_cell_types.csv.gz"
+    },
+    "flywire/783/fw_and_hemibrain_types.csv.gz": {
+      "dataset": "flywire",
+      "downloaded_at": "2026-11-03T10:01:21+00:00",
+      "release": "783",
+      "server_last_modified": "Thu, 15 May 2025 14:29:08 GMT",
+      "sha256": "193f266279f20cfd816e3631a9225cf887d3424d337454a20f09d10916472bd0",
+      "size_bytes": 1043857,
+      "url": "https://storage.googleapis.com/flywire-data/codex/data/fafb/783/fw_and_hemibrain_types.csv.gz"
+    },
+    "flywire/783/neurons.csv.gz": {
+      "dataset": "flywire",
+      "downloaded_at": "2026-11-03T10:01:02+00:00",
+      "release": "783",
+      "server_last_modified": "Thu, 05 Dec 2024 19:54:06 GMT",
+      "sha256": "6a6b3759e635f0f35a677d169052362131ec61d95f55919298b55c43fce4e719",
+      "size_bytes": 1679884,
+      "url": "https://storage.googleapis.com/flywire-data/codex/data/fafb/783/neurons.csv.gz"
+    },
+    "hemibrain/v1.0/conn_summary.tgz": {
+      "dataset": "hemibrain",
+      "downloaded_at": "2026-11-03T10:00:26+00:00",
+      "release": "v1.0",
+      "server_last_modified": "Tue, 28 Jan 2020 16:41:37 GMT",
+      "sha256": "fd71b617b20fa6d3a1bce9d7f971b1b47ab076df4fa03f30dfc0ede6439a6dfc",
+      "size_bytes": 47369620,
+      "url": "https://storage.googleapis.com/hemibrain/v1.0/conn_summary.tgz"
+    },
+    "hemibrain/v1.1/exported-traced-adjacencies-v1.1.tar.gz": {
+      "dataset": "hemibrain",
+      "downloaded_at": "2026-11-03T10:00:36+00:00",
+      "release": "v1.1",
+      "server_last_modified": "Mon, 22 Jun 2020 01:36:54 GMT",
+      "sha256": "7ac603698db356c72c20712d82b07f9da74e19c5adfec218c84b12f1d0c07409",
+      "size_bytes": 45473816,
+      "url": "https://storage.googleapis.com/hemibrain/v1.1/exported-traced-adjacencies-v1.1.tar.gz"
+    },
+    "hemibrain/v1.2/exported-traced-adjacencies-v1.2.tar.gz": {
+      "dataset": "hemibrain",
+      "downloaded_at": "2026-11-03T10:00:46+00:00",
+      "release": "v1.2",
+      "server_last_modified": "Tue, 22 Dec 2020 19:18:16 GMT",
+      "sha256": "07d8946eb0c4e3a5cb23d5769c9817847494f9fcadbc0ca239eed7bbd5555cf7",
+      "size_bytes": 45872577,
+      "url": "https://storage.googleapis.com/hemibrain/v1.2/exported-traced-adjacencies-v1.2.tar.gz"
+    },
+    "reference/schlegel2024/Supplemental_file1_neuron_annotations.tsv": {
+      "dataset": "reference",
+      "downloaded_at": "2026-11-03T10:03:11+00:00",
+      "release": "schlegel2024",
+      "server_last_modified": null,
+      "sha256": "b214970b55d2fbe0853bba536fdcb9e28730f4eb7ab06f600491df795da683cd",
+      "size_bytes": 31720298,
+      "url": "https://raw.githubusercontent.com/flyconnectome/flywire_annotations/main/supplemental_files/Supplemental_file1_neuron_annotations.tsv"
+    }
+  }
+}
