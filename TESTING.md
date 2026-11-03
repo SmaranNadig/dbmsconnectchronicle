@@ -44,6 +44,17 @@ python -m backend.cli status
 docker exec -i cc_coordinator psql -U chronicle -d connectome < scripts/demo_queries.sql
 ```
 
+## Snapshot round trip
+
+`scripts/snapshot.py import` checks itself: it refuses a file whose SHA-256
+differs from the manifest, and after restoring it compares the exact row count
+of every `cc` table, the MongoDB document count and the schema revision with
+the exporting machine, stopping with a list of differences on any mismatch.
+`--with-shards` then re-deploys each strategy, and `deploy` verifies every
+shard row by row against the coordinator.
+
+Trial on the real data: export took 86 s (206 MB: 184 MB PostgreSQL dump, 22 MB MongoDB archive); the import trial result will be added here.
+
 ## Benchmarks
 
 ```bash
