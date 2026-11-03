@@ -1,0 +1,42 @@
+name: Integration checks
+on: [push, pull_request]
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Configure isolated services
+        run: cp .env.example .env
+      - name: Start databases
+        run: docker compose up -d --wait
+      - name: Install pinned dependencies
+        run: |
+          python -m pip install -r requirements.lock
+          npm ci --prefix frontend
+      - name: Check JavaScript
+        run: |
+          node --check frontend/public/app.js
+          node --check frontend/public/workspace.js
+      - name: Integration suite
+        run: python -m pytest
+      - name: Seed synthetic browser demo
+        run: python scripts/seed_demo.py
+      - name: Browser smoke checks
+        run: |
+          POSTGRES_DB=connectome_demo MONGO_DB=connectome_meta_demo python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 > api.log 2>&1 &
+          npm --prefix frontend start > frontend.log 2>&1 &
+          npm --prefix frontend exec -- playwright install --with-deps chromium
+          npm --prefix frontend run test:browser
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: results/tests/junit.xml

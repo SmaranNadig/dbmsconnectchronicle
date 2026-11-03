@@ -45,7 +45,7 @@ def _workload(neurons: int, seed: int) -> list[tuple]:
                 """SELECT DISTINCT c.pre_neuron_id FROM connection c JOIN release r ON r.release_id = %s
                    WHERE c.dataset_id = %s AND c.valid_rel @> r.release_order AND upper_inf(c.tx)
                    ORDER BY 1""", (rel, ds)).fetchall()]
-            for n in rng.sample(pool, neurons):
+            for n in rng.sample(pool, min(neurons, len(pool))):
                 items += [("neighbours", (n, rel, "out")), ("neighbours", (n, rel, "in")), ("two_hop", (n, rel))]
             items += [("region", (code, rel)) for code in REGIONS]
             items.append(("summary", (rel,)))
@@ -67,7 +67,7 @@ def _environment() -> dict:
                                       ORDER BY 1, 2""").fetchall()
     return {"host_os": platform.platform(), "python": platform.python_version(), "cpu_logical": os.cpu_count(),
             "postgres": pg, "coordinator_db_size": size,
-            "topology": "1 coordinator + 3 shard PostgreSQL containers on one Docker Desktop VM (one machine)",
+            "topology": os.environ.get("CC_TOPOLOGY", "Coordinator and three configured shard endpoints; deployment mode unspecified"),
             "deployments": [dict(zip(["strategy", "shard", "owned_rows", "mirrors", "bytes"], d))
                             for d in deployments]}
 
@@ -107,7 +107,10 @@ def run(neurons: int = 25, repeat: int = 3, seed: int = 7) -> dict:
             "p95_ms": round(float(np.percentile(lat, 95)), 3),
             "mean_shards_touched": round(mean(r["shards"] for r in runs), 2),
             "mean_rows": round(mean(r["rows"] for r in runs), 1)}
-    result = {"measured_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+    from backend.revisions import source_revision
+    with connect() as conn:
+        revision = source_revision(conn)
+    result = {"data_revision": revision, "measured_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
               "parameters": {"neurons_per_dataset": neurons, "repeat": repeat, "seed": seed, "regions": REGIONS,
                              "warm_up": "one full pass (also the correctness check)"},
               "correctness": {"queries_compared": len(items) * len(STRATEGIES), "mismatches": 0},

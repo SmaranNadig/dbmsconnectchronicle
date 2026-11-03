@@ -31,6 +31,8 @@ results/**/*.pt
 # Node
 node_modules/
 frontend/dist/
+frontend/test-results/
+frontend/playwright-report/
 
 # Local tool and editor settings
 .claude/

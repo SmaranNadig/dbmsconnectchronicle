@@ -30,6 +30,7 @@ from backend.config import PIPELINE_VERSION, get_settings
 from backend.db import connect
 from backend.etl.adapters import ValidationError, get_adapter
 from backend.etl.sources import file_sha256, open_source
+from backend.revisions import digest
 
 log = logging.getLogger("cc.metadata")
 
@@ -148,6 +149,12 @@ def _sync(conn, coll, dataset, release, rel_id, ds_id, run_id) -> dict:
            for sid, recs in records.items()]
     for i in range(0, len(ops), BATCH):
         coll.bulk_write(ops[i:i + BATCH], ordered=False)
+    # Commit independent expectations only after all document writes succeed.
+    conn.execute('DELETE FROM metadata_record_digest WHERE release_id=%s', (rel_id,))
+    with conn.cursor() as cur:
+        cur.executemany('''INSERT INTO metadata_record_digest(dataset_neuron_id,release_id,record_count,sha256)
+                           VALUES (%s,%s,%s,%s)''',
+                        [(neurons[sid],rel_id,len(recs),digest(recs)) for sid,recs in records.items()])
     stats["documents"] = len(ops)
     stats["records"] = sum(len(r) for r in records.values())
     log.info("%s %s: %d documents, %d records", dataset, release, stats["documents"], stats["records"])
@@ -176,8 +183,23 @@ def check_consistency(dataset: str, mdb: Database | None = None) -> dict:
                JOIN release r ON r.release_id = %s AND r.dataset_id = dn.dataset_id
                WHERE nv.valid_rel @> r.release_order AND upper_inf(nv.tx)""",
             (rid,)).fetchall()} for rid in synced}
-    docs = {d["_id"]: d for d in coll.find({"dataset": dataset},
-                                           {"dataset_neuron_id": 1, **{f"releases.{r}.release": 1 for r in synced}})}
+        expected = {(f'{dataset}:{sid}', str(rid)): (count,sha.strip()) for sid,rid,count,sha in conn.execute('''
+            SELECT dn.source_neuron_id,m.release_id,m.record_count,m.sha256 FROM metadata_record_digest m
+            JOIN dataset_neuron dn USING(dataset_neuron_id) JOIN dataset d USING(dataset_id) WHERE d.code=%s''', (dataset,))}
+    docs, mismatches, unchecked, unexpected = {}, [], 0, 0
+    for doc in coll.find({'dataset':dataset}, {'dataset_neuron_id':1, 'releases':1}):
+        entries = doc.get('releases',{})
+        for rid,entry in entries.items():
+            if int(rid) not in synced:
+                continue
+            key = (doc['_id'],rid)
+            if doc['_id'] not in present[int(rid)]:
+                unexpected += 1
+            if key not in expected:
+                unchecked += 1
+            elif (len(entry.get('records',[])),digest(entry.get('records',[]))) != expected[key]:
+                mismatches.append({'document':doc['_id'],'release_id':rid})
+        docs[doc['_id']] = {'dataset_neuron_id':doc.get('dataset_neuron_id'), 'releases': {r: {} for r in entries}}
     report = {
         "dataset": dataset,
         "postgres_neurons": len(pg),
@@ -190,9 +212,15 @@ def check_consistency(dataset: str, mdb: Database | None = None) -> dict:
         "missing_release_entries": {str(rid): sum(1 for k in ids if str(rid) not in docs.get(k, {}).get("releases", {}))
                                     for rid, ids in present.items()},
     }
-    report["consistent"] = not (report["neurons_without_document"] or report["documents_without_neuron"]
+    report["references_consistent"] = not (report["neurons_without_document"] or report["documents_without_neuron"]
                                 or report["dataset_neuron_id_mismatch"]
                                 or any(report["missing_release_entries"].values()))
+    report.update(content_mismatches=mismatches[:20], content_mismatch_count=len(mismatches),
+                  unchecked_release_entries=unchecked, unexpected_release_entries=unexpected)
+    report['content_verified'] = unchecked == 0 and not mismatches and not unexpected
+    report['consistent'] = report['references_consistent'] and report['content_verified']
+    if unchecked:
+        report['action'] = 'Re-sync these releases to establish independent content digests.'
     return report
 
 

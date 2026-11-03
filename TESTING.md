@@ -1,8 +1,20 @@
 # Testing
 
 ```bash
-python -m pytest          # 74 tests, ~10-60 s; report in results/tests/junit.xml
+python -m pytest          # 87 tests; report in results/tests/junit.xml
 ```
+
+The workspace adds 13 regression/workflow checks in `test_workspace.py`: historical
+type filtering, timestamp errors, reusable diffs, bounded graphs and exact IDs,
+event provenance/export, document-content corruption, dynamic/empty MongoDB
+samples, jobs, reviewer-token enforcement, corrupted mirrors and deployment
+recovery, stale placements, and reproducible Isolation Forest scoring.
+
+`frontend/tests/workspace.spec.js` contains Chromium smoke checks for exploration,
+comparison, provenance, model results and mobile page overflow. CI installs the
+browser and runs these against the generated synthetic demo. For a local browser
+run, start the seeded API/dashboard, run `npm --prefix frontend exec -- playwright
+install chromium`, then `npm --prefix frontend run test:browser`.
 
 The suite drops and recreates separate test databases — `connectome_test` on
 the coordinator and on each shard, and `connectome_meta_test` in MongoDB —

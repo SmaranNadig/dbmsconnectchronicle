@@ -1,5 +1,12 @@
 # Architecture
 
+The current interactive/API workflow is documented in [PROJECT_GUIDE.md](PROJECT_GUIDE.md).
+Migration `0011` adds durable jobs, independent MongoDB record digests, model
+features/explanations, correspondence score evidence, and versioned shard
+deployments. `backend/workspace.py` provides release-aware graph/event reads;
+`backend/analysis.py` provides anomaly and correspondence scoring;
+`backend/jobs.py` runs two local workers with PostgreSQL-backed status.
+
 ```
 public releases (hemibrain v1.0/1.1/1.2, FlyWire 630/783)
    │  scripts/download_datasets.py   (immutable raw files + SHA-256 manifest)

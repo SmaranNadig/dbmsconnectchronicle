@@ -16,6 +16,6 @@ const app = express();
 app.use("/api", createProxyMiddleware({ target: `${API_URL}/api`, changeOrigin: true }));
 app.use(express.static(path.join(__dirname, "public")));
 
-app.listen(PORT, () => {
+app.listen(PORT, process.env.HOST || '127.0.0.1', () => {
   console.log(`ConnectomeChronicle dashboard on http://localhost:${PORT} (API ${API_URL})`);
 });

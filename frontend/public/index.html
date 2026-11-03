@@ -5,25 +5,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ConnectomeChronicle</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="workspace.css">
 </head>
 <body>
 <header class="top">
   <div class="wrap top-row">
     <div>
       <h1>ConnectomeChronicle</h1>
-      <p class="sub">A temporal, federated and distributed database for evolving fly-brain connectomes ·
-        RVCE DBMS (CD252IA) · Team 03</p>
+      <p class="sub">Explore connections. Compare releases. Follow the evidence.</p>
     </div>
-    <div id="health" class="health">checking API…</div>
+    <div class="header-status"><span id="data-pill" class="badge">Connecting…</span><div id="health" class="health">checking API…</div></div>
   </div>
   <nav class="wrap tabs">
     <a href="#overview">Overview</a>
-    <a href="#console">Query console</a>
-    <a href="#concepts">DBMS concepts</a>
-    <a href="#sql">SQL implementation</a>
-    <a href="#nosql">NoSQL implementation</a>
-    <a href="#distributed">Distributed</a>
-    <a href="#results">Results</a>
+    <a href="#explorer">Neuron explorer</a>
+    <a href="#compare">Compare releases</a>
+    <a href="#quality">Change quality</a>
+    <a href="#matching">Correspondences</a>
+    <details class="nav-more"><summary>Database lab</summary><div>
+      <a href="#console">Query console</a><a href="#concepts">DBMS concepts</a>
+      <a href="#sql">SQL implementation</a><a href="#nosql">NoSQL implementation</a>
+      <a href="#distributed">Distributed</a><a href="#results">Results</a>
+    </div></details>
+    <a href="#methodology">How it works</a>
   </nav>
 </header>
 
@@ -31,7 +35,13 @@
 
   <!-- ============================================================ overview -->
   <section id="overview">
-    <h2>What this project is</h2>
+    <div class="hero"><div><p class="eyebrow">CONNECTOMECHRONICLE / RESEARCH WORKSPACE</p>
+      <h2>Every connection<br>has a history.</h2>
+      <p class="hero-copy">Follow a neuron through successive reconstructions. See what changed in its wiring, and trace every finding back to the original evidence.</p>
+      <div class="row"><a class="button" href="#explorer">Explore the connectome →</a><a class="button secondary" href="#compare">Compare two releases</a></div>
+      <div id="data-context" class="context-label" aria-live="polite">Connecting to your data…</div>
+    </div><div class="hero-graphic" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><span class="hub">n</span><i class="dot d1"></i><i class="dot d2"></i><i class="dot d3"></i><i class="dot d4"></i><span class="orbit-label">RELEASE → REVISION → EVIDENCE</span></div></div>
+    <h3>A database for reconstructed brain wiring</h3>
     <p class="lede">Scientists publish maps of a fruit fly's brain wiring (a <b>connectome</b>: neurons and the
       synapses between them) as a series of releases. Each release corrects the last. We built a database that loads
       every release <b>without overwriting the old ones</b>, so any past version can be queried, and every fact can be
@@ -57,7 +67,7 @@
 
     <div class="kpis" id="kpis"></div>
 
-    <h3>Datasets (real, public)</h3>
+    <h3>Loaded datasets</h3>
     <div id="datasets"></div>
 
     <div class="guide">
@@ -72,10 +82,68 @@
     </div>
   </section>
 
+  <section id="explorer">
+    <div class="section-head"><div><p class="eyebrow">01 / EXPLORE</p><h2>A neuron, across time.</h2><p class="note">Choose a release and follow its wiring. Source identifiers stay exact, including large FlyWire IDs.</p></div></div>
+    <form id="explore-form" class="filter-bar">
+      <label>Dataset<select id="e-dataset" aria-label="Explorer dataset"></select></label>
+      <label>Release<select id="e-release" aria-label="Explorer release"></select></label>
+      <label>Known as of (local time)<input id="e-asof" type="datetime-local" step="0.001" aria-label="Known as of"></label>
+      <label>Source neuron ID<input id="e-source" placeholder="Exact source ID" autocomplete="off"></label>
+      <label>Cell type<input id="e-type" placeholder="Exact type, optional"></label>
+      <label>Brain region<select id="e-region"><option value="">All regions</option></select></label>
+      <button type="submit">Find neurons</button>
+    </form>
+    <div class="explore-grid"><aside class="search-panel"><div class="panel-heading"><h3>Search results</h3><span id="e-count" class="note"></span></div><div id="e-results" aria-live="polite" class="empty">Choose a dataset to begin.</div>
+      <div class="pager"><button id="e-prev" class="ghost" type="button" disabled>Previous</button><button id="e-next" class="ghost" type="button" disabled>Next</button></div></aside>
+      <div><div class="panel-heading"><div id="e-selected"><h3>Select a neuron</h3><p class="note">Its neighbourhood and history will appear here.</p></div><button id="e-source-records" class="ghost" type="button" disabled>Source evidence ↗</button></div>
+      <div class="graph-toolbar"><label>Hops<select id="e-hops"><option value="1">1 hop</option><option value="2">2 hops</option></select></label><label>Direction<select id="e-direction"><option value="both">In + out</option><option value="out">Outgoing</option><option value="in">Incoming</option></select></label><label>Min. synapses<input id="e-weight" type="number" min="0" value="0"></label><span class="note">Click or focus a node to explore it.</span></div>
+      <div id="e-graph" class="graph-panel empty">A bounded view of the strongest connections.</div><div id="e-graph-meta" class="note"></div>
+      <h3>Release timeline</h3><div id="e-timeline" class="timeline"></div>
+      <h3>Connection evidence</h3><div id="e-connections"></div></div></div>
+  </section>
+
+  <section id="compare">
+    <p class="eyebrow">02 / CONNECTOMEDIFF</p><h2>What changed in the wiring?</h2>
+    <p class="note">Compare two releases of one dataset. Changes describe reconstruction records; they do not by themselves establish biological change.</p>
+    <form id="compare-form" class="filter-bar"><label>Dataset<select id="c-dataset" aria-label="Comparison dataset"></select></label><label>Before<select id="c-before" aria-label="Before release"></select></label><span class="compare-arrow">→</span><label>After<select id="c-after" aria-label="After release"></select></label><label>Known as of (local time)<input id="c-asof" type="datetime-local" step="0.001"></label><button type="submit">Compare releases</button></form>
+    <div id="c-job" class="job-status" aria-live="polite"></div>
+    <div class="row"><label>Saved comparison<select id="c-saved" aria-label="Saved comparison"></select></label><button id="c-refresh" class="ghost" type="button">Refresh list</button></div>
+    <div id="c-summary" class="kpis"></div>
+    <div id="c-workspace" hidden><div class="row"><label>Entity<select id="c-entity"><option value="">All entities</option><option value="connection">Connections</option><option value="annotation">Annotations</option><option value="neuron">Neurons</option></select></label><label>Change<select id="c-change"><option value="">All changes</option><option>added</option><option>removed</option><option>modified</option></select></label><label>Source neuron ID<input id="c-query" placeholder="Either endpoint"></label><button id="c-filter" type="button" class="ghost">Apply filters</button><button id="c-export" type="button" class="ghost">Export CSV ↓</button><button id="c-export-json" type="button" class="ghost">Export JSON ↓</button><button id="c-score" type="button">Analyse change quality →</button></div>
+      <p id="c-meta" class="note"></p><div id="c-events"></div><div class="pager"><button id="c-prev" type="button" class="ghost">Previous</button><button id="c-next" type="button" class="ghost">Next</button></div>
+      <div id="c-detail" class="event-detail" hidden></div><div class="grid2"><div><h3 id="c-before-title">Before</h3><div id="c-graph-before" class="graph-panel empty">Select a change to inspect its neighbourhood.</div></div><div><h3 id="c-after-title">After</h3><div id="c-graph-after" class="graph-panel empty">Before and after use the same node layout.</div></div></div>
+      <p class="note graph-legend"><span class="legend-added">+ added</span><span class="legend-removed">− removed (dashed)</span><span class="legend-modified">Δ modified</span><span>Colour highlights the selected event. Grey edges provide context. Views are capped; they are not the entire graph.</span></p>
+    </div>
+  </section>
+
+  <section id="quality">
+    <p class="eyebrow">03 / EXPLAINABLE REVIEW</p><h2>Find changes worth a closer look.</h2>
+    <p class="note">A threshold baseline and Isolation Forest prioritise unusual connection changes. Every score has recorded features and an evidence-based explanation. No external AI API is used.</p>
+    <form id="quality-form" class="filter-bar"><label>Comparison<select id="q-diff" aria-label="Quality comparison"></select></label><button type="submit">Score connection changes</button></form><div id="q-job" class="job-status" aria-live="polite"></div>
+    <div class="row"><label>Model run<select id="q-model" aria-label="Model run"></select></label><label class="check"><input id="q-flagged" type="checkbox">Flagged only</label></div>
+    <div id="q-summary" class="kpis"></div><div id="q-method" class="callout"></div><p id="q-meta" class="note"></p><div id="q-results" class="empty">Run a comparison, then score its changed connections.</div><div class="pager"><button id="q-prev" type="button" class="ghost">Previous</button><button id="q-next" type="button" class="ghost">Next</button></div>
+  </section>
+
+  <section id="matching">
+    <p class="eyebrow">04 / CROSS-DATASET CORRESPONDENCES</p><h2>Similar cells. Explicit evidence.</h2>
+    <p class="note">Type-and-side candidates can be ranked by typed connectivity and brain-region profiles. These are correspondences across specimens, with heuristic ranking scores. Nothing is approved automatically.</p>
+    <div class="row"><label>Status<select id="m-status"><option value="">All statuses</option><option>proposed</option><option>approved</option><option>rejected</option><option>unresolved</option></select></label><button id="m-rank" type="button">Rank candidates</button><label>Reviewer name<input id="m-reviewer" placeholder="Name for the audit log" maxlength="100"></label><label id="m-token-label" hidden>Reviewer token<input id="m-token" type="password" autocomplete="off" placeholder="Kept only in this page"></label></div>
+    <div id="m-job" class="job-status" aria-live="polite"></div><div id="m-evaluation" class="callout">Evaluation appears after ranking. Without reviewed reference matches, accuracy cannot be estimated.</div><div id="m-results"></div><div class="pager"><button id="m-prev" type="button" class="ghost">Previous</button><button id="m-next" type="button" class="ghost">Next</button></div>
+  </section>
+
+  <section id="methodology">
+    <p class="eyebrow">THE COMPLETE PICTURE</p><h2>From published files to traceable findings.</h2>
+    <p class="lede">ConnectomeChronicle is a versioned database and analysis workspace for fruit-fly connectome reconstructions. PostgreSQL is authoritative; MongoDB keeps heterogeneous source rows; shards provide derived read copies.</p>
+    <div class="method-flow"><article><span>01</span><h3>Acquire</h3><p>A catalog identifies public releases. Immutable files receive SHA-256 checksums.</p></article><article><span>02</span><h3>Integrate</h3><p>Source mappings translate columns. Staging tables validate IDs, types and references before an atomic load.</p></article><article><span>03</span><h3>Remember</h3><p>Release ranges record when facts apply. Transaction-time ranges record when the database believed them.</p></article><article><span>04</span><h3>Compare</h3><p>SQL set differences produce persisted neuron, annotation and connection events with provenance.</p></article><article><span>05</span><h3>Explain</h3><p>Recorded deltas and model features explain review priorities. Original files and rows remain traceable.</p></article><article><span>06</span><h3>Distribute</h3><p>Three placements create staged shard generations. Full content hashes are checked before activation.</p></article></div>
+    <h3>What the tabs do</h3><div id="tab-guide"></div>
+    <div class="grid2"><div class="callout"><h3>Two clocks, two questions</h3><p><b>Release:</b> what did reconstruction r2 contain?<br><b>Known as of:</b> what did our database believe at a particular time?</p><p>Region aggregates and source documents are release-derived. Transaction-time audit is maintained on the PostgreSQL coordinator.</p></div><div class="callout"><h3>How to interpret a finding</h3><p>Release edits can change root IDs. A removal can be identifier churn. An unusual score is a review suggestion, not proof of a biological anomaly. Cross-brain matches describe correspondence, not the same individual cell.</p></div></div>
+    <h3>Recent operations</h3><p class="note">Jobs run in two local workers and retain status in PostgreSQL. Queued work can be cancelled; running transactions finish atomically. Use one API process per database.</p><button id="jobs-refresh" type="button" class="ghost">Refresh operations</button><div id="job-history"></div>
+  </section>
+
   <!-- ============================================================ console -->
   <section id="console">
     <h2>Query console</h2>
-    <p class="note">Runs against the real database. SQL runs as role <code>cc_reader</code> (SELECT only) inside a
+    <p class="note">Runs against the currently connected database. SQL runs as role <code>cc_reader</code> (SELECT only) inside a
       read-only transaction that is rolled back, with a 10 s limit and at most 500 rows. MongoDB allows
       <code>find</code>, <code>count</code> and <code>aggregate</code> only.</p>
     <div class="seg" role="tablist">
@@ -110,7 +178,7 @@
       </div>
       <div class="row">
         <button type="button" id="mongo-run">Run ▸</button>
-        <span class="note">collection <code>connectome_meta.neuron_source_record</code></span>
+        <span class="note">collection <code id="mongo-collection-label">neuron_source_record</code></span>
         <span class="note" id="mongo-meta"></span>
       </div>
       <div id="mongo-out"></div>
@@ -119,7 +187,7 @@
 
   <!-- ============================================================ concepts -->
   <section id="concepts">
-    <h2>DBMS concepts, shown on real data</h2>
+    <h2>DBMS concepts, shown on loaded data</h2>
     <p class="note">Each card gives the concept, where it is used in this database, and live evidence. <i>Try it</i>
       loads a working query into the console and runs it.</p>
     <div class="concepts" id="concept-cards"></div>
@@ -134,7 +202,7 @@
   <!-- ============================================================ SQL implementation -->
   <section id="sql">
     <h2>SQL implementation (PostgreSQL 16)</h2>
-    <p class="lede">The schema is built by 10 plain SQL migrations, applied in order with Alembic. On the left is the
+    <p class="lede">The schema is built by versioned SQL migrations, applied in order with Alembic. On the left is the
       source. On the right is what PostgreSQL's own system catalog says exists right now.</p>
     <div class="impl">
       <div>
@@ -157,14 +225,13 @@
   <!-- ============================================================ NoSQL implementation -->
   <section id="nosql">
     <h2>NoSQL implementation (MongoDB 7)</h2>
-    <p class="lede">The two datasets publish different columns (hemibrain has 3 per neuron; FlyWire has 21, spread
-      over several files per release), and a column can appear or vanish between releases. Forcing these into fixed
-      relational columns would mean many empty columns or frequent schema changes. So the original rows go into
+    <p class="lede">Sources publish different columns across files and releases. Keeping all original fields in fixed
+      relational columns would require frequent schema changes. The original rows go into
       MongoDB as <b>one document per neuron</b>, and the cleaned, typed facts stay in PostgreSQL.</p>
     <div class="kpis" id="mongo-kpis"></div>
     <div class="grid2">
       <div>
-        <h3>Document structure</h3>
+        <h3>Document structure (illustrative)</h3>
 <pre class="json">{
   "_id": "hemibrain:1688868386",        <span class="cm">// = dataset_neuron.metadata_doc_id in PostgreSQL</span>
   "dataset": "hemibrain",
@@ -217,11 +284,11 @@
     </div>
     <div id="strategies"></div>
 
-    <h3>Run a query on the shards</h3>
+    <h3>Run a query on the shards</h3><div class="row"><label>Deploy strategy<select id="deploy-strategy"><option>hash</option><option>anatomical</option><option>community</option></select></label><button id="deploy-run" type="button" class="ghost">Rebuild and verify shards</button></div><div id="deploy-job" class="job-status" aria-live="polite"></div>
     <form class="row" id="route-form">
       <label>Strategy <select id="r-strategy"><option value="anatomical">anatomical</option><option value="hash">hash</option><option value="community">community</option></select></label>
       <label>Query <select id="r-kind">
-        <option value="neighbours_out">outgoing partners of a neuron</option>
+        <option value="neighbours_out">outgoing partners of a neuron</option><option value="neighbours_in">incoming partners of a neuron</option>
         <option value="two_hop">partners of partners (2 hops)</option>
         <option value="region">all connections of a brain region</option>
         <option value="summary">totals for a whole release</option>
@@ -246,10 +313,13 @@
   </section>
 </main>
 
-<footer class="wrap note">Every number on this page is read live from PostgreSQL, MongoDB, the latest benchmark
-  file or the latest test run. The only hand-written content is the explanations and the requirement status.</footer>
+<footer class="wrap note">Live counts and query evidence come from the connected databases. Saved reports and
+  illustrative schema examples are labelled separately. RVCE DBMS · Team 03.</footer>
+
+<dialog id="evidence-dialog"><div class="dialog-head"><h2 id="evidence-title">Source evidence</h2><button id="evidence-close" type="button" class="ghost" aria-label="Close evidence">Close ×</button></div><div id="evidence-body"></div></dialog>
 
 <div id="tip" class="tip" hidden></div>
 <script type="module" src="app.js"></script>
+<script type="module" src="workspace.js"></script>
 </body>
 </html>

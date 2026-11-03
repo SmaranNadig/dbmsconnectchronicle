@@ -26,28 +26,28 @@ services:
       postgres -c shared_buffers=1GB -c work_mem=64MB
                -c maintenance_work_mem=512MB -c max_wal_size=4GB
                -c track_io_timing=on
-    ports: ["${COORDINATOR_PORT}:5432"]
+    ports: ["127.0.0.1:${COORDINATOR_PORT}:5432"]
     volumes: [coordinator_data:/var/lib/postgresql/data]
 
   postgres_shard_1:
     <<: *postgres
     container_name: cc_shard_1
     command: postgres -c shared_buffers=256MB -c work_mem=32MB
-    ports: ["${SHARD1_PORT}:5432"]
+    ports: ["127.0.0.1:${SHARD1_PORT}:5432"]
     volumes: [shard1_data:/var/lib/postgresql/data]
 
   postgres_shard_2:
     <<: *postgres
     container_name: cc_shard_2
     command: postgres -c shared_buffers=256MB -c work_mem=32MB
-    ports: ["${SHARD2_PORT}:5432"]
+    ports: ["127.0.0.1:${SHARD2_PORT}:5432"]
     volumes: [shard2_data:/var/lib/postgresql/data]
 
   postgres_shard_3:
     <<: *postgres
     container_name: cc_shard_3
     command: postgres -c shared_buffers=256MB -c work_mem=32MB
-    ports: ["${SHARD3_PORT}:5432"]
+    ports: ["127.0.0.1:${SHARD3_PORT}:5432"]
     volumes: [shard3_data:/var/lib/postgresql/data]
 
   mongodb:
@@ -56,7 +56,7 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
-    ports: ["${MONGO_PORT}:27017"]
+    ports: ["127.0.0.1:${MONGO_PORT}:27017"]
     volumes: [mongo_data:/data/db]
     healthcheck:
       test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]

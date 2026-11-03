@@ -96,6 +96,9 @@ async function loadOverview() {
   let o;
   try { o = await api("overview"); } catch (e) { fail("kpis", e); return; }
   ctx.overview = o;
+  $("data-context").innerHTML = `<b>${esc(o.data_mode === 'synthetic' ? 'SYNTHETIC DEMO' : o.data_mode === 'mixed' ? 'MIXED DATA' : o.data_mode === 'empty' ? 'NO DATA LOADED' : 'PUBLIC RELEASES')}</b>${esc(o.database)} · counts below are live`;
+
+  $("data-pill").textContent = o.data_mode === "synthetic" ? "Synthetic demo" : o.data_mode === "mixed" ? "Mixed data" : o.data_mode === "empty" ? "No data" : "Public data";
   const st = o.storage;
   const mongoTotal = Object.values(o.mongo_documents).filter((v) => typeof v === "number").reduce((a, b) => a + b, 0);
   $("n-tables").textContent = st.tables;
@@ -104,7 +107,7 @@ async function loadOverview() {
     kpi(num(st.source_neurons), "neurons (one identity each)"),
     kpi(num(st.connection_rows_stored), "connection rows (bitemporal)"),
     kpi(num(st.annotation_rows), "annotation rows"),
-    kpi(num(mongoTotal), "MongoDB documents"),
+    kpi(o.mongo_documents.unavailable ? "unavailable" : num(mongoTotal), "MongoDB documents"),
     kpi(bytes(st.database_bytes), "PostgreSQL database size"),
   ].join("");
   const rows = o.datasets.map((d) => {
@@ -117,7 +120,7 @@ async function loadOverview() {
     { fn: (d) => d.rs.map((r) => esc(r.version_label)).join(" → "), label: "Releases loaded" },
     { fn: (d) => num(d.latest?.neurons), label: "Neurons (latest)", num: true },
     { fn: (d) => num(d.latest?.connections), label: "Connections (latest)", num: true },
-    { fn: (d) => `<a href="${esc(d.source_url)}" target="_blank" rel="noopener">source</a>`, label: "Link" },
+    { fn: (d) => d.source_url ? `<a href="${esc(d.source_url)}" target="_blank" rel="noopener">source</a>` : "Generated fixture", label: "Link" },
   ], rows);
 }
 
@@ -174,7 +177,7 @@ function loadSqlExample(id, run = true) {
   setMode("sql");
   $("sql-example").value = id;
   $("sql-text").value = e.sql;
-  if (run) { $("console").scrollIntoView({ behavior: "smooth" }); runSql(e.explain); }
+  if (run) { location.hash = "console"; runSql(e.explain); }
 }
 $("sql-example").addEventListener("change", (ev) => loadSqlExample(ev.target.value, false));
 
@@ -197,7 +200,7 @@ function loadMongoExample(id, run = true) {
   $("mongo-pipe").value = pretty(e.pipeline);
   $("mongo-limit").value = e.limit || 5;
   mongoOpChanged();
-  if (run) { $("console").scrollIntoView({ behavior: "smooth" }); runMongo(); }
+  if (run) { location.hash = "console"; runMongo(); }
 }
 $("mongo-example").addEventListener("change", (ev) => loadMongoExample(ev.target.value, false));
 
@@ -276,7 +279,7 @@ const CONCEPTS = [
     evidence: (c) => `${num(c.mongoDocs)} documents`, link: "#nosql" },
   { id: "distributed", title: "Distributed database",
     what: "Fragmentation, replication and query routing across several servers.",
-    here: "Three partitioning strategies on 3 PostgreSQL shards, each deployment checked row by row against the coordinator.",
+    here: "Three partitioning strategies on 3 PostgreSQL shards, each new deployment verified by full-content SHA-256 digests, including mirrors.",
     evidence: (c) => c.cutSummary, link: "#distributed" },
 ];
 CONCEPTS.forEach((c) => { CONCEPT_NAME[c.id] = c.title; });
@@ -361,7 +364,7 @@ async function showSource(path) {
 document.addEventListener("click", (ev) => {
   const b = ev.target.closest("[data-source]");
   if (b) {
-    if (!b.closest("#sql-files")) $("sql").scrollIntoView({ behavior: "smooth" });
+    if (!b.closest("#sql-files")) location.hash = "sql";
     showSource(b.dataset.source);
   }
   const m = ev.target.closest("[data-mongo-example]");
@@ -381,6 +384,7 @@ const MIGRATION_ABOUT = {
   "0008": "distribution: shards, strategies, deployments",
   "0009": "materialized view release_stats",
   "0010": "read-only role for this console",
+  "0011": "workspace jobs, independent metadata digests, model evidence and shard generations",
 };
 async function loadSql() {
   try {
@@ -392,7 +396,7 @@ async function loadSql() {
       const n = f.path.split("/").pop().slice(0, 4);
       return btn({ ...f, about: MIGRATION_ABOUT[n] || f.about }, f.path.split("/").pop());
     }).join("") + `<div class="flabel">Application code that uses the databases</div>` + other.map((f) => btn(f, f.path)).join("");
-    showSource(sql[0].path);
+    if (sql.length) showSource(sql[0].path);
   } catch (e) { fail("sql-files", e); }
 }
 
@@ -400,6 +404,7 @@ async function loadSql() {
 async function loadMongo() {
   let m;
   try { m = await api("mongo/overview"); } catch (e) { fail("mongo-kpis", e); return; }
+  $("mongo-collection-label").textContent = `${m.database}.${m.collection}`;
   $("mongo-kpis").innerHTML = [
     kpi(num(m.documents), "documents (one per neuron)"),
     kpi(bytes(m.data_bytes), `data · ${bytes(m.storage_bytes)} on disk (compressed)`),
@@ -425,8 +430,8 @@ async function loadMongo() {
       <p class="note">Clean, typed facts live in their own tables (annotation, connection…), keyed by <code>dataset_neuron_id</code>.</p>
       <button type="button" class="ghost" data-sql-example="cross-store">Run in SQL console</button></div>
     <div><h4 class="store">MongoDB · <code>neuron_source_record</code></h4>
-      <details open><summary><mark>"_id": ${esc(JSON.stringify(m.sample._id))}</mark>, ${Object.keys(m.sample.releases || {}).length} releases</summary>
-      <pre class="json tall">${esc(pretty(m.sample))}</pre></details></div>`;
+      <details open><summary><mark>"_id": ${esc(JSON.stringify(m.sample?._id ?? "No synced sample"))}</mark>, ${Object.keys(m.sample?.releases || {}).length} releases</summary>
+      <pre class="json tall">${esc(pretty(m.sample) || "No synced document is available. Run metadata sync for a loaded release.")}</pre></details></div>`;
 }
 
 // ================================================================ distributed
@@ -442,15 +447,25 @@ async function loadDistribution() {
     { fn: (s) => pct(deps[s.code].cut_fraction), label: "Edges cut", num: true },
     { fn: (s) => `${deps[s.code].storage_overhead}×`, label: "Storage vs 1 copy", num: true },
     { fn: (s) => pct(deps[s.code].max_share), label: "Largest shard", num: true },
-    { fn: (s) => status(deps[s.code].verified, deps[s.code].verified ? "verified" : "not verified"), label: "Copy check" },
+    { fn: (s) => status(deps[s.code].verified && deps[s.code].fresh, !deps[s.code].fresh ? "stale: rebuild" : deps[s.code].verified ? `verified / generation ${deps[s.code].generation}` : "not verified"), label: "Copy check" },
   ], live)}</div><div><h4 class="chart-t">Edges stored on two shards (lower is better)</h4>${bars(live.map((s) => ({ label: s.code, value: deps[s.code].cut_fraction })),
     { max: 1, value: (i) => pct(i.value), tip: (i) => `${i.label}: ${pct(i.value, 2)} of connections cross shards` })}
     <p class="note">Random hashing over 3 shards cuts about two thirds of all edges by construction. Grouping by brain region or graph community cuts far fewer, so most queries need one shard.</p></div></div>`;
   $("r-release").innerHTML = (ctx.overview?.releases || []).map((r) => `<option value="${r.release_id}" ${r.dataset === "hemibrain" && r.version_label === "v1.2" ? "selected" : ""}>${esc(r.dataset)} ${esc(r.version_label)}</option>`).join("");
 }
+async function routeReleaseChanged() {
+  const rel = ctx.overview?.releases.find(r => String(r.release_id) === $("r-release").value);
+  if (!rel) return;
+  try {
+    const [neurons, regions] = await Promise.all([api("neurons", {dataset:rel.dataset, release:rel.version_label, limit:1}), api("regions", {release:rel.release_id, limit:100})]);
+    $("r-neuron").value = neurons[0]?.source_neuron_id || "";
+    $("r-region").innerHTML = regions.map(r => `<option>${esc(r.code)}</option>`).join("");
+  } catch (e) { fail("route-out",e); }
+}
+$("r-release").addEventListener("change", routeReleaseChanged);
 function routeKindChanged() {
   const k = $("r-kind").value;
-  $("r-neuron-l").hidden = !["neighbours_out", "two_hop"].includes(k);
+  $("r-neuron-l").hidden = !["neighbours_out", "neighbours_in", "two_hop"].includes(k);
   $("r-region-l").hidden = k !== "region";
 }
 $("r-kind").addEventListener("change", routeKindChanged);
@@ -485,7 +500,7 @@ async function loadBench() {
   let b;
   try { b = await api("benchmarks/latest"); } catch (e) { fail("bench-head", e); return; }
   const c = b.correctness;
-  $("bench-head").innerHTML = `<p class="note">${status(c.mismatches === 0, `${num(c.queries_compared)} routed answers compared, ${num(c.mismatches)} mismatches`)}
+  $("bench-head").innerHTML = `<p class="note ${b.matches_current_data ? "" : "warning"}"><b>${b.matches_current_data ? "Benchmark matches current data" : "Saved benchmark from another or unverified data revision"}</b> · ${esc(b.measured_at)} · ${esc(b.file)}<br>${status(c.mismatches === 0, `${num(c.queries_compared)} routed answers compared, ${num(c.mismatches)} mismatches`)}
     · grey = single server, blue = 3 shards · label shows shards touched · ${b.parameters.repeat} timed passes after a warm-up ·
     all shards share one machine, so this measures placement and routing, not network cost.</p>`;
   const kinds = Object.keys(QUERY_LABEL).filter((k) => b.results[k]);
@@ -504,6 +519,7 @@ const TEST_AREA = {
   test_entity_resolution: "entity resolution", test_api: "REST API",
   test_metadata_regions_er: "MongoDB, brain regions, ER views", test_distributed: "partitioning, shards, router",
   test_console: "query consoles and integrity demo",
+  test_workspace: "interactive workspace, model evidence and deployment recovery",
 };
 async function loadTests() {
   let t;
@@ -517,12 +533,12 @@ async function loadTests() {
 
 const REQUIREMENTS = [
   ["1 Ingestion and schema integration", "done", "source adapters, schema-mapping registry, original ids, files and lines kept"],
-  ["2 Cross-dataset entity resolution", "partial", "identities and type-crosswalk candidates with confidence; embedding / GraphSAGE matcher not started"],
+  ["2 Cross-dataset entity resolution", "partial", "type/side candidates, connectivity and region ranking, manual review; learned matching requires reference evaluation"],
   ["3 Temporal, version-aware storage", "done", "valid + transaction time, exclusion constraints, append-only trigger, any release / any time"],
   ["4 Provenance and lineage", "done", "dataset → release → file (SHA-256) → line → run → pipeline version, for every fact"],
-  ["5 ConnectomeDiff", "partial", "added / removed / modified with weight deltas, persisted; Isolation Forest anomalies not started"],
+  ["5 ConnectomeDiff", "done", "persisted changes, visual comparisons, threshold baseline and Isolation Forest with recorded features"],
   ["6 Distributed storage and query", "done", "3 shards, 3 partitioning strategies, verified copies, query router, benchmark"],
-  ["7 API and visualisation", "partial", "REST API, this dashboard and query consoles; React dashboard not started"],
+  ["7 API and visualisation", "done", "release-aware explorer, graph comparison, jobs, provenance and query consoles"],
   ["8 Integrity, consistency, reproducibility", "done", "constraints and trigger, one transaction per load, versions recorded on every output"],
   ["Heterogeneous metadata (MongoDB)", "done", "one document per neuron, sync log, cross-store consistency check"],
   ["Team ER diagram", "done", "every entity and attribute queryable in schema er"],
@@ -556,7 +572,7 @@ async function factsFromCatalog() {
 }
 
 (async function start() {
-  try { EXAMPLES = await (await fetch("examples.json")).json(); } catch { /* the consoles work without examples */ }
+  try { EXAMPLES = await api("workspace/examples"); } catch { /* the consoles work without examples */ }
   fillExamples();
   renderConcepts();
   loadSqlExample("join-releases", false);
@@ -583,6 +599,7 @@ async function factsFromCatalog() {
     loadDistribution(),
   ]);
   renderConcepts();
+  routeReleaseChanged();
   loadSql();
   loadMongo();
   loadBench();

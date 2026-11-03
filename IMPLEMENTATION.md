@@ -1,5 +1,27 @@
 # Implementation status
 
+## Interactive workspace extension (2026-11-03)
+
+Implemented and exercised locally with synthetic data:
+
+- Release-aware neuron search, bounded interactive graphs, time travel, source evidence.
+- Visual comparisons, deterministic explanations, filtered pagination and CSV/JSON exports.
+- Threshold baseline and Isolation Forest, streamed scoring, reproducibility records and model evidence.
+- Connectivity/region correspondence ranking and manual review UI with an optional reviewer token.
+- Independent metadata content digests and corruption detection.
+- Staged, fully hashed shard generations, atomic activation, stale-copy refusal and recovery.
+- Persistent two-worker jobs, locked dependencies, a synthetic demo launcher and CI checks.
+
+Validation: **87 integration tests passing**; fresh synthetic benchmark **222 routed
+answers, zero mismatches**. Manual browser workflows were exercised. A Chromium
+smoke suite is included in CI. Public datasets were not re-ingested for this extension.
+
+Learned embeddings/GraphSAGE, held-out biological matching evaluation and labelled
+anomaly accuracy remain research work. Multi-host/high-availability operation is
+not established by the local benchmark. See [PROJECT_GUIDE.md](PROJECT_GUIDE.md).
+
+The original real-data implementation record follows; its numerical results are historical.
+
 Last updated 2026-11-03. "Done" means implemented **and** exercised by a
 passing test or a run on the real data; nothing here is claimed from code alone.
 
