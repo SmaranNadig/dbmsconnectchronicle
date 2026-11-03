@@ -290,7 +290,10 @@ class DiffRequest(BaseModel):
 
 @app.post("/api/v1/diffs")
 def create_diff(body: DiffRequest, conn=Depends(db)):
-    ts = workspace.instant(body.as_of)
+    # Without an explicit as_of the database's own transaction time is used: a
+    # timestamp from this machine's clock can be a few ms ahead of the database
+    # container's clock and would be rejected as "in the future".
+    ts = workspace.instant(body.as_of) if body.as_of is not None else None
     conn.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ')
     a, b = _release_id(conn, body.dataset, body.release_a), _release_id(conn, body.dataset, body.release_b)
     if a == b:
@@ -304,7 +307,8 @@ def create_diff(body: DiffRequest, conn=Depends(db)):
             AND status='succeeded' AND stats->>'source_revision'=%s ORDER BY diff_run_id DESC LIMIT 1''', (a,b,revision)).fetchone()
         if existing:
             return get_diff(existing['diff_run_id'],conn)
-    run = conn.execute("SELECT run_temporal_diff(%s, %s, %s) AS id", (a, b, ts)).fetchone()["id"]
+    run = conn.execute("SELECT run_temporal_diff(%s, %s, coalesce(%s::timestamptz, now())) AS id",
+                       (a, b, ts)).fetchone()["id"]
     if body.as_of is None:
         conn.execute("UPDATE diff_run SET stats=stats || jsonb_build_object('source_revision',%s::text) WHERE diff_run_id=%s",(revision,run))
     conn.commit()
