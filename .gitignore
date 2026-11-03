@@ -45,3 +45,6 @@ WhatsApp Image *.jpeg
 
 # Course documents (kept locally, not published)
 *.pdf
+
+# Database snapshot from scripts/snapshot.py (about 210 MB); share it outside git
+snapshot/

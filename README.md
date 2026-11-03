@@ -66,6 +66,39 @@ docker compose up -d --wait     # coordinator, 3 shards, MongoDB
 alembic upgrade head            # create schemas cc and er (migrations 0001-0010)
 ```
 
+Then either load the data yourself (next sections), or restore a snapshot
+from a teammate who already has it loaded.
+
+## Quick start from a snapshot (skip downloading and loading)
+
+On the machine that already has the data loaded:
+
+```bash
+python scripts/snapshot.py export
+```
+
+This writes `snapshot/` (git-ignored): a PostgreSQL dump, a MongoDB archive,
+and `snapshot.json` with SHA-256 checksums and the exact row count of every
+table. Send the whole folder (e.g. through Google Drive). Do not send `.env`
+or Docker containers: the other person uses their own `.env`, and Docker
+downloads the same images from `docker-compose.yml`.
+
+On the new machine, after **Setup** above, copy the folder into the project
+root as `snapshot/` and run:
+
+```bash
+python scripts/snapshot.py import --with-shards
+```
+
+The import checks the file checksums, replaces the PostgreSQL and MongoDB
+databases named in `.env`, re-grants the console's read-only role, and then
+compares every table's row count and the MongoDB document count with the
+exporting machine; it stops with a list of differences if anything does not
+match. `--with-shards` then re-deploys the three sharding strategies (the
+partition assignments are part of the dump) and verifies each shard against
+the coordinator. The raw source files are not part of the snapshot; download
+them only if you want to re-run the loaders.
+
 ## Data
 
 ```bash

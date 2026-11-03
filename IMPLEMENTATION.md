@@ -45,6 +45,7 @@ passing test or a run on the real data; nothing here is claimed from code alone.
 | transactions & indexing | 3-transaction ingest with full rollback; btree/GiST/partial indexes | done, rollback demonstrated on real data |
 | outputs tied to dataset/pipeline/model versions | `ingestion_run.pipeline_version`, `provenance.transformation_version`, `diff_run.as_of`, `ml_model_run` | done for ETL and diff |
 | PostgreSQL authoritative, MongoDB for heterogeneous metadata | `backend/metadata.py`: one document per source neuron with all original rows per release; `cc.metadata_sync`; cross-store `metadata check`; API merges the document into `/neurons/{id}` | done (182,274 documents, consistent) |
+| copying a loaded system to another machine | `scripts/snapshot.py`: pg_dump + mongodump into `snapshot/` with SHA-256 checksums and exact per-table row counts; import verifies checksums, restores, re-grants `cc_reader`, compares every count, re-deploys and verifies the shards | done; trial restore into scratch databases (see TESTING.md) |
 
 | **Team ER diagram** | | |
 | every entity / attribute / relationship of the diagram | schema `er` views (`0007_er_views.sql`), mapping in ARCHITECTURE.md | done |
