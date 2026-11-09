@@ -56,14 +56,20 @@ def test_sql_console_explain(client):
     assert r["explain"] == "plan" and any("Scan" in row[0] for row in r["rows"])
 
 
-def test_every_published_example_is_read_only_sql():
-    # the real-data examples cannot run on the fixtures; check they pass the console's own gate
-    from backend.console import ALLOWED_START, _strip
+def test_every_published_example_passes_its_targets_gate():
+    # the real-data examples cannot run on the fixtures; check they pass the console's own gate.
+    # Lab examples are scripts (several statements allowed) and are run in test_lab.py.
+    from backend.console import ALLOWED_START, TRIAL_START, _strip
     ex = json.loads((PROJECT_ROOT / "frontend/public/examples.json").read_text(encoding="utf-8"))
     assert ex["sql"] and ex["mongo"]
     for e in ex["sql"]:
-        assert ALLOWED_START.match(_strip(e["sql"])), e["id"]
+        target = e.get("target", "read")
+        assert target in ("read", "trial", "lab"), e["id"]
+        if target == "lab":
+            continue
+        assert (ALLOWED_START if target == "read" else TRIAL_START).match(_strip(e["sql"])), e["id"]
         assert ";" not in _strip(e["sql"]), e["id"]
+    assert all(m.get("target", "main") == "lab" or m["op"] in ("find", "count", "aggregate") for m in ex["mongo"])
 
 
 def test_mongo_console(client):

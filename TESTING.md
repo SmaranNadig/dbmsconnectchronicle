@@ -1,7 +1,7 @@
 # Testing
 
 ```bash
-python -m pytest          # 87 tests; report in results/tests/junit.xml
+python -m pytest          # 114 tests; report in results/tests/junit.xml
 ```
 
 The workspace adds 13 regression/workflow checks in `test_workspace.py`: historical
@@ -47,7 +47,8 @@ to drop a MongoDB database with another name).
 | ER-diagram views | `test_metadata_regions_er.py` | `er.connection` between canonical neurons with valid_from/valid_to releases; `er.annotation` retype B→B2 with file:line source; `er.dataset_neuron`; `er.canonical_neuron`; `er.record_provenance` row number |
 | distribution | `test_distributed.py` | LPT packing; every neuron exactly one owner; anatomical keeps a region on one shard; deployments verified and complete, mirrors = cut rows; **every routed answer (neighbours in/out, two-hop, region, summary, every neuron and release) equals the coordinator's** for all three strategies; 1-hop touches 1 shard, summary 3; executions logged |
 | REST API | `test_api.py` | health/schema revision, releases, neuron states, connections, diff round-trip, 404/422 handling |
-| query consoles | `test_console.py` | SQL console runs as `cc_reader` read-only; refuses DELETE, multi-statement `COMMIT` escape, writable CTE, `set_config`, `pg_read_file`; timeout enforced; EXPLAIN; every published example passes the read-only gate; MongoDB count/aggregate and refusal of `$where`/`$out`/`$merge`; all 9 integrity-demo writes rejected with nothing written; catalog and source whitelist (no `.env`, no `../`) |
+| query consoles | `test_console.py` | SQL console runs as `cc_reader` read-only; refuses DELETE, multi-statement `COMMIT` escape, writable CTE, `set_config`, `pg_read_file`; timeout enforced; EXPLAIN; every published example passes its target's gate; MongoDB count/aggregate and refusal of `$where`/`$out`/`$merge`; all 9 integrity-demo writes rejected with nothing written; catalog and source whitelist (no `.env`, no `../`) |
+| Data editor (lab) | `test_lab.py` | lab built from the real store (every lab connection equal to the real one; MongoDB lab holds exactly the lab neurons' documents); multi-statement scripts committed and visible to a new connection; preview and a left-open `BEGIN` rolled back; a failing statement undoes the script; DDL, savepoints, `ON DELETE CASCADE`; `cc_lab` refused on `DELETE` / `UPDATE` / `DROP` / `CREATE` in `cc`, `RESET ROLE`, `SET ROLE`, `SET SESSION AUTHORIZATION`, `COPY TO PROGRAM`, with the real row counts unchanged; timeout enforced even after `SET statement_timeout = 0`; table editor insert / update / delete with the SQL shown, CHECK and UNIQUE errors, change log entries by `cc_lab`; bad keys, unknown columns, identity columns refused; real tables browsable but not editable; trial writes run with constraints and triggers and are rolled back; MongoDB lab insert / update / replace / delete, `$jsonSchema` validator, unique index, indexes and collections; real document store refuses writes; every published lab example runs or fails exactly where intended; reset restores; reviewer token guards writes |
 
 ## Real-data checks
 

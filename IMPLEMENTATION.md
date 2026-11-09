@@ -1,5 +1,33 @@
 # Implementation status
 
+## Data editor: writing to the database from the dashboard (2026-11-09)
+
+Requested by the evaluator: run any SQL including writes, see the tables, and
+add, change and delete records, for SQL and NoSQL. Design, options considered
+and acceptance criteria: [DATA_EDITOR_PLAN.md](DATA_EDITOR_PLAN.md).
+
+- Migration 0012: role `cc_tryout` (NOLOGIN; reads and writes `cc`, used only
+  inside a rolled-back transaction) and login role `cc_lab` (owns schema `lab`,
+  may only read `cc` / `er`; password derived from the administrator's).
+- `backend/db/lab_schema.sql` + `backend/lab.py`: schema `lab` rebuilt from the
+  real data (dataset, release, neuron, connection with PK / UNIQUE / CHECK /
+  composite FKs, `ON DELETE CASCADE`, view `neuron_degree`, audit table
+  `change_log` filled by a trigger) and MongoDB database `<mongo_db>_lab` with
+  the same neurons' documents, the real store's unique indexes and a
+  `$jsonSchema` validator. On the real data: 360 neurons, 9,023 connections
+  over 5 releases, 360 documents; rebuilt in about 4-9 s.
+- Query console targets: read-only (unchanged), trial (one write on the real
+  tables, rolled back) and lab (scripts, DDL, transactions, saved). MongoDB:
+  real store read-only; lab allows insert / update / replace / delete,
+  indexes and collections.
+- Data editor page: browse lab / cc / er tables, insert / edit / delete lab
+  rows and documents with the executed statement shown, change log, reset.
+- Database connections now use 127.0.0.1 instead of `localhost`, which on
+  Windows cost about 2 s per new connection (IPv6 tried first).
+
+Validation: **114 integration tests passing** (27 new in `test_lab.py`), and the
+editor and console were exercised in the browser on the real data.
+
 ## Interactive workspace extension (2026-11-03)
 
 Implemented and exercised locally with synthetic data:

@@ -17,8 +17,11 @@ const ms = (v) => (v < 10 ? v.toFixed(2) : num(Math.round(v)));
 async function api(path, params, body) {
   const url = new URL(`/api/v1/${path}`, location.origin);
   Object.entries(params || {}).forEach(([k, v]) => v !== undefined && url.searchParams.set(k, v));
+  // the reviewer token (only needed when CC_REVIEW_TOKEN is set) lives in the Data editor page
+  const token = document.getElementById("lab-token")?.value;
   const r = await fetch(url, body === undefined ? {} : {
-    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+    method: "POST", body: JSON.stringify(body),
+    headers: { "Content-Type": "application/json", ...(token ? { "X-Review-Token": token } : {}) },
   });
   if (!r.ok) {
     const detail = (await r.json().catch(() => ({}))).detail;
@@ -126,11 +129,11 @@ async function loadOverview() {
 
 // ================================================================ console
 function setMode(mode) {
-  document.querySelectorAll("#console .seg button").forEach((b) => b.classList.toggle("on", b.dataset.mode === mode));
+  document.querySelectorAll("#console > .seg button").forEach((b) => b.classList.toggle("on", b.dataset.mode === mode));
   $("sql-pane").hidden = mode !== "sql";
   $("mongo-pane").hidden = mode !== "mongo";
 }
-document.querySelectorAll("#console .seg button").forEach((b) => b.addEventListener("click", () => setMode(b.dataset.mode)));
+document.querySelectorAll("#console > .seg button").forEach((b) => b.addEventListener("click", () => setMode(b.dataset.mode)));
 
 function renderCell(v) {
   if (v === null || v === undefined) return `<span class="null">NULL</span>`;
@@ -139,18 +142,52 @@ function renderCell(v) {
   return esc(v);
 }
 
+// Where SQL runs: read (SELECT only), trial (one write on the real tables,
+// rolled back) or lab (scripts in schema lab, saved). See DATA_EDITOR_PLAN.md.
+const SQL_TARGET_NOTE = {
+  read: "Runs on the real data as role <code>cc_reader</code> (SELECT only) in a read-only transaction that is rolled back; at most 500 rows.",
+  trial: "Runs <b>one</b> SELECT, INSERT, UPDATE, DELETE or MERGE on the real tables as role <code>cc_tryout</code>, with every constraint and trigger, and then <b>rolls it back</b>: you see exactly what PostgreSQL would do, and nothing is saved.",
+  lab: "Runs a whole script as role <code>cc_lab</code> in schema <code>lab</code> (an editable copy of real data). Several statements, DDL (CREATE / ALTER / DROP) and BEGIN / SAVEPOINT / COMMIT are allowed, and changes are <b>saved</b>. The real tables can be read but not changed. See them in the <a href=\"#editor\">Data editor</a>.",
+};
+let sqlTarget = "read";
+function setSqlTarget(t) {
+  sqlTarget = t;
+  document.querySelectorAll("#sql-target button").forEach((b) => {
+    b.classList.toggle("on", b.dataset.target === t);
+    b.setAttribute("aria-checked", String(b.dataset.target === t));
+  });
+  $("sql-rollback-l").hidden = t !== "lab";
+  $("sql-target-note").innerHTML = SQL_TARGET_NOTE[t];
+  $("sql-target-note").classList.toggle("warn", t === "lab");
+  $("sql-plan").hidden = $("sql-analyze").hidden = t === "lab";
+}
+document.querySelectorAll("#sql-target button").forEach((b) => b.addEventListener("click", () => setSqlTarget(b.dataset.target)));
+
+function resultTable(columns, rows) {
+  return `<div class="scroll">${table(columns.map((c, i) => ({ fn: (row) => renderCell(row[i]), label: c,
+    num: rows.length > 0 && rows.every((row) => row[i] === null || typeof row[i] === "number") })), rows)}</div>`;
+}
+
 async function runSql(explain) {
   const sql = $("sql-text").value;
   $("sql-meta").textContent = "running…";
   $("sql-out").innerHTML = "";
   try {
-    const r = await api("query/sql", null, { sql, explain: explain || null });
-    $("sql-meta").innerHTML = `${status(true, `${num(r.row_count)} row${r.row_count === 1 ? "" : "s"}${r.truncated ? " (first 500)" : ""}`)} · ${ms(r.elapsed_ms)} ms · ${esc(r.executed_as)}`;
+    const r = await api("query/sql", null, { sql, explain: explain || null, target: sqlTarget,
+      rollback: sqlTarget === "lab" && $("sql-rollback").checked });
+    if (r.results) {               // lab script: one result per statement
+      $("sql-meta").innerHTML = `${status(true, `${r.statements} statement${r.statements === 1 ? "" : "s"}`)} · ${ms(r.elapsed_ms)} ms · ${esc(r.executed_as)}`;
+      $("sql-out").innerHTML = r.results.map((x, i) => `<div class="stmt-result"><p class="note"><b>${i + 1}.</b> <code>${esc(x.status)}</code>${x.rowcount >= 0 && !x.columns ? ` · ${num(x.rowcount)} row${x.rowcount === 1 ? "" : "s"} affected` : ""}${x.truncated ? " · first 200 rows" : ""}</p>${
+        x.columns ? (x.status.startsWith("EXPLAIN") ? `<pre class="plan">${esc(x.rows.map((y) => y[0]).join("\n"))}</pre>` : resultTable(x.columns, x.rows)) : ""}</div>`).join("");
+      return;
+    }
+    const head = r.target === "trial" ? `<code>${esc(r.status)}</code> · ${num(Math.max(r.affected, 0))} row${r.affected === 1 ? "" : "s"}` :
+      `${num(r.row_count)} row${r.row_count === 1 ? "" : "s"}${r.truncated ? " (first 500)" : ""}`;
+    $("sql-meta").innerHTML = `${status(true, r.target === "trial" ? "ran, then rolled back" : "ok")} ${head} · ${ms(r.elapsed_ms)} ms · ${esc(r.executed_as)}`;
     if (r.explain) {
       $("sql-out").innerHTML = `<pre class="plan">${esc(r.rows.map((x) => x[0]).join("\n"))}</pre>`;
-    } else {
-      $("sql-out").innerHTML = `<div class="scroll">${table(r.columns.map((c, i) => ({ fn: (row) => renderCell(row[i]), label: c,
-        num: r.rows.length > 0 && r.rows.every((row) => row[i] === null || typeof row[i] === "number") })), r.rows)}</div>`;
+    } else if (r.columns.length) {
+      $("sql-out").innerHTML = resultTable(r.columns, r.rows);
     }
   } catch (e) {
     $("sql-meta").innerHTML = status(false, "rejected");
@@ -162,19 +199,22 @@ $("sql-plan").addEventListener("click", () => runSql("plan"));
 $("sql-analyze").addEventListener("click", () => runSql("analyze"));
 $("sql-text").addEventListener("keydown", (ev) => { if ((ev.ctrlKey || ev.metaKey) && ev.key === "Enter") runSql(); });
 
-const CONCEPT_NAME = {};
+const CONCEPT_NAME = { trial: "Try writes on the real tables (rolled back)" };
 function fillExamples() {
   const groups = {};
   EXAMPLES.sql.forEach((e) => (groups[e.concept] ||= []).push(e));
   $("sql-example").innerHTML = `<option value="">— pick an example or write your own —</option>` + Object.entries(groups).map(([c, list]) =>
     `<optgroup label="${esc(CONCEPT_NAME[c] || c)}">${list.map((e) => `<option value="${e.id}">${esc(e.title)}</option>`).join("")}</optgroup>`).join("");
+  const mg = { main: "Real store (read-only)", lab: "Lab (changes saved)" };
   $("mongo-example").innerHTML = `<option value="">— pick an example or write your own —</option>` +
-    EXAMPLES.mongo.map((e) => `<option value="${e.id}">${esc(e.title)}</option>`).join("");
+    Object.entries(mg).map(([t, label]) => `<optgroup label="${label}">${EXAMPLES.mongo.filter((e) => (e.target || "main") === t)
+      .map((e) => `<option value="${e.id}">${esc(e.title)}</option>`).join("")}</optgroup>`).join("");
 }
 function loadSqlExample(id, run = true) {
   const e = EXAMPLES.sql.find((x) => x.id === id);
   if (!e) return;
   setMode("sql");
+  setSqlTarget(e.target || "read");
   $("sql-example").value = id;
   $("sql-text").value = e.sql;
   if (run) { location.hash = "console"; runSql(e.explain); }
@@ -182,22 +222,64 @@ function loadSqlExample(id, run = true) {
 $("sql-example").addEventListener("change", (ev) => loadSqlExample(ev.target.value, false));
 
 const pretty = (v) => (v == null ? "" : JSON.stringify(v, null, 2));
+// Which inputs each MongoDB operation uses; the real store allows the first three only.
+const MONGO_OPS = {
+  find: ["filter", "proj", "limit"], count: ["filter"], aggregate: ["pipe", "limit"],
+  insertOne: ["doc"], insertMany: ["doc"], updateOne: ["filter", "update"], updateMany: ["filter", "update"],
+  replaceOne: ["filter", "doc"], deleteOne: ["filter"], deleteMany: ["filter"], createIndex: ["doc", "index"],
+  dropIndex: ["index"], listIndexes: [], createCollection: ["doc"], dropCollection: [], listCollections: [],
+};
+const DOC_LABEL = { insertOne: "Document (JSON)", insertMany: "Documents (JSON array)", replaceOne: "Replacement document (JSON)",
+  createIndex: "Index keys (JSON, e.g. {\"note\": 1})", createCollection: "Validator (JSON, optional)" };
+let mongoTarget = "main";
+function setMongoTarget(t) {
+  mongoTarget = t;
+  document.querySelectorAll("#mongo-target button").forEach((b) => {
+    b.classList.toggle("on", b.dataset.target === t);
+    b.setAttribute("aria-checked", String(b.dataset.target === t));
+  });
+  const ops = Object.keys(MONGO_OPS).filter((o) => t === "lab" || ["find", "count", "aggregate"].includes(o));
+  const current = $("mongo-op").value;
+  $("mongo-op").innerHTML = ops.map((o) => `<option>${o}</option>`).join("");
+  $("mongo-op").value = ops.includes(current) ? current : "find";
+  $("mongo-collection-l").hidden = t !== "lab";
+  $("mongo-target-note").innerHTML = t === "lab"
+    ? "Database <code>…_lab</code>: the source documents of the lab neurons, with the same unique indexes and a <code>$jsonSchema</code> validator. Insert, update, delete, indexes and collections are allowed, and changes are <b>saved</b>. <i>Reset lab</i> in the <a href=\"#editor\">Data editor</a> restores it."
+    : "The real document store: <code>find</code>, <code>count</code> and <code>aggregate</code> only. Switch to <b>Lab</b> to change documents.";
+  $("mongo-target-note").classList.toggle("warn", t === "lab");
+  mongoOpChanged();
+}
+document.querySelectorAll("#mongo-target button").forEach((b) => b.addEventListener("click", () => setMongoTarget(b.dataset.target)));
 function mongoOpChanged() {
   const op = $("mongo-op").value;
-  $("mongo-filter-l").hidden = op === "aggregate";
-  $("mongo-proj-l").hidden = op !== "find";
-  $("mongo-pipe-l").hidden = op !== "aggregate";
+  const uses = MONGO_OPS[op] || [];
+  $("mongo-filter-l").hidden = !uses.includes("filter");
+  $("mongo-proj-l").hidden = !uses.includes("proj");
+  $("mongo-pipe-l").hidden = !uses.includes("pipe");
+  $("mongo-doc-l").hidden = !uses.includes("doc");
+  $("mongo-update-l").hidden = !uses.includes("update");
+  $("mongo-index-row").hidden = !uses.includes("index");
+  $("mongo-limit-l").hidden = !uses.includes("limit");
+  $("mongo-doc-label").textContent = DOC_LABEL[op] || "Document (JSON)";
+  $("mongo-collection-label").textContent = mongoTarget === "lab" ? $("mongo-collection").value : "neuron_source_record";
 }
 $("mongo-op").addEventListener("change", mongoOpChanged);
+$("mongo-collection").addEventListener("input", mongoOpChanged);
 function loadMongoExample(id, run = true) {
   const e = EXAMPLES.mongo.find((x) => x.id === id);
   if (!e) return;
   setMode("mongo");
+  setMongoTarget(e.target || "main");
   $("mongo-example").value = id;
   $("mongo-op").value = e.op;
+  $("mongo-collection").value = e.collection || "neuron_source_record";
   $("mongo-filter").value = pretty(e.filter);
   $("mongo-proj").value = pretty(e.projection);
   $("mongo-pipe").value = pretty(e.pipeline);
+  $("mongo-doc").value = pretty(e.document ?? e.documents ?? e.keys ?? e.validator);
+  $("mongo-update").value = pretty(e.update);
+  $("mongo-unique").checked = !!e.unique;
+  $("mongo-name").value = e.name || "";
   $("mongo-limit").value = e.limit || 5;
   mongoOpChanged();
   if (run) { location.hash = "console"; runMongo(); }
@@ -214,13 +296,27 @@ async function runMongo() {
   $("mongo-out").innerHTML = "";
   try {
     const op = $("mongo-op").value;
-    const body = { op, limit: Number($("mongo-limit").value) || 5 };
-    if (op !== "aggregate") body.filter = parse("mongo-filter", "Filter");
-    if (op === "find") body.projection = parse("mongo-proj", "Projection");
-    if (op === "aggregate") body.pipeline = parse("mongo-pipe", "Pipeline");
+    const uses = MONGO_OPS[op];
+    const body = { op, target: mongoTarget, limit: Number($("mongo-limit").value) || 5 };
+    if (mongoTarget === "lab") body.collection = $("mongo-collection").value.trim() || null;
+    if (uses.includes("filter")) body.filter = parse("mongo-filter", "Filter");
+    if (uses.includes("proj")) body.projection = parse("mongo-proj", "Projection");
+    if (uses.includes("pipe")) body.pipeline = parse("mongo-pipe", "Pipeline");
+    if (uses.includes("update")) body.update = parse("mongo-update", "Update");
+    if (uses.includes("doc")) {
+      const doc = parse("mongo-doc", $("mongo-doc-label").textContent);
+      const field = { insertMany: "documents", createIndex: "keys", createCollection: "validator" }[op] || "document";
+      body[field] = doc;
+    }
+    if (uses.includes("index")) { body.unique = $("mongo-unique").checked; body.name = $("mongo-name").value.trim() || null; }
     const r = await api("query/mongo", null, body);
-    $("mongo-meta").innerHTML = `${status(true, `${num(r.count)} document${r.count === 1 ? "" : "s"}`)} · ${ms(r.elapsed_ms)} ms`;
-    $("mongo-out").innerHTML = r.documents.map((d, i) => `<details ${i < 2 ? "open" : ""}><summary>${esc(d._id !== undefined ? JSON.stringify(d._id) : `result ${i + 1}`)}</summary><pre class="json">${esc(pretty(d))}</pre></details>`).join("") || `<p class="note">No documents.</p>`;
+    const docs = r.documents || r.indexes || r.collections;
+    const summary = docs ? `${num(docs.length)} result${docs.length === 1 ? "" : "s"}`
+      : Object.entries(r).filter(([k]) => !["database", "collection", "op", "elapsed_ms"].includes(k))
+        .map(([k, v]) => `${k}: ${typeof v === "object" ? JSON.stringify(v) : v}`).join(" · ");
+    $("mongo-meta").innerHTML = `${status(true, summary)} · ${ms(r.elapsed_ms)} ms${r.database ? ` · database <code>${esc(r.database)}</code>` : ""}`;
+    $("mongo-out").innerHTML = docs ? (docs.map((d, i) => `<details ${i < 2 ? "open" : ""}><summary>${esc(d._id !== undefined ? JSON.stringify(d._id) : d.name || `result ${i + 1}`)}</summary><pre class="json">${esc(pretty(d))}</pre></details>`).join("") || `<p class="note">No documents.</p>`)
+      : `<pre class="json">${esc(pretty(r))}</pre>`;
   } catch (e) {
     $("mongo-meta").innerHTML = status(false, "rejected");
     $("mongo-out").innerHTML = `<pre class="error-box">${esc(e.message)}</pre>`;
@@ -281,6 +377,10 @@ const CONCEPTS = [
     what: "Fragmentation, replication and query routing across several servers.",
     here: "Three partitioning strategies on 3 PostgreSQL shards, each new deployment verified by full-content SHA-256 digests, including mirrors.",
     evidence: (c) => c.cutSummary, link: "#distributed" },
+  { id: "lab", title: "Changing data: DML, DDL and access control",
+    what: "INSERT, UPDATE, DELETE, CREATE / ALTER / DROP, transactions with savepoints, and privileges per role.",
+    here: "Schema <code>lab</code> is an editable copy of real data owned by role <code>cc_lab</code>, which may read the real tables but not change them. A trigger writes every change to <code>lab.change_log</code>. The <i>Trial</i> target runs a write on the real tables with all constraints and triggers, then rolls it back.",
+    evidence: (c) => c.labSummary || "editable copy of real data", link: "#editor" },
 ];
 CONCEPTS.forEach((c) => { CONCEPT_NAME[c.id] = c.title; });
 
@@ -575,6 +675,8 @@ async function factsFromCatalog() {
   try { EXAMPLES = await api("workspace/examples"); } catch { /* the consoles work without examples */ }
   fillExamples();
   renderConcepts();
+  setSqlTarget("read");
+  setMongoTarget("main");
   loadSqlExample("join-releases", false);
   loadMongoExample("m-one", false);
   setMode("sql");
@@ -597,6 +699,7 @@ async function factsFromCatalog() {
     api("query/sql", null, { sql: `SELECT count(*) FROM provenance p JOIN ingestion_run r ON r.run_id = p.ingestion_run_id
                                     WHERE r.status = 'failed'` }).then((r) => { ctx.facts.partialFacts = r.rows[0][0]; }),
     loadDistribution(),
+    api("lab/status").then((l) => { ctx.facts.labSummary = l.built ? `${num(l.tables.neurons)} neurons · ${num(l.tables.connections)} connections · ${num(l.tables.changes)} changes logged` : "not built yet"; }),
   ]);
   renderConcepts();
   routeReleaseChanged();

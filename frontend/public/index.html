@@ -23,7 +23,7 @@
     <a href="#quality">Change quality</a>
     <a href="#matching">Correspondences</a>
     <details class="nav-more"><summary>Database lab</summary><div>
-      <a href="#console">Query console</a><a href="#concepts">DBMS concepts</a>
+      <a href="#console">Query console</a><a href="#editor">Data editor</a><a href="#concepts">DBMS concepts</a>
       <a href="#sql">SQL implementation</a><a href="#nosql">NoSQL implementation</a>
       <a href="#distributed">Distributed</a><a href="#results">Results</a>
     </div></details>
@@ -143,15 +143,25 @@
   <!-- ============================================================ console -->
   <section id="console">
     <h2>Query console</h2>
-    <p class="note">Runs against the currently connected database. SQL runs as role <code>cc_reader</code> (SELECT only) inside a
-      read-only transaction that is rolled back, with a 10 s limit and at most 500 rows. MongoDB allows
-      <code>find</code>, <code>count</code> and <code>aggregate</code> only.</p>
+    <p class="note">Choose where a query runs. <b>Read-only</b> and <b>Trial</b> work on the real loaded data and are always
+      rolled back. <b>Lab</b> is an editable copy of real data (schema <code>lab</code>, MongoDB database
+      <code>…_lab</code>): changes there are saved, can be browsed in the <a href="#editor">Data editor</a>, and
+      <i>Reset lab</i> restores it. Every statement has a 10 s limit.</p>
     <div class="seg" role="tablist">
       <button type="button" class="on" data-mode="sql">SQL · PostgreSQL</button>
       <button type="button" data-mode="mongo">NoSQL · MongoDB</button>
     </div>
 
     <div id="sql-pane">
+      <div class="row">
+        <div class="seg small" id="sql-target" role="radiogroup" aria-label="Where the SQL runs">
+          <button type="button" class="on" data-target="read" role="radio" aria-checked="true">Read-only</button>
+          <button type="button" data-target="trial" role="radio" aria-checked="false">Trial on real tables</button>
+          <button type="button" data-target="lab" role="radio" aria-checked="false">Lab (changes saved)</button>
+        </div>
+        <label class="inline-check" id="sql-rollback-l" hidden><input type="checkbox" id="sql-rollback"> Preview only: roll back at the end</label>
+      </div>
+      <p class="callout target-note" id="sql-target-note"></p>
       <div class="row">
         <label class="grow">Example <select id="sql-example"></select></label>
       </div>
@@ -167,14 +177,28 @@
 
     <div id="mongo-pane" hidden>
       <div class="row">
+        <div class="seg small" id="mongo-target" role="radiogroup" aria-label="Which MongoDB database">
+          <button type="button" class="on" data-target="main" role="radio" aria-checked="true">Real store (read-only)</button>
+          <button type="button" data-target="lab" role="radio" aria-checked="false">Lab (changes saved)</button>
+        </div>
+      </div>
+      <p class="callout target-note" id="mongo-target-note"></p>
+      <div class="row">
         <label class="grow">Example <select id="mongo-example"></select></label>
-        <label>Operation <select id="mongo-op"><option>find</option><option>count</option><option>aggregate</option></select></label>
-        <label>Limit <input id="mongo-limit" type="number" min="1" max="50" value="5" size="4"></label>
+        <label>Operation <select id="mongo-op"></select></label>
+        <label id="mongo-collection-l" hidden>Collection <input id="mongo-collection" value="neuron_source_record" size="22" spellcheck="false"></label>
+        <label id="mongo-limit-l">Limit <input id="mongo-limit" type="number" min="1" max="50" value="5" size="4"></label>
       </div>
       <div class="grid2 tight">
         <label class="stack" id="mongo-filter-l">Filter (JSON) <textarea id="mongo-filter" spellcheck="false" rows="4"></textarea></label>
         <label class="stack" id="mongo-proj-l">Projection (JSON, optional) <textarea id="mongo-proj" spellcheck="false" rows="4"></textarea></label>
         <label class="stack wide" id="mongo-pipe-l" hidden>Pipeline (JSON array of stages) <textarea id="mongo-pipe" spellcheck="false" rows="7"></textarea></label>
+        <label class="stack" id="mongo-doc-l" hidden><span id="mongo-doc-label">Document (JSON)</span> <textarea id="mongo-doc" spellcheck="false" rows="7"></textarea></label>
+        <label class="stack" id="mongo-update-l" hidden>Update (JSON, e.g. {"$set": {…}}) <textarea id="mongo-update" spellcheck="false" rows="5"></textarea></label>
+      </div>
+      <div class="row" id="mongo-index-row" hidden>
+        <label class="inline-check"><input type="checkbox" id="mongo-unique"> unique</label>
+        <label>Index name <input id="mongo-name" size="24" spellcheck="false" placeholder="optional for createIndex"></label>
       </div>
       <div class="row">
         <button type="button" id="mongo-run">Run ▸</button>
@@ -182,6 +206,77 @@
         <span class="note" id="mongo-meta"></span>
       </div>
       <div id="mongo-out"></div>
+    </div>
+  </section>
+
+  <!-- ============================================================ data editor -->
+  <section id="editor">
+    <h2>Data editor</h2>
+    <p class="note">Browse every table, and add, edit or delete records without writing SQL. Editing happens in the
+      <b>lab</b>: schema <code>lab</code> and MongoDB database <code>…_lab</code>, an editable copy of
+      <span id="lab-size">real data</span> taken from the loaded releases. Changes are saved; the real tables stay
+      read-only here and are never changed. Each change shows the exact statement that ran, and PostgreSQL's own
+      error when a constraint refuses it. To write your own statements, use the
+      <a href="#console">Query console</a> with the <b>Lab</b> target.</p>
+    <div class="row">
+      <button type="button" class="ghost" id="lab-reset">Reset lab ↺</button>
+      <span class="note" id="lab-reset-meta"></span>
+      <label id="lab-token-l" hidden>Reviewer token <input id="lab-token" type="password" autocomplete="off" placeholder="Kept only in this page"></label>
+    </div>
+    <div id="lab-kpis" class="kpis"></div>
+
+    <div class="seg" role="tablist" id="editor-mode">
+      <button type="button" class="on" data-mode="tables">SQL tables</button>
+      <button type="button" data-mode="docs">MongoDB documents</button>
+      <button type="button" data-mode="log">Change log</button>
+    </div>
+
+    <div id="ed-tables" class="editor-grid">
+      <aside>
+        <label class="stack">Schema
+          <select id="ed-schema">
+            <option value="lab">lab · editable copy</option>
+            <option value="cc">cc · real data (read-only)</option>
+            <option value="er">er · ER-diagram views (read-only)</option>
+          </select></label>
+        <div id="ed-table-list" class="table-list"></div>
+      </aside>
+      <div class="editor-main">
+        <div class="row"><h3 id="ed-title" class="grow-title">Pick a table</h3>
+          <button type="button" id="ed-add" hidden>+ Add row</button></div>
+        <details id="ed-structure"><summary>Columns and constraints</summary><div id="ed-structure-body"></div></details>
+        <div id="ed-form" class="edit-form" hidden></div>
+        <div id="ed-result"></div>
+        <p class="note" id="ed-meta"></p>
+        <div id="ed-rows"></div>
+        <div class="pager"><button id="ed-prev" type="button" class="ghost" disabled>Previous</button><button id="ed-next" type="button" class="ghost" disabled>Next</button></div>
+      </div>
+    </div>
+
+    <div id="ed-docs" class="editor-grid" hidden>
+      <aside>
+        <div id="ed-coll-list" class="table-list"></div>
+        <div id="ed-coll-info"></div>
+      </aside>
+      <div class="editor-main">
+        <div class="row">
+          <label class="grow">Filter (JSON) <input id="ed-doc-filter" spellcheck="false" placeholder='{"dataset": "hemibrain"}'></label>
+          <button type="button" id="ed-doc-find">Find</button>
+          <button type="button" class="ghost" id="ed-doc-new">+ Insert document</button>
+        </div>
+        <div id="ed-doc-form" class="edit-form" hidden></div>
+        <div id="ed-doc-result"></div>
+        <p class="note" id="ed-doc-meta"></p>
+        <div id="ed-doc-list"></div>
+        <div class="pager"><button id="ed-doc-prev" type="button" class="ghost" disabled>Previous</button><button id="ed-doc-next" type="button" class="ghost" disabled>Next</button></div>
+      </div>
+    </div>
+
+    <div id="ed-log" hidden>
+      <p class="note">Written by the trigger <code>lab.log_change()</code> on every INSERT, UPDATE and DELETE in the lab tables,
+        including rows removed by <code>ON DELETE CASCADE</code>.</p>
+      <div class="row"><button type="button" class="ghost" id="ed-log-refresh">Refresh</button></div>
+      <div id="ed-log-rows"></div>
     </div>
   </section>
 
@@ -321,5 +416,6 @@
 <div id="tip" class="tip" hidden></div>
 <script type="module" src="app.js"></script>
 <script type="module" src="workspace.js"></script>
+<script type="module" src="editor.js"></script>
 </body>
 </html>

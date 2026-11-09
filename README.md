@@ -29,13 +29,13 @@ It combines three kinds of database work in one system:
 | Relational core | PostgreSQL 16 | normalised schema from the team ER diagram; keys, CHECK, composite foreign keys and GiST exclusion constraints; append-only history trigger; bitemporal queries; views, a materialized view, SQL and PL/pgSQL functions |
 | Document store | MongoDB 7 | one document per neuron holding every original source row (columns differ by dataset and release), linked to PostgreSQL by key, with a sync log and consistency check |
 | Distributed storage | 3 PostgreSQL shards | hash, anatomical (brain region) and community (Louvain) partitioning, verified copies, a query router, benchmarks |
-| Dashboard | npm + Express, plain HTML/JS | DBMS concepts with live evidence; read-only SQL and MongoDB query consoles; the SQL and NoSQL implementation; routed shard queries |
+| Dashboard | npm + Express, plain HTML/JS | DBMS concepts with live evidence; SQL and MongoDB query consoles (read-only, trial writes on the real tables, saved writes in an editable lab); a Data editor to browse tables and add / edit / delete rows and documents; the SQL and NoSQL implementation; routed shard queries |
 
 Results on the real data (2 datasets, 5 releases, 182,274 neurons): 9.0 M
 connection rows stored instead of 15.8 M as full copies per release (43% fewer);
 182,274 MongoDB documents; edge cut 66.7% (hash), 28.0% (anatomical), 27.1%
 (community); 492 routed answers checked against the single server with 0
-mismatches; 74 automated tests passing.
+mismatches; 114 automated tests passing.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the design and ER model,
 [DATASETS.md](DATASETS.md) for sources, [IMPLEMENTATION.md](IMPLEMENTATION.md)
@@ -45,7 +45,7 @@ for what is done and what is next, and [TESTING.md](TESTING.md) for the tests.
 
 ```
 backend/            Python: ETL, API (FastAPI), MongoDB sync, sharding, query consoles
-  db/sql/           the schema: SQL migrations 0001-0010 (run by Alembic)
+  db/sql/           the schema: SQL migrations 0001-0012 (run by Alembic)
   etl/              source adapters, release loader (one transaction per release)
   distributed/      partitioning, shard deployment, query router, benchmark
 alembic/            migration runner
@@ -75,7 +75,7 @@ python -m venv .venv
 pip install -r requirements.lock
 cp .env.example .env            # then set real passwords in .env
 docker compose up -d --wait     # coordinator, 3 shards, MongoDB
-alembic upgrade head            # create schemas cc and er (migrations 0001-0010)
+alembic upgrade head            # create schemas cc and er (migrations 0001-0012)
 ```
 
 Then either load the data yourself (next sections), or restore a snapshot
@@ -178,11 +178,25 @@ npm --prefix frontend start               # http://localhost:3000
 
 One page, organised around DBMS concepts so evaluators can check each one:
 
-- **Query console**: type SQL (PostgreSQL) or a MongoDB find / count / aggregate
-  and get live results; EXPLAIN / EXPLAIN ANALYZE shows the query plan. SQL runs
+- **Query console**: type SQL (PostgreSQL) or a MongoDB operation and get live
+  results; EXPLAIN / EXPLAIN ANALYZE shows the query plan. Three targets:
+  *Read-only* (below), *Trial on real tables* (one INSERT / UPDATE / DELETE /
+  MERGE run as role `cc_tryout` with every constraint and trigger, then rolled
+  back) and *Lab* (any script, DDL and transactions, saved; see Data editor).
+  Read-only details: SQL runs
   as role `cc_reader` (SELECT only, migration 0010) in a READ ONLY transaction
   that is rolled back, as a single prepared statement, with a 10 s timeout and
   500-row cap. MongoDB refuses `$where`, `$function`, `$accumulator`, `$out`, `$merge`.
+- **Data editor**: browse every table of schemas `lab`, `cc` and `er` (columns,
+  constraints, paged and sortable rows), and add, edit or delete rows of the
+  lab tables and documents of the MongoDB lab without writing SQL; every change
+  shows the statement that ran, constraint errors are shown as PostgreSQL
+  reports them, and a trigger keeps a change log. The lab is an editable copy
+  of real data (the neurons of each dataset's 150 strongest current
+  connections, their connections in every release, and their source
+  documents), owned by login role `cc_lab`, which can read the real tables but
+  not change them (migration 0012). *Reset lab* rebuilds it in a few seconds.
+  Design and alternatives: [DATA_EDITOR_PLAN.md](DATA_EDITOR_PLAN.md).
 - **DBMS concepts**: ER model, relational queries, constraints and triggers,
   transactions, bitemporal data, indexing, views and functions, provenance,
   ConnectomeDiff, entity resolution, NoSQL, distribution. Each concept has live

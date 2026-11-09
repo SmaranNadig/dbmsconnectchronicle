@@ -25,7 +25,9 @@ class Settings(BaseSettings):
     postgres_user: str = "chronicle"
     postgres_password: str = ""
     postgres_db: str = "connectome"
-    postgres_host: str = "localhost"
+    # 127.0.0.1, not "localhost": on Windows "localhost" tries IPv6 (::1) first,
+    # which Docker's published ports do not answer, costing ~2 s per new connection
+    postgres_host: str = "127.0.0.1"
     coordinator_port: int = 55432
     shard1_port: int = 55433
     shard2_port: int = 55434
