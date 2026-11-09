@@ -45,7 +45,7 @@ MONGO_CONTAINER = "cc_mongodb"
 OUT = ROOT / "snapshot"
 PG_FILE = "connectome.dump"
 MONGO_FILE = "connectome_meta.archive.gz"
-ROLE_SQL = ROOT / "backend" / "db" / "sql" / "0010_query_console_role.sql"
+ROLE_SQL = [ROOT / "backend" / "db" / "sql" / f for f in ("0010_query_console_role.sql", "0012_lab_roles.sql")]
 STRATEGIES = ("hash", "anatomical", "community")
 
 
@@ -144,9 +144,15 @@ def import_(args) -> None:
     run("exec", PG_CONTAINER, "rm", "-f", f"/tmp/{PG_FILE}")
     if r.returncode != 0:
         sys.exit(f"pg_restore reported errors:\n{r.stderr.strip()[-3000:]}")
-    # grants for the dashboard's read-only console role (skipped by --no-acl)
+    # grants for the dashboard's console roles (skipped by --no-acl). The Data
+    # editor's lab schema must belong to cc_lab, so it is dropped here and
+    # rebuilt from the restored data on first use (backend/lab.py).
+    from backend.lab import lab_password
     with psycopg.connect(s.pg_dsn(db=pg_db), autocommit=True) as conn:
-        conn.execute(ROLE_SQL.read_text(encoding="utf-8"))
+        for f in ROLE_SQL:
+            conn.execute(f.read_text(encoding="utf-8"))
+        conn.execute(f"ALTER ROLE cc_lab PASSWORD '{lab_password()}'")
+        conn.execute("DROP SCHEMA IF EXISTS lab CASCADE")
 
     print(f"MongoDB: restoring into {mongo_db} ...")
     run("cp", str(OUT / MONGO_FILE), f"{MONGO_CONTAINER}:/tmp/{MONGO_FILE}")

@@ -14,7 +14,7 @@ def client(toyfly_loaded):
 
 def test_health(client):
     r = client.get("/api/v1/health")
-    assert r.status_code == 200 and r.json()["schema_revision"] == "0011"
+    assert r.status_code == 200 and r.json()["schema_revision"] == "0012"
 
 
 def test_releases(client):
@@ -51,7 +51,7 @@ def test_overview_counts_come_from_the_database(client):
     toy = {(r["dataset"], r["version_label"]): (r["neurons"], r["connections"]) for r in o["releases"]}
     assert toy[("toyfly", "r1")] == (5, 4) and toy[("toyfly", "r3")] == (6, 5)
     assert o["storage"]["connection_rows_stored"] <= o["storage"]["rows_if_snapshots"]
-    assert o["schema_revision"] == "0011" and any(d["code"] == "toyfly" for d in o["datasets"])
+    assert o["schema_revision"] == "0012" and any(d["code"] == "toyfly" for d in o["datasets"])
 
 
 def test_dashboard_endpoints_respond(client):

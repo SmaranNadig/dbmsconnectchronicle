@@ -240,3 +240,42 @@ summary { cursor: pointer; color: var(--ink-2); margin-bottom: 4px; }
   .bars { grid-template-columns: 1fr; gap: 2px; }
   .bars .lab { margin-top: 6px; }
 }
+
+/* ------------------------------------------------ write targets and Data editor */
+.callout.target-note { padding: 8px 12px; font-size: 13px; margin: 0 0 6px; color: var(--ink-2); }
+.callout.target-note.warn { border-left: 3px solid var(--warning); }
+.inline-check, .row label.inline-check { display: inline-flex; flex-direction: row; align-items: center; gap: 6px;
+  font-size: 13px; color: var(--ink-2); align-self: center; }
+.stmt-result { margin: 10px 0 14px; }
+.stmt-result .note { margin-bottom: 4px; }
+.editor-grid { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 18px; margin-top: 12px; }
+.editor-grid > * { min-width: 0; }
+.table-list { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; }
+button.tbl-btn { display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: 1px;
+  background: transparent; color: var(--ink); border: 1px solid var(--border); font-weight: 500; }
+button.tbl-btn span { font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; }
+button.tbl-btn small { color: var(--ink-2); font-size: 11.5px; }
+button.tbl-btn:hover { background: var(--page); }
+button.tbl-btn.on { border-color: var(--series-1); background: var(--accent-wash); }
+.grow-title { flex: 1 1 auto; margin: 0; font-size: 16px; }
+.badge.muted { color: var(--muted); }
+button.sort { background: none; border: 0; padding: 0; color: inherit; font: inherit; font-weight: 600; cursor: pointer; white-space: nowrap; }
+button.small { padding: 2px 8px; font-size: 12px; }
+button.danger { color: var(--critical); }
+button.danger:hover { background: var(--critical-wash); }
+td.actions { white-space: nowrap; display: flex; gap: 4px; }
+.edit-form { border: 1px solid var(--series-1); border-radius: 8px; padding: 12px 14px; margin: 10px 0; background: var(--accent-wash); }
+.edit-form h4 { margin: 0 0 4px; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px 12px; }
+.form-grid small { color: var(--muted); }
+.form-grid input { width: 100%; font-family: ui-monospace, Consolas, monospace; }
+.callout.good-box { padding: 10px 14px; margin: 10px 0; border-left: 3px solid var(--good); font-size: 13px; }
+pre.sqlshown { margin: 6px 0 0; padding: 8px 10px; background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px;
+  white-space: pre-wrap; word-break: break-word; font-size: 12.5px; }
+details.doc { border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; margin: 6px 0; }
+details.doc summary { cursor: pointer; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.doc-actions { margin-left: auto; display: inline-flex; gap: 4px; }
+#ed-structure { margin: 6px 0 10px; font-size: 13px; }
+#ed-structure summary { cursor: pointer; color: var(--ink-2); }
+#ed-meta code { font-size: 11.5px; }
+@media (max-width: 760px) { .editor-grid { grid-template-columns: 1fr; } }

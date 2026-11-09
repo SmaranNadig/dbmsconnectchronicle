@@ -63,15 +63,36 @@ def _strip(sql: str) -> str:
             return sql
 
 
-def run_sql(sql: str, explain: str | None = None) -> dict:
-    """Run one read-only statement. explain: None, "plan" (EXPLAIN) or
-    "analyze" (EXPLAIN ANALYZE, BUFFERS: the statement really runs)."""
+def _error(e: psycopg.Error) -> str:
+    diag = e.diag
+    return (f"{diag.sqlstate or ''} {diag.message_primary or e}".strip()
+            + (f"\nDETAIL: {diag.message_detail}" if diag.message_detail else "")
+            + (f"\nHINT: {diag.message_hint}" if diag.message_hint else "")
+            + (f"\nCONSTRAINT: {diag.constraint_name}" if diag.constraint_name else ""))
+
+
+# "trial" target: one data-changing statement on the real tables, run as
+# cc_tryout (migration 0012) and always rolled back, so constraints and
+# triggers can be tried on the loaded data without changing it.
+TRIAL_START = re.compile(r"^\s*(\(\s*)*(select|with|table|values|explain|insert|update|delete|merge)\b", re.I)
+
+
+def run_sql(sql: str, explain: str | None = None, target: str = "read") -> dict:
+    """Run one statement on the real database, always rolled back.
+    target "read": SELECT-only role in a READ ONLY transaction; "trial":
+    INSERT / UPDATE / DELETE allowed, with every constraint and trigger.
+    explain: None, "plan" (EXPLAIN) or "analyze" (EXPLAIN ANALYZE, BUFFERS:
+    the statement really runs)."""
     sql = _strip(sql)
     if not sql:
         raise QueryError("empty query")
-    if not ALLOWED_START.match(sql):
+    trial = target == "trial"
+    if trial and not TRIAL_START.match(sql):
+        raise QueryError("a trial runs one SELECT, INSERT, UPDATE, DELETE or MERGE statement; for DDL "
+                         "(CREATE, ALTER, DROP) use the Lab target")
+    if not trial and not ALLOWED_START.match(sql):
         raise QueryError("the console is read-only: start the query with SELECT, WITH, TABLE, VALUES, "
-                         "EXPLAIN or SHOW")
+                         "EXPLAIN or SHOW, or choose the Trial or Lab target to change data")
     if explain == "plan":
         sql = f"EXPLAIN (COSTS, VERBOSE OFF) {sql}"
     elif explain == "analyze":
@@ -79,28 +100,28 @@ def run_sql(sql: str, explain: str | None = None) -> dict:
     with psycopg.connect(get_settings().pg_dsn(), options="-c search_path=cc,public",
                          autocommit=True) as conn:
         try:
-            conn.execute("BEGIN READ ONLY")
-            conn.execute("SET LOCAL ROLE cc_reader")
+            conn.execute("BEGIN" if trial else "BEGIN READ ONLY")
+            conn.execute(f"SET LOCAL ROLE {'cc_tryout' if trial else 'cc_reader'}")
             conn.execute(f"SET LOCAL statement_timeout = {TIMEOUT_MS}")
             t0 = time.perf_counter()
             cur = conn.execute(sql, prepare=True)
-            if cur.description is None:
+            status, affected = cur.statusmessage, cur.rowcount
+            if cur.description is None and not trial:
                 raise QueryError("statement returned no result set")
-            columns = [d.name for d in cur.description]
-            rows = cur.fetchmany(MAX_ROWS + 1)
+            columns = [d.name for d in cur.description] if cur.description else []
+            rows = cur.fetchmany(MAX_ROWS + 1) if cur.description else []
             ms = (time.perf_counter() - t0) * 1000
         except psycopg.Error as e:
-            diag = e.diag
-            raise QueryError(f"{diag.sqlstate or ''} {diag.message_primary or e}".strip()
-                             + (f"\nDETAIL: {diag.message_detail}" if diag.message_detail else "")
-                             + (f"\nHINT: {diag.message_hint}" if diag.message_hint else "")) from e
+            raise QueryError(_error(e)) from e
         finally:
             conn.execute("ROLLBACK")
     truncated = len(rows) > MAX_ROWS
     rows = rows[:MAX_ROWS]
     return {"columns": columns, "rows": [[_cell(v) for v in r] for r in rows], "row_count": len(rows),
-            "truncated": truncated, "elapsed_ms": round(ms, 2), "explain": explain,
-            "executed_as": "cc_reader (READ ONLY transaction, rolled back)"}
+            "truncated": truncated, "elapsed_ms": round(ms, 2), "explain": explain, "status": status,
+            "affected": affected, "target": target,
+            "executed_as": ("cc_tryout on the real tables (transaction rolled back: nothing was saved)" if trial
+                            else "cc_reader (READ ONLY transaction, rolled back)")}
 
 
 FORBIDDEN = {"$where", "$function", "$accumulator", "$out", "$merge"}

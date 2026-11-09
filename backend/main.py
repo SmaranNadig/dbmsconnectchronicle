@@ -20,7 +20,7 @@ from psycopg.rows import dict_row
 from psycopg_pool import ConnectionPool
 from pydantic import BaseModel, Field
 
-from backend import console, showcase, workspace
+from backend import console, lab, showcase, workspace
 from backend.config import PROJECT_ROOT, get_settings
 from backend.metadata import mongo_db
 
@@ -439,32 +439,120 @@ def latest_tests():
 class SqlQuery(BaseModel):
     sql: str = Field(..., max_length=20_000)
     explain: Literal["plan", "analyze"] | None = None
+    # read: SELECT only; trial: one write on the real tables, rolled back;
+    # lab: a script in schema lab, committed unless rollback (DATA_EDITOR_PLAN.md)
+    target: Literal["read", "trial", "lab"] = "read"
+    rollback: bool = False
 
 
 @app.post("/api/v1/query/sql")
-def query_sql(body: SqlQuery):
-    """Run one read-only statement as cc_reader (see backend/console.py)."""
+def query_sql(body: SqlQuery, x_review_token: str | None = Header(None)):
+    """Run SQL as cc_reader, cc_tryout or cc_lab (see backend/console.py, backend/lab.py)."""
     try:
-        return console.run_sql(body.sql, body.explain)
+        if body.target == "lab":
+            workspace.require_review_token(x_review_token)
+            if body.explain:
+                raise console.QueryError("for EXPLAIN in the lab, write EXPLAIN in the script")
+            return lab.run_script(body.sql, body.rollback)
+        return console.run_sql(body.sql, body.explain, body.target)
     except console.QueryError as e:
         raise HTTPException(400, str(e)) from e
 
 
 class MongoQuery(BaseModel):
-    op: Literal["find", "count", "aggregate"] = "find"
+    op: Literal["find", "count", "aggregate", "listIndexes", "listCollections", "insertOne", "insertMany",
+                "updateOne", "updateMany", "replaceOne", "deleteOne", "deleteMany", "createIndex", "dropIndex",
+                "createCollection", "dropCollection"] = "find"
+    # main: the real store, find / count / aggregate only; lab: the editable copy
+    target: Literal["main", "lab"] = "main"
+    collection: str | None = Field(None, max_length=63)
     filter: dict | None = None
     projection: dict | None = None
     sort: dict | None = None
     pipeline: list | None = None
     limit: int = Field(10, ge=1, le=console.MAX_DOCS)
+    skip: int = Field(0, ge=0)
+    document: dict | None = None
+    documents: list | None = None
+    update: dict | list | None = None
+    keys: dict | None = None
+    unique: bool = False
+    name: str | None = Field(None, max_length=127)
+    validator: dict | None = None
 
 
 @app.post("/api/v1/query/mongo")
-def query_mongo(body: MongoQuery):
+def query_mongo(body: MongoQuery, x_review_token: str | None = Header(None)):
     try:
+        if body.target == "lab":
+            if body.op in lab.WRITE_OPS:
+                workspace.require_review_token(x_review_token)
+            return lab.run_mongo(**body.model_dump(exclude={"target"}))
+        if body.op not in ("find", "count", "aggregate"):
+            raise console.QueryError(f"the real document store is read-only: {body.op} is allowed only on the "
+                                     "Lab target")
         return console.run_mongo(body.op, body.filter, body.projection, body.sort, body.pipeline, body.limit)
     except console.QueryError as e:
         raise HTTPException(400, str(e)) from e
+
+
+# ------------------------------------------------- data editor (lab)
+def _lab(fn, *args, **kw):
+    try:
+        return fn(*args, **kw)
+    except console.QueryError as e:
+        raise HTTPException(400, str(e)) from e
+
+
+@app.get("/api/v1/lab/status")
+def lab_status():
+    lab.ensure()
+    return lab.status()
+
+
+@app.post("/api/v1/lab/reset")
+def lab_reset(x_review_token: str | None = Header(None)):
+    """Drop and rebuild schema lab and the MongoDB lab from the real data."""
+    workspace.require_review_token(x_review_token)
+    return lab.reset()
+
+
+@app.get("/api/v1/lab/tables")
+def lab_tables(schema: Literal["lab", "cc", "er"] = "lab"):
+    return _lab(lab.tables, schema)
+
+
+@app.get("/api/v1/lab/tables/{schema}/{table}")
+def lab_rows(schema: Literal["lab", "cc", "er"], table: str, limit: int = Query(50, ge=1, le=MAX_LIMIT),
+             offset: int = Query(0, ge=0), sort: str | None = None, desc: bool = False):
+    return _lab(lab.rows, schema, table, limit, offset, sort, desc)
+
+
+class RowEdit(BaseModel):
+    key: dict = Field(default_factory=dict)       # primary key columns, for update / delete
+    values: dict = Field(default_factory=dict)    # column -> value, for insert / update
+
+
+@app.post("/api/v1/lab/tables/lab/{table}/{action}")
+def lab_edit(table: str, action: Literal["insert", "update", "delete"], body: RowEdit,
+             x_review_token: str | None = Header(None)):
+    """Insert, update or delete one row of a lab table; returns the SQL that ran."""
+    workspace.require_review_token(x_review_token)
+    if action == "insert":
+        return _lab(lab.insert_row, table, body.values)
+    if action == "update":
+        return _lab(lab.update_row, table, body.key, body.values)
+    return _lab(lab.delete_row, table, body.key)
+
+
+@app.get("/api/v1/lab/changes")
+def lab_changes(limit: int = Query(50, ge=1, le=MAX_LIMIT)):
+    return lab.changes(limit)
+
+
+@app.get("/api/v1/lab/mongo/collections")
+def lab_mongo_collections():
+    return lab.mongo_collections()
 
 
 @app.get("/api/v1/catalog")

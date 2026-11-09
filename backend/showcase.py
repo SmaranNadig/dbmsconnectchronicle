@@ -139,6 +139,8 @@ SOURCES = {
     "backend/distributed/deploy.py": "sharding: copy each strategy to the 3 shards and verify",
     "backend/distributed/router.py": "sharding: query router (scatter-gather) and coordinator baseline",
     "backend/console.py": "this dashboard's read-only SQL and MongoDB consoles",
+    "backend/db/lab_schema.sql": "Data editor: the editable lab schema, its copy of real data and its audit trigger",
+    "backend/lab.py": "Data editor: lab role, SQL scripts, table editing and the MongoDB lab",
     "backend/workspace.py": "release-aware search, bounded graphs, event explanations and exports",
     "backend/analysis.py": "reproducible anomaly features and correspondence ranking",
     "backend/jobs.py": "persisted operations and bounded local workers",

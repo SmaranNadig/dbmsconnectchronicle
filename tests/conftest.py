@@ -41,6 +41,7 @@ def test_database():
     mdb = mongo_db()
     assert mdb.name == TEST_MONGO_DB, f"refusing to drop MongoDB database {mdb.name}"
     mdb.client.drop_database(TEST_MONGO_DB)
+    mdb.client.drop_database(f"{TEST_MONGO_DB}_lab")    # the Data editor's copy (backend/lab.py)
     subprocess.run([sys.executable, "-m", "alembic", "upgrade", "head"], cwd=ROOT, check=True,
                    env={**os.environ}, capture_output=True)
     yield

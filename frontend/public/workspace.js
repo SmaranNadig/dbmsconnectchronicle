@@ -122,6 +122,7 @@ function route(event) {
   });
   const lab = [
     "console",
+    "editor",
     "concepts",
     "sql",
     "nosql",
