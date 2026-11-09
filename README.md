@@ -12,7 +12,7 @@ databases and explicitly synthetic releases. The original public-data results
 below are historical; current fixture reports are labelled separately.
 
 A temporal, federated and distributed database for the evolution of neural
-connectomes — RVCE DBMS (CD252IA), Team 03.
+connectomes — RVCE Database Management Systems (CD252IA), Team 03.
 
 ConnectomeChronicle ingests public *Drosophila* connectome releases
 (hemibrain, FlyWire), keeps every source identifier and source line traceable,
