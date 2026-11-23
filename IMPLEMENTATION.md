@@ -1,5 +1,37 @@
 # Implementation status
 
+## Design: data flow, normalisation, queries, detailed design (2026-11-23)
+
+- **Data flow diagrams** defined as data (`config/dfd.yaml`): context diagram,
+  level 1 (8 processes, 8 data stores, 4 external entities) and level 2 for
+  processes 2 (*Load release*) and 4 (*Compare releases*). `backend/design/dfd.py`
+  checks nine notation rules (labels, data moves through processes, no black
+  holes or miracles, hierarchical numbering, verb names, balancing, context
+  diagram, stores written and read, no duplicates) and draws Gane–Sarson SVGs.
+- **Normalisation**: keys and functional dependencies of all 39 relations
+  (`backend/design/relations.py`); closure, candidate keys (Lucchesi–Osborn),
+  minimal cover, 2NF/3NF/BCNF tests, BCNF decomposition with the chase test
+  (`backend/design/fd.py`). Every key and dependency is checked on the loaded
+  data. Findings fixed in migration `0013`: `brain_region` decomposed (new
+  `neuropil`), the `diff_run_ids` array replaced by `ml_model_input`,
+  dependencies enforced with composite foreign keys and an exclusion
+  constraint; the lab is strictly BCNF (`lab.connection` without `dataset_id`,
+  same-dataset rule as constraint triggers). Remaining redundancy (8 relations)
+  is documented with the constraint that protects each copy.
+- **Anomalies and file maintenance**: update / insertion / deletion anomalies
+  shown on a flat copy of the lab connections (rolled back); storage files,
+  dead tuples, VACUUM / ANALYZE / REINDEX of the lab tables.
+- **Query catalogue** (`config/query_catalogue.yaml`): 31 queries (25 SQL,
+  6 MongoDB) run on the loaded data with EXPLAIN ANALYZE / explain and checked
+  (expected index, no sequential scan, row counts, expected rejection).
+- **Detailed design and data dictionary**: `docs/DESIGN.md`,
+  `docs/DATA_DICTIONARY.md`; descriptions stored with `COMMENT ON` (migration
+  `0014`).
+- Dashboard: **Database lab → Design**; API `/api/v1/design/*`;
+  `python scripts/design_docs.py` regenerates the documents.
+- Tests: `tests/unit/test_fd.py`, `tests/unit/test_dfd.py`,
+  `tests/integration/test_design.py`.
+
 ## Data editor: writing to the database from the dashboard (2026-11-09)
 
 Requested by the evaluator: run any SQL including writes, see the tables, and

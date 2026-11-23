@@ -21,8 +21,7 @@ CREATE TABLE release (
     version_label  text NOT NULL CHECK (version_label <> ''),
     release_order  integer NOT NULL CHECK (release_order > 0),
     UNIQUE (dataset_id, version_label),
-    UNIQUE (dataset_id, release_order),
-    UNIQUE (release_id, dataset_id)             -- target of composite FKs
+    UNIQUE (dataset_id, release_order)
 );
 
 CREATE TABLE neuron (
@@ -32,26 +31,57 @@ CREATE TABLE neuron (
     cell_type         text,
     side              text CHECK (side IN ('L', 'R', 'center')),
     primary_region    text,
-    UNIQUE (dataset_id, source_neuron_id),
-    UNIQUE (neuron_id, dataset_id)              -- target of composite FKs
+    UNIQUE (dataset_id, source_neuron_id)
 );
 CREATE INDEX neuron_cell_type_idx ON neuron (cell_type);
 
--- Both endpoints and the release must belong to the connection's dataset.
+-- Every relation of the lab is in BCNF (docs/NORMALISATION.md). Unlike
+-- cc.connection, lab.connection keeps no copy of dataset_id (release_id ->
+-- dataset_id would be a partial dependency on its key), so the rule "the
+-- release and both endpoints belong to one dataset" is not a composite
+-- foreign key here but the constraint trigger connection_same_dataset below.
 CREATE TABLE connection (
-    release_id      integer NOT NULL,
-    dataset_id      smallint NOT NULL,
-    pre_neuron_id   bigint NOT NULL,
-    post_neuron_id  bigint NOT NULL,
+    release_id      integer NOT NULL REFERENCES release ON DELETE CASCADE,
+    pre_neuron_id   bigint NOT NULL REFERENCES neuron ON DELETE CASCADE ON UPDATE CASCADE,
+    post_neuron_id  bigint NOT NULL REFERENCES neuron ON DELETE CASCADE ON UPDATE CASCADE,
     synapse_count   integer NOT NULL CHECK (synapse_count > 0),
-    PRIMARY KEY (release_id, pre_neuron_id, post_neuron_id),
-    FOREIGN KEY (release_id, dataset_id) REFERENCES release (release_id, dataset_id) ON DELETE CASCADE,
-    FOREIGN KEY (pre_neuron_id, dataset_id) REFERENCES neuron (neuron_id, dataset_id)
-        ON DELETE CASCADE ON UPDATE CASCADE,
-    FOREIGN KEY (post_neuron_id, dataset_id) REFERENCES neuron (neuron_id, dataset_id)
-        ON DELETE CASCADE ON UPDATE CASCADE
+    PRIMARY KEY (release_id, pre_neuron_id, post_neuron_id)
 );
 CREATE INDEX connection_post_idx ON connection (post_neuron_id);
+
+-- the inter-relation rule, checked at the end of the statement for every
+-- change that could break it: a connection written, or the dataset of a
+-- release or neuron changed while connections refer to it
+CREATE FUNCTION same_dataset_violation(p_release integer, p_pre bigint, p_post bigint) RETURNS boolean
+LANGUAGE sql STABLE AS $$
+    SELECT NOT EXISTS (SELECT 1 FROM lab.release r, lab.neuron a, lab.neuron b
+                       WHERE r.release_id = p_release AND a.neuron_id = p_pre AND b.neuron_id = p_post
+                         AND a.dataset_id = r.dataset_id AND b.dataset_id = r.dataset_id)
+$$;
+
+CREATE FUNCTION check_connection_dataset() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE bad record;
+BEGIN
+    IF TG_TABLE_NAME = 'connection' THEN
+        SELECT NEW.release_id, NEW.pre_neuron_id, NEW.post_neuron_id INTO bad
+        WHERE lab.same_dataset_violation(NEW.release_id, NEW.pre_neuron_id, NEW.post_neuron_id);
+    ELSIF TG_TABLE_NAME = 'release' THEN
+        SELECT c.release_id, c.pre_neuron_id, c.post_neuron_id INTO bad FROM lab.connection c
+        WHERE c.release_id = NEW.release_id
+          AND lab.same_dataset_violation(c.release_id, c.pre_neuron_id, c.post_neuron_id) LIMIT 1;
+    ELSE
+        SELECT c.release_id, c.pre_neuron_id, c.post_neuron_id INTO bad FROM lab.connection c
+        WHERE (c.pre_neuron_id = NEW.neuron_id OR c.post_neuron_id = NEW.neuron_id)
+          AND lab.same_dataset_violation(c.release_id, c.pre_neuron_id, c.post_neuron_id) LIMIT 1;
+    END IF;
+    IF FOUND AND bad.release_id IS NOT NULL THEN
+        RAISE EXCEPTION 'connection (release %, % -> %) would join different datasets',
+              bad.release_id, bad.pre_neuron_id, bad.post_neuron_id
+            USING ERRCODE = 'foreign_key_violation', CONSTRAINT = 'connection_same_dataset',
+                  TABLE = TG_TABLE_NAME;
+    END IF;
+    RETURN NULL;
+END $$;
 
 CREATE VIEW neuron_degree AS
 SELECT r.release_id, r.version_label, n.neuron_id, n.source_neuron_id, n.cell_type,
@@ -99,8 +129,8 @@ SELECT dn.dataset_neuron_id, dn.dataset_id, dn.source_neuron_id,
 FROM lab_pick p JOIN cc.dataset_neuron dn ON dn.dataset_neuron_id = p.neuron_id;
 
 -- Their connections to each other, as currently recorded, in every release.
-INSERT INTO connection (release_id, dataset_id, pre_neuron_id, post_neuron_id, synapse_count)
-SELECT r.release_id, c.dataset_id, c.pre_neuron_id, c.post_neuron_id, c.synapse_count
+INSERT INTO connection (release_id, pre_neuron_id, post_neuron_id, synapse_count)
+SELECT r.release_id, c.pre_neuron_id, c.post_neuron_id, c.synapse_count
 FROM neuron a
 JOIN cc.connection c ON c.pre_neuron_id = a.neuron_id
 JOIN neuron b ON b.neuron_id = c.post_neuron_id
@@ -142,4 +172,18 @@ CREATE TRIGGER neuron_log AFTER INSERT OR UPDATE OR DELETE ON neuron
 CREATE TRIGGER connection_log AFTER INSERT OR UPDATE OR DELETE ON connection
     FOR EACH ROW EXECUTE FUNCTION log_change();
 
+-- installed after the copy too: the copied rows come from cc.connection,
+-- whose composite foreign keys already guarantee the rule
+CREATE CONSTRAINT TRIGGER connection_same_dataset AFTER INSERT OR UPDATE ON connection
+    FOR EACH ROW EXECUTE FUNCTION check_connection_dataset();
+CREATE CONSTRAINT TRIGGER release_same_dataset AFTER UPDATE OF dataset_id ON release
+    FOR EACH ROW EXECUTE FUNCTION check_connection_dataset();
+CREATE CONSTRAINT TRIGGER neuron_same_dataset AFTER UPDATE OF dataset_id ON neuron
+    FOR EACH ROW EXECUTE FUNCTION check_connection_dataset();
+
 COMMENT ON SCHEMA lab IS 'Editable copy of a real-data subset; rebuilt by "Reset lab". Changes here never reach schema cc.';
+COMMENT ON TABLE lab.dataset IS 'Editable copy of cc.dataset (key columns).';
+COMMENT ON TABLE lab.release IS 'Editable copy of the loaded releases.';
+COMMENT ON TABLE lab.neuron IS 'Editable neurons with their current cell type, side and primary region.';
+COMMENT ON TABLE lab.connection IS 'Synapse count of a neuron pair in one release (BCNF: no dataset_id copy).';
+COMMENT ON TABLE lab.change_log IS 'Audit trail written by trigger for every lab change.';

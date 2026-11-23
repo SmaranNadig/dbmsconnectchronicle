@@ -1,0 +1,439 @@
+# Query catalogue (docs/QUERIES.md): the questions the database is built to
+# answer, each written once in its simplest correct form and executed on the
+# real data by backend/design/queries.py.
+#
+#   question   what is asked, in words
+#   sql        PostgreSQL (target read: role cc_reader, READ ONLY, rolled back;
+#              target trial: role cc_tryout on the real tables, rolled back;
+#              target lab: the editable lab schema, rolled back)
+#   mongo      MongoDB operation on neuron_source_record
+#   why        why it is written this way (index, constraint, set-based form)
+#   expect     checked on every run:
+#                index: [names]      the plan must use these indexes
+#                no_seq_scan: [rel]  the plan must not scan these tables sequentially
+#                stage: IXSCAN|...   the MongoDB winning plan must contain this stage
+#                rows_at_least: n    the result must have at least n rows
+#                error: text         the statement must be rejected with this text
+categories:
+  - {id: select, title: Selection and projection}
+  - {id: join, title: Joins}
+  - {id: aggregate, title: Aggregation and grouping}
+  - {id: subquery, title: Subqueries and set operations}
+  - {id: window, title: Window functions}
+  - {id: recursive, title: Recursive queries}
+  - {id: temporal, title: Bitemporal queries}
+  - {id: views, title: Views and stored functions}
+  - {id: analysis, title: ConnectomeDiff and distribution}
+  - {id: dml, title: "Inserting, updating and deleting"}
+  - {id: nosql, title: MongoDB (NoSQL)}
+
+queries:
+  # ----------------------------------------------------------- selection
+  - id: q-releases
+    category: select
+    question: Which releases are loaded, in order, for each dataset?
+    sql: |
+      SELECT d.code AS dataset, r.version_label, r.release_order, r.release_date, r.loaded_at
+      FROM release r
+      JOIN dataset d USING (dataset_id)
+      WHERE r.ingestion_status = 'loaded'
+      ORDER BY d.code, r.release_order;
+    why: The two catalogue tables are tiny, so a plain join is optimal; release_order (not the label) gives the true order, because labels such as "630" and "783" do not sort like versions.
+    expect: {rows_at_least: 5}
+
+  - id: q-find-neuron
+    category: select
+    question: Which internal id does hemibrain neuron 1688868386 have, and in which release did it first appear?
+    sql: |
+      SELECT dn.dataset_neuron_id, dn.source_neuron_id, r.version_label AS first_release
+      FROM dataset_neuron dn
+      JOIN release r ON r.release_id = dn.first_release_id
+      WHERE dn.dataset_id = (SELECT dataset_id FROM dataset WHERE code = 'hemibrain')
+        AND dn.source_neuron_id = '1688868386';
+    why: The predicate matches the natural key (dataset_id, source_neuron_id) exactly, so the UNIQUE constraint's index finds the row without reading the 182,274-row table; the id is compared as text because published ids are kept losslessly as text.
+    expect: {index: [dataset_neuron_dataset_id_source_neuron_id_key], rows_at_least: 1}
+
+  # --------------------------------------------------------------- joins
+  - id: q-strongest-partners
+    category: join
+    question: What are the 10 strongest current outgoing connections of hemibrain neuron 487144598 (an LHCENT3 neuron), with each partner's cell type?
+    sql: |
+      SELECT post.source_neuron_id AS partner, t.annotation_value AS partner_type, c.synapse_count
+      FROM connection c
+      JOIN dataset_neuron post ON post.dataset_neuron_id = c.post_neuron_id
+      LEFT JOIN annotation t ON t.dataset_neuron_id = c.post_neuron_id
+                            AND t.annotation_key = 'cell_type'
+                            AND upper_inf(t.tx) AND upper_inf(t.valid_rel)
+      WHERE c.pre_neuron_id = cc.find_neuron('hemibrain', '487144598')
+        AND upper_inf(c.tx) AND upper_inf(c.valid_rel)
+      ORDER BY c.synapse_count DESC
+      LIMIT 10;
+    why: "Starts from the one neuron (index connection_pre_idx), so only its edges are read, not 9 M rows; upper_inf(tx) AND upper_inf(valid_rel) is the bitemporal \"current\" filter; LEFT JOIN keeps partners that have no cell type."
+    expect: {index: [connection_pre_idx], no_seq_scan: [connection, annotation], rows_at_least: 1}
+
+  - id: q-untyped
+    category: join
+    question: How many FlyWire neurons of the latest release have no cell type annotation?
+    sql: |
+      SELECT count(*) AS neurons_without_type
+      FROM dataset_neuron dn
+      JOIN neuron_version v ON v.dataset_neuron_id = dn.dataset_neuron_id
+                           AND upper_inf(v.tx) AND upper_inf(v.valid_rel)
+      WHERE dn.dataset_id = (SELECT dataset_id FROM dataset WHERE code = 'flywire')
+        AND NOT EXISTS (SELECT 1 FROM annotation a
+                        WHERE a.dataset_neuron_id = dn.dataset_neuron_id
+                          AND a.annotation_key = 'cell_type'
+                          AND upper_inf(a.tx) AND upper_inf(a.valid_rel));
+    why: NOT EXISTS is an anti-join (it stops at the first match and, unlike NOT IN, is correct when NULLs are present); the existence filter on neuron_version keeps only neurons present in the latest release.
+
+  # ----------------------------------------------------------- aggregation
+  - id: q-release-sizes
+    category: aggregate
+    question: How many neurons and connections does each release have?
+    sql: |
+      SELECT d.code AS dataset, r.version_label, s.neurons, s.connections, s.computed_at
+      FROM release_stats s
+      JOIN release r USING (release_id)
+      JOIN dataset d USING (dataset_id)
+      ORDER BY d.code, r.release_order;
+    why: Counting the 9 M connection rows per release on every request would take seconds; the materialized view release_stats is refreshed in the same transaction that loads a release, so it is never stale and the query reads 5 rows.
+    expect: {rows_at_least: 5}
+
+  - id: q-top-types
+    category: aggregate
+    question: Which 10 cell types have the most neurons in hemibrain v1.2?
+    sql: |
+      SELECT a.annotation_value AS cell_type, count(*) AS neurons
+      FROM annotation a
+      JOIN dataset_neuron dn USING (dataset_neuron_id)
+      WHERE dn.dataset_id = (SELECT dataset_id FROM dataset WHERE code = 'hemibrain')
+        AND a.annotation_key = 'cell_type'
+        AND a.valid_rel @> (SELECT release_order FROM release r JOIN dataset d USING (dataset_id)
+                            WHERE d.code = 'hemibrain' AND r.version_label = 'v1.2')
+        AND upper_inf(a.tx)
+      GROUP BY a.annotation_value
+      ORDER BY neurons DESC, cell_type
+      LIMIT 10;
+    why: valid_rel @> order selects the facts valid in that release, whichever release they were first loaded in; the partial index annotation_key_value_idx (current rows only) serves the key filter.
+    expect: {rows_at_least: 10}
+
+  - id: q-regions
+    category: aggregate
+    question: In the latest FlyWire release, which brain regions hold more than 1 million synapses?
+    sql: |
+      SELECT l.code, l.name, l.super_region, sum(s.pre_synapses + s.post_synapses) AS synapses
+      FROM neuron_region_synapses s
+      JOIN brain_region_label l USING (brain_region_id)
+      WHERE s.release_id = (SELECT r.release_id FROM release r JOIN dataset d USING (dataset_id)
+                            WHERE d.code = 'flywire' ORDER BY r.release_order DESC LIMIT 1)
+      GROUP BY l.code, l.name, l.super_region
+      HAVING sum(s.pre_synapses + s.post_synapses) > 1000000
+      ORDER BY synapses DESC;
+    why: WHERE filters rows before grouping, HAVING filters groups after it; super_region now comes from neuropil through the view (normalised in migration 0013).
+    expect: {rows_at_least: 1}
+
+  # ---------------------------------------------- subqueries and set ops
+  - id: q-types-gone
+    category: subquery
+    question: Which hemibrain cell types existed in v1.0 but no longer exist in v1.2?
+    sql: |
+      WITH hb AS (SELECT dataset_id FROM dataset WHERE code = 'hemibrain')
+      SELECT a.annotation_value AS cell_type
+      FROM annotation a JOIN dataset_neuron dn USING (dataset_neuron_id) JOIN hb USING (dataset_id)
+      WHERE a.annotation_key = 'cell_type' AND upper_inf(a.tx) AND a.valid_rel @> 1   -- v1.0
+      EXCEPT
+      SELECT a.annotation_value
+      FROM annotation a JOIN dataset_neuron dn USING (dataset_neuron_id) JOIN hb USING (dataset_id)
+      WHERE a.annotation_key = 'cell_type' AND upper_inf(a.tx) AND a.valid_rel @> 3   -- v1.2
+      ORDER BY cell_type
+      LIMIT 20;
+    why: EXCEPT states the question directly as a set difference and removes duplicates; valid_rel holds release orders, so @> 1 and @> 3 mean "valid in v1.0" and "valid in v1.2".
+    expect: {rows_at_least: 1}
+
+  - id: q-shared-types
+    category: subquery
+    question: How many cell type names appear in both hemibrain and FlyWire (current releases)?
+    sql: |
+      SELECT count(*) AS shared_type_names FROM (
+        SELECT a.annotation_value FROM annotation a JOIN dataset_neuron dn USING (dataset_neuron_id)
+        JOIN dataset d USING (dataset_id)
+        WHERE d.code = 'hemibrain' AND a.annotation_key = 'cell_type' AND upper_inf(a.tx) AND upper_inf(a.valid_rel)
+        INTERSECT
+        SELECT a.annotation_value FROM annotation a JOIN dataset_neuron dn USING (dataset_neuron_id)
+        JOIN dataset d USING (dataset_id)
+        WHERE d.code = 'flywire' AND a.annotation_key = 'cell_type' AND upper_inf(a.tx) AND upper_inf(a.valid_rel)
+      ) shared;
+    why: INTERSECT on the names is the cross-dataset comparison (kept separate from temporal change); identical names are only a starting point for entity resolution, which uses the published crosswalk and review.
+
+  - id: q-above-average
+    category: subquery
+    question: Which current hemibrain connections are more than 100 times stronger than the dataset's average connection?
+    sql: |
+      SELECT pre.source_neuron_id AS pre, post.source_neuron_id AS post, c.synapse_count
+      FROM connection c
+      JOIN dataset_neuron pre ON pre.dataset_neuron_id = c.pre_neuron_id
+      JOIN dataset_neuron post ON post.dataset_neuron_id = c.post_neuron_id
+      WHERE c.dataset_id = (SELECT dataset_id FROM dataset WHERE code = 'hemibrain')
+        AND upper_inf(c.tx) AND upper_inf(c.valid_rel)
+        AND c.synapse_count > 100 * (SELECT avg(synapse_count) FROM connection
+                                     WHERE dataset_id = (SELECT dataset_id FROM dataset WHERE code = 'hemibrain')
+                                       AND upper_inf(tx) AND upper_inf(valid_rel))
+      ORDER BY c.synapse_count DESC
+      LIMIT 10;
+    why: The scalar subquery is uncorrelated, so it runs once (an InitPlan), not once per row; both scans use the partial index connection_dataset_open_idx over current rows of one dataset.
+    expect: {index: [connection_dataset_open_idx], rows_at_least: 1}
+
+  # ------------------------------------------------------ window functions
+  - id: q-rank-partners
+    category: window
+    question: For every LC28a neuron, what are its three strongest current partners?
+    sql: |
+      SELECT pre, partner, synapse_count, rank
+      FROM (SELECT pre.source_neuron_id AS pre, post.source_neuron_id AS partner, c.synapse_count,
+                   rank() OVER (PARTITION BY c.pre_neuron_id ORDER BY c.synapse_count DESC) AS rank
+            FROM annotation t
+            JOIN dataset_neuron pre ON pre.dataset_neuron_id = t.dataset_neuron_id
+            JOIN connection c ON c.pre_neuron_id = t.dataset_neuron_id AND upper_inf(c.tx) AND upper_inf(c.valid_rel)
+            JOIN dataset_neuron post ON post.dataset_neuron_id = c.post_neuron_id
+            WHERE t.annotation_key = 'cell_type' AND t.annotation_value = 'LC28a'
+              AND upper_inf(t.tx) AND upper_inf(t.valid_rel)) ranked
+      WHERE rank <= 3
+      ORDER BY pre, rank;
+    why: rank() OVER (PARTITION BY ...) keeps ties and needs one pass instead of a LIMIT per neuron; the type filter uses annotation_key_value_idx, then connection_pre_idx per neuron.
+    expect: {index: [annotation_key_value_idx], rows_at_least: 1}
+
+  - id: q-weight-trend
+    category: window
+    question: How did the synapse count of that neuron's strongest connection change from release to release?
+    sql: |
+      WITH strongest AS (
+        SELECT post_neuron_id FROM connection
+        WHERE pre_neuron_id = cc.find_neuron('hemibrain', '1688868386') AND upper_inf(tx)
+        ORDER BY synapse_count DESC LIMIT 1)
+      SELECT r.version_label, c.synapse_count,
+             c.synapse_count - lag(c.synapse_count) OVER (ORDER BY r.release_order) AS change
+      FROM strongest s
+      JOIN release r ON r.dataset_id = (SELECT dataset_id FROM dataset WHERE code = 'hemibrain')
+      JOIN connection c ON c.pre_neuron_id = cc.find_neuron('hemibrain', '1688868386')
+                       AND c.post_neuron_id = s.post_neuron_id
+                       AND c.valid_rel @> r.release_order AND upper_inf(c.tx)
+      ORDER BY r.release_order;
+    why: One stored row covers every release in which the count did not change (valid_rel is a range), so joining on valid_rel @> release_order expands it per release; lag() compares each release with the previous one.
+    expect: {rows_at_least: 1}
+
+  # ---------------------------------------------------------- recursive
+  - id: q-downstream
+    category: recursive
+    question: Which neurons can be reached from hemibrain neuron 487144598 in at most two steps over strong connections (at least 50 synapses)?
+    sql: |
+      WITH RECURSIVE reach(neuron, depth) AS (
+        SELECT cc.find_neuron('hemibrain', '487144598'), 0
+        UNION
+        SELECT c.post_neuron_id, r.depth + 1
+        FROM reach r
+        JOIN connection c ON c.pre_neuron_id = r.neuron
+        WHERE r.depth < 2 AND c.synapse_count >= 50 AND upper_inf(c.tx) AND upper_inf(c.valid_rel))
+      SELECT depth, count(DISTINCT neuron) AS neurons
+      FROM reach
+      GROUP BY depth
+      ORDER BY depth;
+    why: WITH RECURSIVE expresses graph traversal in SQL; UNION (not UNION ALL) drops repeated (neuron, depth) pairs and the depth bound guarantees termination; each step is an index lookup on connection_pre_idx.
+    expect: {index: [connection_pre_idx], rows_at_least: 2}
+
+  # ------------------------------------------------------------ temporal
+  - id: q-type-history
+    category: temporal
+    question: Which cell type did hemibrain neuron 1688868386 have in each release, and since when has the database known it?
+    sql: |
+      SELECT cc.release_label(dn.dataset_id, lower(a.valid_rel)) AS from_release,
+             coalesce(cc.release_label(dn.dataset_id, upper(a.valid_rel)), 'still valid') AS until_release,
+             a.annotation_value AS cell_type, lower(a.tx) AS recorded_at, upper(a.tx) AS retired_at
+      FROM annotation a
+      JOIN dataset_neuron dn USING (dataset_neuron_id)
+      WHERE a.dataset_neuron_id = cc.find_neuron('hemibrain', '1688868386')
+        AND a.annotation_key = 'cell_type'
+      ORDER BY lower(a.valid_rel), lower(a.tx);
+    why: Valid time (which releases) and transaction time (when the database believed it) are separate columns, so a type change (LC28d to LC28a) and a later correction can both be read back.
+    expect: {rows_at_least: 1}
+
+  - id: q-as-of
+    category: temporal
+    question: Before hemibrain v1.2 was loaded, what did the database believe that neuron's cell type was "until further notice", and what does it believe now?
+    sql: |
+      SELECT 'before the v1.2 load' AS as_of, a.annotation_value AS cell_type, a.valid_rel
+      FROM annotation a
+      WHERE a.dataset_neuron_id = cc.find_neuron('hemibrain', '1688868386') AND a.annotation_key = 'cell_type'
+        AND upper_inf(a.valid_rel)
+        AND a.tx @> (SELECT loaded_at - interval '1 second' FROM release r JOIN dataset d USING (dataset_id)
+                     WHERE d.code = 'hemibrain' AND r.version_label = 'v1.2')
+      UNION ALL
+      SELECT 'now', a.annotation_value, a.valid_rel
+      FROM annotation a
+      WHERE a.dataset_neuron_id = cc.find_neuron('hemibrain', '1688868386') AND a.annotation_key = 'cell_type'
+        AND upper_inf(a.valid_rel) AND upper_inf(a.tx);
+    why: tx @> timestamp is an "as of" query on transaction time. A load retires a belief by closing its tx interval instead of deleting it, so the state before any load is reconstructed exactly; the GiST exclusion index on annotation serves the neuron and key.
+    expect: {rows_at_least: 1}
+
+  - id: q-at-release
+    category: temporal
+    question: What were that neuron's five strongest outgoing connections in hemibrain v1.1?
+    sql: |
+      SELECT * FROM cc.connections_at_release(
+          cc.find_neuron('hemibrain', '1688868386'),
+          (SELECT release_id FROM release r JOIN dataset d USING (dataset_id)
+           WHERE d.code = 'hemibrain' AND r.version_label = 'v1.1'))
+      WHERE direction = 'out'
+      ORDER BY synapse_count DESC
+      LIMIT 5;
+    why: The stored SQL function connections_at_release encapsulates the valid-time and transaction-time predicates, so every caller asks the question the same, correct way.
+    expect: {rows_at_least: 1}
+
+  # ------------------------------------------------------ views, functions
+  - id: q-er-view
+    category: views
+    question: Show the neuron as the team's ER diagram defines it (entity DATASET_NEURON).
+    sql: |
+      SELECT * FROM er.dataset_neuron WHERE raw_metadata = 'hemibrain:1688868386';
+    why: The er views present the physical tables under the ER model's names and attributes, so the ER diagram can be queried directly without changing the storage design.
+    expect: {rows_at_least: 1}
+
+  - id: q-provenance
+    category: views
+    question: Where exactly did that neuron's record come from (file, checksum, line, run)?
+    sql: |
+      SELECT cc.trace_provenance('dataset_neuron', cc.find_neuron('hemibrain', '1688868386')) AS lineage;
+    why: trace_provenance follows provenance and provenance_parent to the source file, its SHA-256 and the line number, for any versioned row.
+    expect: {rows_at_least: 1}
+
+  # ------------------------------------------- ConnectomeDiff, distribution
+  - id: q-diff-summary
+    category: analysis
+    question: What did the most recent ConnectomeDiff run find, by entity and change type?
+    sql: |
+      SELECT e.entity_type, e.change_type, count(*) AS events, sum(abs(e.weight_delta)) AS synapses_changed
+      FROM diff_event e
+      WHERE e.diff_run_id = (SELECT max(diff_run_id) FROM diff_run WHERE status = 'succeeded')
+      GROUP BY e.entity_type, e.change_type
+      ORDER BY e.entity_type, e.change_type;
+    why: "The run is found by a scalar subquery, so its id is known only when the query runs: PostgreSQL plans for an average run (one fifth of the 3.9 M events) and chooses a parallel sequential scan. Given a literal run id it uses diff_event_run_idx (diff_run_id, entity_type, change_type) instead. Both plans are correct; this one takes about 0.2 s."
+    expect: {rows_at_least: 1}
+
+  - id: q-shards
+    category: analysis
+    question: How evenly does each partitioning strategy spread neurons over the three shards?
+    sql: |
+      SELECT s.code AS strategy, a.shard_id, count(*) AS neurons,
+             round(100.0 * count(*) / sum(count(*)) OVER (PARTITION BY s.code), 1) AS percent
+      FROM partition_assignment a
+      JOIN partition_strategy s USING (strategy_id)
+      GROUP BY s.code, a.shard_id
+      ORDER BY s.code, a.shard_id;
+    why: An aggregate inside a window (sum(count(*)) OVER ...) gives each shard's share in one pass.
+    expect: {rows_at_least: 3}
+
+  # ---------------------------------------------------------------- DML
+  - id: q-trial-insert
+    category: dml
+    target: trial
+    question: Insert a new annotation for a real neuron (run on the real tables, then rolled back).
+    sql: |
+      INSERT INTO annotation (dataset_neuron_id, annotation_key, annotation_value, valid_rel, provenance_id)
+      SELECT dn.dataset_neuron_id, 'review_note', 'checked by hand', int4range(3, NULL), dn.provenance_id
+      FROM dataset_neuron dn
+      WHERE dn.dataset_neuron_id = cc.find_neuron('hemibrain', '1688868386')
+      RETURNING annotation_id, annotation_key, annotation_value, valid_rel;
+    why: INSERT ... SELECT takes the keys from the database instead of typing ids; every constraint and the exclusion constraint are checked, then the trial transaction is rolled back.
+    expect: {rows_at_least: 1}
+
+  - id: q-trial-overlap
+    category: dml
+    target: trial
+    question: Insert a second cell type for the same neuron and releases; the exclusion constraint must reject it.
+    sql: |
+      INSERT INTO annotation (dataset_neuron_id, annotation_key, annotation_value, valid_rel, provenance_id)
+      SELECT a.dataset_neuron_id, 'cell_type', 'conflicting_type', a.valid_rel, a.provenance_id
+      FROM annotation a
+      WHERE a.dataset_neuron_id = cc.find_neuron('hemibrain', '1688868386')
+        AND a.annotation_key = 'cell_type' AND upper_inf(a.tx)
+      LIMIT 1;
+    why: The GiST exclusion constraint (same neuron and key, overlapping valid and transaction time) is what makes "one value per neuron, key and moment" a database rule.
+    expect: {error: conflicting key value violates exclusion constraint}
+
+  - id: q-trial-delete
+    category: dml
+    target: trial
+    question: Delete a connection from the history; the append-only trigger must reject it.
+    sql: |
+      DELETE FROM connection
+      WHERE connection_id = (SELECT min(connection_id) FROM connection);
+    why: History is never deleted; guard_history() rejects DELETE and any UPDATE other than closing the tx interval, so every past state stays reconstructible.
+    expect: {error: history is append-only}
+
+  - id: q-lab-update
+    category: dml
+    target: lab
+    question: In the lab, rename a cell type for every neuron that has it, then list what changed.
+    sql: |
+      UPDATE lab.neuron SET cell_type = cell_type || '_renamed'
+      WHERE cell_type = (SELECT cell_type FROM lab.neuron WHERE cell_type IS NOT NULL
+                         GROUP BY cell_type ORDER BY count(*) DESC, cell_type LIMIT 1);
+      SELECT table_name, operation, old_row->>'cell_type' AS old_type, new_row->>'cell_type' AS new_type
+      FROM lab.change_log ORDER BY change_id DESC LIMIT 5;
+    why: Because the lab is normalised, the type is stored once per neuron, so one UPDATE row per neuron is the whole change; the log_change trigger records it.
+
+  - id: q-lab-delete
+    category: dml
+    target: lab
+    question: In the lab, delete one neuron; its connections go with it (ON DELETE CASCADE).
+    sql: |
+      WITH gone AS (DELETE FROM lab.neuron
+                    WHERE neuron_id = (SELECT min(pre_neuron_id) FROM lab.connection)
+                    RETURNING neuron_id)
+      SELECT neuron_id FROM gone;
+      SELECT count(*) AS connections_left_for_it FROM lab.connection
+      WHERE pre_neuron_id = (SELECT min(neuron_id) FROM lab.change_log c, LATERAL (SELECT (c.old_row->>'neuron_id')::bigint) x(neuron_id)
+                             WHERE c.table_name = 'neuron' AND c.operation = 'DELETE');
+    why: The foreign keys of lab.connection cascade, so deleting the neuron removes its connections in the same statement; the change log keeps both.
+
+  # -------------------------------------------------------------- MongoDB
+  - id: m-by-id
+    category: nosql
+    question: Fetch one neuron's source document by its key.
+    mongo: {op: find, filter: {_id: "hemibrain:1688868386"}, projection: {dataset: 1, source_neuron_id: 1, dataset_neuron_id: 1}, limit: 1}
+    why: _id is dataset_neuron.metadata_doc_id in PostgreSQL (now UNIQUE, migration 0013), the link between the two stores; lookup by _id uses the primary index.
+    expect: {stage: [IDHACK, EXPRESS_IXSCAN, IXSCAN], rows_at_least: 1}
+
+  - id: m-by-natural-key
+    category: nosql
+    question: Find a FlyWire neuron's document by dataset and published id.
+    mongo: {op: find, filter: {dataset: flywire, source_neuron_id: "720575940590515268"}, projection: {_id: 1, dataset_neuron_id: 1}, limit: 1}
+    why: The compound unique index (dataset, source_neuron_id) mirrors the natural key of dataset_neuron.
+    expect: {stage: [IXSCAN], rows_at_least: 1}
+
+  - id: m-from-postgres
+    category: nosql
+    question: Follow the link from PostgreSQL to MongoDB (dataset_neuron_id) and read the neuron's v1.0 source row.
+    mongo: {op: find, filter: {dataset_neuron_id: 41903}, projection: {"releases.1.records.fields": 1, "releases.1.release": 1}, limit: 1}
+    why: dataset_neuron_id is indexed (unique), and the projection returns one release's original columns instead of the whole document.
+    expect: {stage: [IXSCAN], rows_at_least: 1}
+
+  - id: m-count-datasets
+    category: nosql
+    question: How many documents does each dataset have?
+    mongo: {op: aggregate, pipeline: [{$group: {_id: "$dataset", documents: {$sum: 1}}}, {$sort: {_id: 1}}], limit: 10}
+    why: "A $group over the collection is the aggregation equivalent of GROUP BY. It has to read every document (COLLSCAN, about 1 s for 182,274 documents); the same count is available instantly from PostgreSQL, and metadata check compares the two."
+    expect: {rows_at_least: 2}
+
+  - id: m-columns
+    category: nosql
+    question: Which original source columns does FlyWire's classification file provide?
+    mongo: {op: aggregate, pipeline: [{$match: {dataset: flywire}}, {$limit: 1000}, {$project: {r: {$objectToArray: "$releases"}}}, {$unwind: "$r"}, {$unwind: "$r.v.records"}, {$match: {"r.v.records.file": {$regex: "classification"}}}, {$project: {k: {$objectToArray: "$r.v.records.fields"}}}, {$unwind: "$k"}, {$group: {_id: "$k.k", documents: {$sum: 1}}}, {$sort: {_id: 1}}], limit: 20}
+    why: Documents keep columns the relational model does not map, and they differ by dataset and release; $objectToArray turns field names into data so they can be grouped (on the first 1000 FlyWire documents, using the dataset index).
+    expect: {stage: [IXSCAN], rows_at_least: 3}
+
+  - id: m-unindexed
+    category: nosql
+    question: Which hemibrain documents have a v1.2 source row with instance "LC28a(lVLPT4)_R"?
+    mongo: {op: count, filter: {dataset: hemibrain, "releases.4.records.fields.instance": "LC28a(lVLPT4)_R"}}
+    why: Only the dataset prefix of the compound index applies; the nested field is checked on every hemibrain document. In this design such questions are answered in PostgreSQL (annotation, indexed) and MongoDB is used for the original rows of known neurons.
+    expect: {stage: [IXSCAN]}

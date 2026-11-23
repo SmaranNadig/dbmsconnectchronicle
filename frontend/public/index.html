@@ -23,7 +23,7 @@
     <a href="#quality">Change quality</a>
     <a href="#matching">Correspondences</a>
     <details class="nav-more"><summary>Database lab</summary><div>
-      <a href="#console">Query console</a><a href="#editor">Data editor</a><a href="#concepts">DBMS concepts</a>
+      <a href="#console">Query console</a><a href="#editor">Data editor</a><a href="#design">Design</a><a href="#concepts">DBMS concepts</a>
       <a href="#sql">SQL implementation</a><a href="#nosql">NoSQL implementation</a>
       <a href="#distributed">Distributed</a><a href="#results">Results</a>
     </div></details>
@@ -280,6 +280,83 @@
     </div>
   </section>
 
+  <!-- ============================================================ design -->
+  <section id="design">
+    <h2>Design</h2>
+    <p class="note">How the database is designed, shown from the running system: the data flow diagrams, the keys,
+      dependencies and normal form of every relation (checked against the loaded data), why the tables are split the
+      way they are, how the storage files are maintained, the query catalogue with plans, and the data dictionary.
+      The same content is in <code>docs/DESIGN.md</code> and its companion documents.</p>
+    <div class="seg" role="tablist" id="design-mode">
+      <button type="button" class="on" data-mode="dfd">Data flow</button>
+      <button type="button" data-mode="nf">Normal forms</button>
+      <button type="button" data-mode="files">Anomalies &amp; files</button>
+      <button type="button" data-mode="queries">Queries</button>
+      <button type="button" data-mode="dict">Dictionary</button>
+    </div>
+
+    <div id="dz-dfd" class="design-pane">
+      <p class="note">Gane–Sarson notation: rounded boxes are processes, open rectangles data stores, squares external
+        entities, arrows data flows. The diagrams are defined as data in <code>config/dfd.yaml</code> and every rule
+        below is checked on each load.</p>
+      <div id="dz-dfd-check" class="row"></div>
+      <div class="seg small" id="dz-dfd-list"></div>
+      <div id="dz-dfd-img" class="dfd-frame"></div>
+      <div class="grid2">
+        <div><h3>Processes on this diagram</h3><div id="dz-dfd-procs"></div></div>
+        <div><h3>Notation rules</h3><div id="dz-dfd-rules"></div></div>
+        <div class="wide"><h3>External entities and data stores</h3><div id="dz-dfd-stores"></div></div>
+      </div>
+    </div>
+
+    <div id="dz-nf" class="design-pane" hidden>
+      <div id="dz-nf-summary"></div>
+      <div class="row"><button type="button" class="ghost" id="dz-nf-verify">Check on the loaded data now</button>
+        <span class="note" id="dz-nf-verify-meta"></span></div>
+      <div class="grid2">
+        <div><h3>Every relation</h3><p class="note">Keys and normal forms are computed from the functional dependencies
+          (attribute closure, minimal cover). Pick a relation for its details.</p><div id="dz-nf-rel" class="scroll"></div></div>
+        <div id="dz-nf-detail" class="panel"></div>
+      </div>
+      <h3>From the published release to BCNF</h3>
+      <p class="note">A release file as published, normalised step by step; each step's keys and normal forms are computed the same way.</p>
+      <div id="dz-nf-walk"></div>
+    </div>
+
+    <div id="dz-files" class="design-pane" hidden>
+      <h3>Why the tables are split: update, insertion and deletion anomalies</h3>
+      <p class="note">Runs the same change against one wide table and against the normalised lab tables. Nothing is kept.</p>
+      <div class="row"><button type="button" id="dz-anom-run">Show the anomalies</button></div>
+      <div id="dz-anom"></div>
+      <h3>File maintenance</h3>
+      <p class="note">Each table is stored in its own file of 8 kB pages. Updates and deletes leave dead row versions
+        until VACUUM reclaims them; ANALYZE refreshes the planner's statistics; REINDEX rebuilds the index files. These run
+        on the lab tables (edit some rows in the <a href="#editor">Data editor</a> first to see dead rows appear).</p>
+      <div class="row" id="dz-maint">
+        <button type="button" class="ghost" data-op="vacuum">VACUUM (ANALYZE) lab tables</button>
+        <button type="button" class="ghost" data-op="analyze">ANALYZE lab tables</button>
+        <button type="button" class="ghost" data-op="reindex">REINDEX lab tables</button>
+      </div>
+      <div id="dz-maint-out"></div>
+      <h3>Storage of every table</h3><div id="dz-files-list"></div>
+    </div>
+
+    <div id="dz-queries" class="design-pane" hidden>
+      <div id="dz-q-summary" class="row"></div>
+      <p class="note">Each query answers a question about the data. It is shown with the reason for its form, its result
+        and its execution plan, and is checked automatically (it runs, returns rows, uses the expected index).
+        Defined in <code>config/query_catalogue.yaml</code>.</p>
+      <div class="row"><label>Category <select id="dz-q-cat"></select></label></div>
+      <div id="dz-q-list"></div>
+    </div>
+
+    <div id="dz-dict" class="design-pane" hidden>
+      <div id="dz-dict-summary"></div>
+      <div class="row"><label class="grow">Table, view list, functions or collections <select id="dz-dict-table"></select></label></div>
+      <div id="dz-dict-out"></div>
+    </div>
+  </section>
+
   <!-- ============================================================ concepts -->
   <section id="concepts">
     <h2>DBMS concepts, shown on loaded data</h2>
@@ -417,5 +494,6 @@
 <script type="module" src="app.js"></script>
 <script type="module" src="workspace.js"></script>
 <script type="module" src="editor.js"></script>
+<script type="module" src="design.js"></script>
 </body>
 </html>

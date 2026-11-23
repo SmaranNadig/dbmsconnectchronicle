@@ -49,6 +49,7 @@ Original source rows → MongoDB ← neuron key   |     quality analysis   3 ver
 | **Change quality** | Score a comparison, select a saved model run, compare model/baseline flags, read features and explanations, and open the underlying change. |
 | **Correspondences** | Inspect type-and-side candidates, rank up to 5,000 candidates per UI run using connectivity/region similarity, and approve/reject with a reviewer name. Scores are heuristic, not calibrated probabilities. |
 | **Database lab → Query console** | Read-only SQL/MongoDB queries, dataset-aware teaching examples and PostgreSQL EXPLAIN/EXPLAIN ANALYZE. |
+| **Database lab → Design** | Data flow diagrams (levels 0, 1, 2) with their notation check; keys, dependencies and normal form of every relation, checked on the loaded data; update/insertion/deletion anomalies; storage files and VACUUM/ANALYZE/REINDEX of the lab; the query catalogue with results and plans; the data dictionary. Documents: `docs/`. |
 | **Database lab → DBMS concepts** | Live evidence for relational design, integrity, ACID transactions, time travel, indexing, views, lineage, NoSQL and distribution. Includes nine deliberately rejected writes. |
 | **Database lab → SQL implementation** | Migration/application source plus PostgreSQL's live tables, constraints, indexes, triggers and functions. |
 | **Database lab → NoSQL implementation** | Document structure, indexes, sync logs and a neuron shown in both stores. An empty collection is handled explicitly. |

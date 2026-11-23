@@ -1,0 +1,4588 @@
+{
+ "generated_at": "2026-11-23 13:14 UTC",
+ "analysis": {
+  "relations": [
+   {
+    "relation": "cc.dataset",
+    "schema": "cc",
+    "name": "dataset",
+    "group": "Sources",
+    "purpose": "A public connectome (hemibrain, FlyWire).",
+    "attributes": [
+     "dataset_id",
+     "code",
+     "name",
+     "organism",
+     "description",
+     "source_url",
+     "license",
+     "created_at",
+     "organization",
+     "repository",
+     "data_formats"
+    ],
+    "fds": [
+     "dataset_id \u2192 code, created_at, data_formats, description, license, name, organism, organization, repository, source_url",
+     "code \u2192 created_at, data_formats, dataset_id, description, license, name, organism, organization, repository, source_url"
+    ],
+    "minimal_cover": [
+     "code \u2192 created_at, data_formats, dataset_id, description, license, name, organism, organization, repository, source_url",
+     "dataset_id \u2192 code"
+    ],
+    "candidate_keys": [
+     [
+      "code"
+     ],
+     [
+      "dataset_id"
+     ]
+    ],
+    "prime": [
+     "code",
+     "dataset_id"
+    ],
+    "non_prime": [
+     "name",
+     "organism",
+     "description",
+     "source_url",
+     "license",
+     "created_at",
+     "organization",
+     "repository",
+     "data_formats"
+    ],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {
+      "data_formats": "the list of file formats the publisher offers, a descriptive value of the dataset as a whole (never queried by element)"
+     }
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "cc.release",
+    "schema": "cc",
+    "name": "release",
+    "group": "Sources",
+    "purpose": "One published version of a dataset, ordered within the dataset.",
+    "attributes": [
+     "release_id",
+     "dataset_id",
+     "version_label",
+     "release_order",
+     "release_date",
+     "manifest_hash",
+     "ingestion_status",
+     "registered_at",
+     "loaded_at",
+     "description"
+    ],
+    "fds": [
+     "release_id \u2192 dataset_id, description, ingestion_status, loaded_at, manifest_hash, registered_at, release_date, release_order, version_label",
+     "dataset_id, version_label \u2192 description, ingestion_status, loaded_at, manifest_hash, registered_at, release_date, release_id, release_order",
+     "dataset_id, release_order \u2192 description, ingestion_status, loaded_at, manifest_hash, registered_at, release_date, release_id, version_label"
+    ],
+    "minimal_cover": [
+     "release_id \u2192 dataset_id, version_label",
+     "dataset_id, release_order \u2192 description, ingestion_status, loaded_at, manifest_hash, registered_at, release_date, release_id",
+     "dataset_id, version_label \u2192 release_order"
+    ],
+    "candidate_keys": [
+     [
+      "release_id"
+     ],
+     [
+      "dataset_id",
+      "release_order"
+     ],
+     [
+      "dataset_id",
+      "version_label"
+     ]
+    ],
+    "prime": [
+     "dataset_id",
+     "release_id",
+     "release_order",
+     "version_label"
+    ],
+    "non_prime": [
+     "release_date",
+     "manifest_hash",
+     "ingestion_status",
+     "registered_at",
+     "loaded_at",
+     "description"
+    ],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {}
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "cc.ingestion_run",
+    "schema": "cc",
+    "name": "ingestion_run",
+    "group": "Sources",
+    "purpose": "One attempt to load a release.",
+    "attributes": [
+     "run_id",
+     "release_id",
+     "pipeline_version",
+     "status",
+     "started_at",
+     "finished_at",
+     "stats",
+     "error_message"
+    ],
+    "fds": [
+     "run_id \u2192 error_message, finished_at, pipeline_version, release_id, started_at, stats, status"
+    ],
+    "minimal_cover": [
+     "run_id \u2192 error_message, finished_at, pipeline_version, release_id, started_at, stats, status"
+    ],
+    "candidate_keys": [
+     [
+      "run_id"
+     ]
+    ],
+    "prime": [
+     "run_id"
+    ],
+    "non_prime": [
+     "release_id",
+     "pipeline_version",
+     "status",
+     "started_at",
+     "finished_at",
+     "stats",
+     "error_message"
+    ],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {
+      "stats": "an opaque document (run parameters / statistics) stored and read as a whole; no relational rule depends on a key inside it"
+     }
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "cc.source_file",
+    "schema": "cc",
+    "name": "source_file",
+    "group": "Sources",
+    "purpose": "A checksummed file (or archive member) a release was read from.",
+    "attributes": [
+     "source_file_id",
+     "release_id",
+     "archive_path",
+     "member_path",
+     "sha256",
+     "size_bytes",
+     "source_url",
+     "row_count"
+    ],
+    "fds": [
+     "source_file_id \u2192 archive_path, member_path, release_id, row_count, sha256, size_bytes, source_url",
+     "archive_path, member_path, release_id \u2192 row_count, sha256, size_bytes, source_file_id, source_url"
+    ],
+    "minimal_cover": [
+     "source_file_id \u2192 archive_path, member_path, release_id",
+     "archive_path, member_path, release_id \u2192 row_count, sha256, size_bytes, source_file_id, source_url"
+    ],
+    "candidate_keys": [
+     [
+      "source_file_id"
+     ],
+     [
+      "archive_path",
+      "member_path",
+      "release_id"
+     ]
+    ],
+    "prime": [
+     "archive_path",
+     "member_path",
+     "release_id",
+     "source_file_id"
+    ],
+    "non_prime": [
+     "sha256",
+     "size_bytes",
+     "source_url",
+     "row_count"
+    ],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {}
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "cc.provenance",
+    "schema": "cc",
+    "name": "provenance",
+    "group": "Sources",
+    "purpose": "How a set of facts was produced: run, source file, transformation.",
+    "attributes": [
+     "provenance_id",
+     "dataset_id",
+     "release_id",
+     "source_file_id",
+     "ingestion_run_id",
+     "transformation_name",
+     "transformation_version",
+     "parameters",
+     "created_at"
+    ],
+    "fds": [
+     "provenance_id \u2192 created_at, dataset_id, ingestion_run_id, parameters, release_id, source_file_id, transformation_name, transformation_version",
+     "release_id \u2192 dataset_id",
+     "source_file_id \u2192 release_id",
+     "ingestion_run_id \u2192 release_id"
+    ],
+    "minimal_cover": [
+     "ingestion_run_id \u2192 release_id",
+     "provenance_id \u2192 created_at, ingestion_run_id, parameters, source_file_id, transformation_name, transformation_version",
+     "release_id \u2192 dataset_id",
+     "source_file_id \u2192 release_id"
+    ],
+    "candidate_keys": [
+     [
+      "provenance_id"
+     ]
+    ],
+    "prime": [
+     "provenance_id"
+    ],
+    "non_prime": [
+     "dataset_id",
+     "release_id",
+     "source_file_id",
+     "ingestion_run_id",
+     "transformation_name",
+     "transformation_version",
+     "parameters",
+     "created_at"
+    ],
+    "highest_form": "2NF",
+    "violations": [
+     {
+      "form": "3NF",
+      "fd": "ingestion_run_id \u2192 release_id",
+      "reason": "transitive dependency: ingestion_run_id is not a superkey and release_id is non-prime",
+      "documented": true
+     },
+     {
+      "form": "3NF",
+      "fd": "release_id \u2192 dataset_id",
+      "reason": "transitive dependency: release_id is not a superkey and dataset_id is non-prime",
+      "documented": true
+     },
+     {
+      "form": "3NF",
+      "fd": "source_file_id \u2192 release_id",
+      "reason": "transitive dependency: source_file_id is not a superkey and release_id is non-prime",
+      "documented": true
+     }
+    ],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {
+      "parameters": "an opaque document (run parameters / statistics) stored and read as a whole; no relational rule depends on a key inside it"
+     }
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [
+     {
+      "fd": "release_id -> dataset_id",
+      "enforced_by": [
+       "provenance_release_id_dataset_id_fkey"
+      ],
+      "why": "the composite foreign key (release_id, dataset_id) \u2192 release makes the copy match its release; provenance is filtered by dataset without a join"
+     },
+     {
+      "fd": "source_file_id -> release_id",
+      "enforced_by": [
+       "provenance_source_file_release_fkey"
+      ],
+      "why": "release_id is needed for derived facts that have no source file (source_file_id NULL); where a file is given, the composite key forces the same release"
+     },
+     {
+      "fd": "ingestion_run_id -> release_id",
+      "enforced_by": [
+       "provenance_run_release_fkey"
+      ],
+      "why": "release_id is needed for facts that were not produced by an ingestion run; where a run is given, the composite key forces the same release"
+     }
+    ],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": false,
+     "BCNF": false
+    },
+    "bcnf_decomposition": {
+     "parts": [
+      {
+       "attributes": [
+        "provenance_id",
+        "source_file_id",
+        "ingestion_run_id",
+        "transformation_name",
+        "transformation_version",
+        "parameters",
+        "created_at"
+       ],
+       "fds": [
+        "provenance_id \u2192 created_at, ingestion_run_id, parameters, source_file_id, transformation_name, transformation_version"
+       ],
+       "keys": [
+        [
+         "provenance_id"
+        ]
+       ]
+      },
+      {
+       "attributes": [
+        "dataset_id",
+        "release_id"
+       ],
+       "fds": [
+        "release_id \u2192 dataset_id"
+       ],
+       "keys": [
+        [
+         "release_id"
+        ]
+       ]
+      },
+      {
+       "attributes": [
+        "release_id",
+        "ingestion_run_id"
+       ],
+       "fds": [
+        "ingestion_run_id \u2192 release_id"
+       ],
+       "keys": [
+        [
+         "ingestion_run_id"
+        ]
+       ]
+      }
+     ],
+     "lossless": true,
+     "not_preserved": [
+      "source_file_id \u2192 release_id"
+     ]
+    }
+   },
+   {
+    "relation": "cc.provenance_parent",
+    "schema": "cc",
+    "name": "provenance_parent",
+    "group": "Sources",
+    "purpose": "Lineage: which provenance records a derived record was computed from.",
+    "attributes": [
+     "provenance_id",
+     "parent_id"
+    ],
+    "fds": [],
+    "minimal_cover": [],
+    "candidate_keys": [
+     [
+      "parent_id",
+      "provenance_id"
+     ]
+    ],
+    "prime": [
+     "parent_id",
+     "provenance_id"
+    ],
+    "non_prime": [],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {}
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "cc.schema_mapping",
+    "schema": "cc",
+    "name": "schema_mapping",
+    "group": "Sources",
+    "purpose": "How a source field maps to a canonical field.",
+    "attributes": [
+     "schema_mapping_id",
+     "dataset_id",
+     "source_file_pattern",
+     "source_field",
+     "canonical_entity",
+     "canonical_field",
+     "transform",
+     "notes"
+    ],
+    "fds": [
+     "schema_mapping_id \u2192 canonical_entity, canonical_field, dataset_id, notes, source_field, source_file_pattern, transform",
+     "canonical_entity, canonical_field, dataset_id, source_field, source_file_pattern \u2192 notes, schema_mapping_id, transform"
+    ],
+    "minimal_cover": [
+     "schema_mapping_id \u2192 canonical_entity, canonical_field, dataset_id, source_field, source_file_pattern",
+     "canonical_entity, canonical_field, dataset_id, source_field, source_file_pattern \u2192 notes, schema_mapping_id, transform"
+    ],
+    "candidate_keys": [
+     [
+      "schema_mapping_id"
+     ],
+     [
+      "canonical_entity",
+      "canonical_field",
+      "dataset_id",
+      "source_field",
+      "source_file_pattern"
+     ]
+    ],
+    "prime": [
+     "canonical_entity",
+     "canonical_field",
+     "dataset_id",
+     "schema_mapping_id",
+     "source_field",
+     "source_file_pattern"
+    ],
+    "non_prime": [
+     "transform",
+     "notes"
+    ],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {}
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "cc.neuropil",
+    "schema": "cc",
+    "name": "neuropil",
+    "group": "Vocabulary",
+    "purpose": "A canonical neuropil code and the super region it belongs to (split from brain_region, 0013).",
+    "attributes": [
+     "canonical_code",
+     "super_region"
+    ],
+    "fds": [
+     "canonical_code \u2192 super_region"
+    ],
+    "minimal_cover": [
+     "canonical_code \u2192 super_region"
+    ],
+    "candidate_keys": [
+     [
+      "canonical_code"
+     ]
+    ],
+    "prime": [
+     "canonical_code"
+    ],
+    "non_prime": [
+     "super_region"
+    ],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {}
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "cc.brain_region",
+    "schema": "cc",
+    "name": "brain_region",
+    "group": "Vocabulary",
+    "purpose": "A neuropil in one hemisphere (NULL = unpaired).",
+    "attributes": [
+     "brain_region_id",
+     "canonical_code",
+     "hemisphere",
+     "name"
+    ],
+    "fds": [
+     "brain_region_id \u2192 canonical_code, hemisphere, name",
+     "canonical_code, hemisphere \u2192 brain_region_id, name"
+    ],
+    "minimal_cover": [
+     "brain_region_id \u2192 canonical_code, hemisphere",
+     "canonical_code, hemisphere \u2192 brain_region_id, name"
+    ],
+    "candidate_keys": [
+     [
+      "brain_region_id"
+     ],
+     [
+      "canonical_code",
+      "hemisphere"
+     ]
+    ],
+    "prime": [
+     "brain_region_id",
+     "canonical_code",
+     "hemisphere"
+    ],
+    "non_prime": [
+     "name"
+    ],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {}
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "cc.brain_region_alias",
+    "schema": "cc",
+    "name": "brain_region_alias",
+    "group": "Vocabulary",
+    "purpose": "A dataset's own region code mapped to the canonical region.",
+    "attributes": [
+     "dataset_id",
+     "source_code",
+     "brain_region_id"
+    ],
+    "fds": [
+     "dataset_id, source_code \u2192 brain_region_id"
+    ],
+    "minimal_cover": [
+     "dataset_id, source_code \u2192 brain_region_id"
+    ],
+    "candidate_keys": [
+     [
+      "dataset_id",
+      "source_code"
+     ]
+    ],
+    "prime": [
+     "dataset_id",
+     "source_code"
+    ],
+    "non_prime": [
+     "brain_region_id"
+    ],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {}
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "cc.neuron_type",
+    "schema": "cc",
+    "name": "neuron_type",
+    "group": "Vocabulary",
+    "purpose": "A canonical cell type name.",
+    "attributes": [
+     "neuron_type_id",
+     "name"
+    ],
+    "fds": [
+     "neuron_type_id \u2192 name",
+     "name \u2192 neuron_type_id"
+    ],
+    "minimal_cover": [
+     "name \u2192 neuron_type_id",
+     "neuron_type_id \u2192 name"
+    ],
+    "candidate_keys": [
+     [
+      "name"
+     ],
+     [
+      "neuron_type_id"
+     ]
+    ],
+    "prime": [
+     "name",
+     "neuron_type_id"
+    ],
+    "non_prime": [],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {}
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "cc.type_alias",
+    "schema": "cc",
+    "name": "type_alias",
+    "group": "Vocabulary",
+    "purpose": "A dataset's type name linked to a canonical type (many-to-many).",
+    "attributes": [
+     "dataset_id",
+     "source_type",
+     "neuron_type_id",
+     "method",
+     "provenance_id"
+    ],
+    "fds": [
+     "dataset_id, neuron_type_id, source_type \u2192 method, provenance_id"
+    ],
+    "minimal_cover": [
+     "dataset_id, neuron_type_id, source_type \u2192 method, provenance_id"
+    ],
+    "candidate_keys": [
+     [
+      "dataset_id",
+      "neuron_type_id",
+      "source_type"
+     ]
+    ],
+    "prime": [
+     "dataset_id",
+     "neuron_type_id",
+     "source_type"
+    ],
+    "non_prime": [
+     "method",
+     "provenance_id"
+    ],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {}
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "cc.dataset_neuron",
+    "schema": "cc",
+    "name": "dataset_neuron",
+    "group": "Connectome",
+    "purpose": "A neuron as identified by its dataset (original id kept as text).",
+    "attributes": [
+     "dataset_neuron_id",
+     "dataset_id",
+     "source_neuron_id",
+     "first_release_id",
+     "provenance_id",
+     "source_line",
+     "metadata_doc_id"
+    ],
+    "fds": [
+     "dataset_neuron_id \u2192 dataset_id, first_release_id, metadata_doc_id, provenance_id, source_line, source_neuron_id",
+     "dataset_id, source_neuron_id \u2192 dataset_neuron_id, first_release_id, metadata_doc_id, provenance_id, source_line",
+     "metadata_doc_id \u2192 dataset_id, dataset_neuron_id, first_release_id, provenance_id, source_line, source_neuron_id",
+     "first_release_id \u2192 dataset_id"
+    ],
+    "minimal_cover": [
+     "dataset_neuron_id \u2192 metadata_doc_id",
+     "first_release_id \u2192 dataset_id",
+     "metadata_doc_id \u2192 dataset_neuron_id, first_release_id, provenance_id, source_line, source_neuron_id",
+     "dataset_id, source_neuron_id \u2192 metadata_doc_id"
+    ],
+    "candidate_keys": [
+     [
+      "dataset_neuron_id"
+     ],
+     [
+      "metadata_doc_id"
+     ],
+     [
+      "dataset_id",
+      "source_neuron_id"
+     ],
+     [
+      "first_release_id",
+      "source_neuron_id"
+     ]
+    ],
+    "prime": [
+     "dataset_id",
+     "dataset_neuron_id",
+     "first_release_id",
+     "metadata_doc_id",
+     "source_neuron_id"
+    ],
+    "non_prime": [
+     "provenance_id",
+     "source_line"
+    ],
+    "highest_form": "3NF",
+    "violations": [
+     {
+      "form": "BCNF",
+      "fd": "first_release_id \u2192 dataset_id",
+      "reason": "first_release_id is not a superkey (allowed in 3NF because dataset_id is prime)",
+      "documented": true
+     }
+    ],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {}
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [
+     {
+      "fd": "first_release_id -> dataset_id",
+      "enforced_by": [
+       "dataset_neuron_first_release_id_dataset_id_fkey"
+      ],
+      "why": "dataset_id is part of the natural key (dataset_id, source_neuron_id), so the relation is in 3NF; the composite key to release keeps the first release inside the same dataset"
+     }
+    ],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": false
+    },
+    "bcnf_decomposition": {
+     "parts": [
+      {
+       "attributes": [
+        "dataset_id",
+        "first_release_id"
+       ],
+       "fds": [
+        "first_release_id \u2192 dataset_id"
+       ],
+       "keys": [
+        [
+         "first_release_id"
+        ]
+       ]
+      },
+      {
+       "attributes": [
+        "dataset_neuron_id",
+        "source_neuron_id",
+        "first_release_id",
+        "provenance_id",
+        "source_line",
+        "metadata_doc_id"
+       ],
+       "fds": [
+        "dataset_neuron_id \u2192 metadata_doc_id",
+        "metadata_doc_id \u2192 first_release_id, source_neuron_id",
+        "first_release_id, source_neuron_id \u2192 dataset_neuron_id, provenance_id, source_line"
+       ],
+       "keys": [
+        [
+         "dataset_neuron_id"
+        ],
+        [
+         "metadata_doc_id"
+        ],
+        [
+         "first_release_id",
+         "source_neuron_id"
+        ]
+       ]
+      }
+     ],
+     "lossless": true,
+     "not_preserved": [
+      "dataset_id, source_neuron_id \u2192 metadata_doc_id"
+     ]
+    }
+   },
+   {
+    "relation": "cc.neuron_version",
+    "schema": "cc",
+    "name": "neuron_version",
+    "group": "Connectome",
+    "purpose": "Existence of a neuron over a range of releases (bitemporal).",
+    "attributes": [
+     "neuron_version_id",
+     "dataset_neuron_id",
+     "valid_rel",
+     "tx",
+     "provenance_id",
+     "source_line"
+    ],
+    "fds": [
+     "neuron_version_id \u2192 dataset_neuron_id, provenance_id, source_line, tx, valid_rel"
+    ],
+    "minimal_cover": [
+     "neuron_version_id \u2192 dataset_neuron_id, provenance_id, source_line, tx, valid_rel"
+    ],
+    "candidate_keys": [
+     [
+      "neuron_version_id"
+     ]
+    ],
+    "prime": [
+     "neuron_version_id"
+    ],
+    "non_prime": [
+     "dataset_neuron_id",
+     "valid_rel",
+     "tx",
+     "provenance_id",
+     "source_line"
+    ],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {
+      "valid_rel": "one interval of its range type, compared and indexed as a single value",
+      "tx": "one interval of its range type, compared and indexed as a single value"
+     }
+    },
+    "temporal": {
+     "key": "dataset_neuron_id at each point of (valid_rel, tx)",
+     "enforced_by": "neuron_version_dataset_neuron_id_valid_rel_tx_excl"
+    },
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "cc.annotation",
+    "schema": "cc",
+    "name": "annotation",
+    "group": "Connectome",
+    "purpose": "One attribute value (cell type, side, ...) of a neuron over a range of releases.",
+    "attributes": [
+     "annotation_id",
+     "dataset_neuron_id",
+     "annotation_key",
+     "annotation_value",
+     "valid_rel",
+     "tx",
+     "provenance_id",
+     "source_line"
+    ],
+    "fds": [
+     "annotation_id \u2192 annotation_key, annotation_value, dataset_neuron_id, provenance_id, source_line, tx, valid_rel"
+    ],
+    "minimal_cover": [
+     "annotation_id \u2192 annotation_key, annotation_value, dataset_neuron_id, provenance_id, source_line, tx, valid_rel"
+    ],
+    "candidate_keys": [
+     [
+      "annotation_id"
+     ]
+    ],
+    "prime": [
+     "annotation_id"
+    ],
+    "non_prime": [
+     "dataset_neuron_id",
+     "annotation_key",
+     "annotation_value",
+     "valid_rel",
+     "tx",
+     "provenance_id",
+     "source_line"
+    ],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {
+      "valid_rel": "one interval of its range type, compared and indexed as a single value",
+      "tx": "one interval of its range type, compared and indexed as a single value"
+     }
+    },
+    "temporal": {
+     "key": "(dataset_neuron_id, annotation_key) at each point of (valid_rel, tx) \u2192 annotation_value",
+     "enforced_by": "annotation_dataset_neuron_id_annotation_key_valid_rel_tx_excl"
+    },
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "cc.connection",
+    "schema": "cc",
+    "name": "connection",
+    "group": "Connectome",
+    "purpose": "Synapse count between two neurons over a range of releases (bitemporal).",
+    "attributes": [
+     "connection_id",
+     "dataset_id",
+     "pre_neuron_id",
+     "post_neuron_id",
+     "synapse_count",
+     "valid_rel",
+     "tx",
+     "provenance_id",
+     "source_lines"
+    ],
+    "fds": [
+     "connection_id \u2192 dataset_id, post_neuron_id, pre_neuron_id, provenance_id, source_lines, synapse_count, tx, valid_rel",
+     "pre_neuron_id \u2192 dataset_id",
+     "post_neuron_id \u2192 dataset_id"
+    ],
+    "minimal_cover": [
+     "connection_id \u2192 post_neuron_id, pre_neuron_id, provenance_id, source_lines, synapse_count, tx, valid_rel",
+     "post_neuron_id \u2192 dataset_id",
+     "pre_neuron_id \u2192 dataset_id"
+    ],
+    "candidate_keys": [
+     [
+      "connection_id"
+     ]
+    ],
+    "prime": [
+     "connection_id"
+    ],
+    "non_prime": [
+     "dataset_id",
+     "pre_neuron_id",
+     "post_neuron_id",
+     "synapse_count",
+     "valid_rel",
+     "tx",
+     "provenance_id",
+     "source_lines"
+    ],
+    "highest_form": "2NF",
+    "violations": [
+     {
+      "form": "3NF",
+      "fd": "post_neuron_id \u2192 dataset_id",
+      "reason": "transitive dependency: post_neuron_id is not a superkey and dataset_id is non-prime",
+      "documented": true
+     },
+     {
+      "form": "3NF",
+      "fd": "pre_neuron_id \u2192 dataset_id",
+      "reason": "transitive dependency: pre_neuron_id is not a superkey and dataset_id is non-prime",
+      "documented": true
+     }
+    ],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {
+      "valid_rel": "one interval of its range type, compared and indexed as a single value",
+      "tx": "one interval of its range type, compared and indexed as a single value",
+      "source_lines": "the line numbers of the source rows that were summed into this edge: one evidence value, written once and read as a whole (never searched by element)"
+     }
+    },
+    "temporal": {
+     "key": "(pre_neuron_id, post_neuron_id) at each point of (valid_rel, tx)",
+     "enforced_by": "connection_pre_neuron_id_post_neuron_id_valid_rel_tx_excl"
+    },
+    "rules": [],
+    "redundancy": [
+     {
+      "fd": "pre_neuron_id -> dataset_id",
+      "enforced_by": [
+       "connection_pre_neuron_id_dataset_id_fkey"
+      ],
+      "why": "the composite foreign keys (pre, dataset) and (post, dataset) \u2192 dataset_neuron are what makes an edge between two different connectomes impossible; the copy also serves the partial index connection_dataset_open_idx that every per-dataset scan of 9 M rows uses"
+     },
+     {
+      "fd": "post_neuron_id -> dataset_id",
+      "enforced_by": [
+       "connection_post_neuron_id_dataset_id_fkey"
+      ],
+      "why": "the composite foreign key (post_neuron_id, dataset_id) \u2192 dataset_neuron keeps the post-synaptic neuron in the edge's dataset"
+     }
+    ],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": false,
+     "BCNF": false
+    },
+    "bcnf_decomposition": {
+     "parts": [
+      {
+       "attributes": [
+        "connection_id",
+        "pre_neuron_id",
+        "post_neuron_id",
+        "synapse_count",
+        "valid_rel",
+        "tx",
+        "provenance_id",
+        "source_lines"
+       ],
+       "fds": [
+        "connection_id \u2192 post_neuron_id, pre_neuron_id, provenance_id, source_lines, synapse_count, tx, valid_rel"
+       ],
+       "keys": [
+        [
+         "connection_id"
+        ]
+       ]
+      },
+      {
+       "attributes": [
+        "dataset_id",
+        "post_neuron_id"
+       ],
+       "fds": [
+        "post_neuron_id \u2192 dataset_id"
+       ],
+       "keys": [
+        [
+         "post_neuron_id"
+        ]
+       ]
+      }
+     ],
+     "lossless": true,
+     "not_preserved": [
+      "pre_neuron_id \u2192 dataset_id"
+     ]
+    }
+   },
+   {
+    "relation": "cc.neuron_region_synapses",
+    "schema": "cc",
+    "name": "neuron_region_synapses",
+    "group": "Connectome",
+    "purpose": "Per release, how many synapses a neuron has in each brain region.",
+    "attributes": [
+     "release_id",
+     "dataset_id",
+     "dataset_neuron_id",
+     "brain_region_id",
+     "pre_synapses",
+     "post_synapses",
+     "provenance_id"
+    ],
+    "fds": [
+     "brain_region_id, dataset_neuron_id, release_id \u2192 dataset_id, post_synapses, pre_synapses, provenance_id",
+     "release_id \u2192 dataset_id",
+     "dataset_neuron_id \u2192 dataset_id"
+    ],
+    "minimal_cover": [
+     "dataset_neuron_id \u2192 dataset_id",
+     "release_id \u2192 dataset_id",
+     "brain_region_id, dataset_neuron_id, release_id \u2192 post_synapses, pre_synapses, provenance_id"
+    ],
+    "candidate_keys": [
+     [
+      "brain_region_id",
+      "dataset_neuron_id",
+      "release_id"
+     ]
+    ],
+    "prime": [
+     "brain_region_id",
+     "dataset_neuron_id",
+     "release_id"
+    ],
+    "non_prime": [
+     "dataset_id",
+     "pre_synapses",
+     "post_synapses",
+     "provenance_id"
+    ],
+    "highest_form": "1NF",
+    "violations": [
+     {
+      "form": "2NF",
+      "fd": "dataset_neuron_id \u2192 dataset_id",
+      "reason": "partial dependency: dataset_id depend(s) on dataset_neuron_id, a proper part of the key (brain_region_id, dataset_neuron_id, release_id)",
+      "documented": true
+     },
+     {
+      "form": "2NF",
+      "fd": "release_id \u2192 dataset_id",
+      "reason": "partial dependency: dataset_id depend(s) on release_id, a proper part of the key (brain_region_id, dataset_neuron_id, release_id)",
+      "documented": true
+     }
+    ],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {}
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [
+     {
+      "fd": "release_id -> dataset_id",
+      "enforced_by": [
+       "neuron_region_synapses_release_id_dataset_id_fkey"
+      ],
+      "why": "the two composite foreign keys force the release and the neuron into the same dataset"
+     },
+     {
+      "fd": "dataset_neuron_id -> dataset_id",
+      "enforced_by": [
+       "neuron_region_synapses_dataset_neuron_id_dataset_id_fkey"
+      ],
+      "why": "the composite foreign key (dataset_neuron_id, dataset_id) \u2192 dataset_neuron keeps the neuron in the release's dataset"
+     }
+    ],
+    "satisfies": {
+     "1NF": true,
+     "2NF": false,
+     "3NF": false,
+     "BCNF": false
+    },
+    "bcnf_decomposition": {
+     "parts": [
+      {
+       "attributes": [
+        "release_id",
+        "dataset_neuron_id",
+        "brain_region_id",
+        "pre_synapses",
+        "post_synapses",
+        "provenance_id"
+       ],
+       "fds": [
+        "brain_region_id, dataset_neuron_id, release_id \u2192 post_synapses, pre_synapses, provenance_id"
+       ],
+       "keys": [
+        [
+         "brain_region_id",
+         "dataset_neuron_id",
+         "release_id"
+        ]
+       ]
+      },
+      {
+       "attributes": [
+        "dataset_id",
+        "dataset_neuron_id"
+       ],
+       "fds": [
+        "dataset_neuron_id \u2192 dataset_id"
+       ],
+       "keys": [
+        [
+         "dataset_neuron_id"
+        ]
+       ]
+      }
+     ],
+     "lossless": true,
+     "not_preserved": [
+      "release_id \u2192 dataset_id"
+     ]
+    }
+   },
+   {
+    "relation": "cc.canonical_neuron",
+    "schema": "cc",
+    "name": "canonical_neuron",
+    "group": "Identity",
+    "purpose": "A neuron identity across datasets.",
+    "attributes": [
+     "canonical_neuron_id",
+     "status",
+     "neuron_type_id",
+     "label",
+     "created_at"
+    ],
+    "fds": [
+     "canonical_neuron_id \u2192 created_at, label, neuron_type_id, status"
+    ],
+    "minimal_cover": [
+     "canonical_neuron_id \u2192 created_at, label, neuron_type_id, status"
+    ],
+    "candidate_keys": [
+     [
+      "canonical_neuron_id"
+     ]
+    ],
+    "prime": [
+     "canonical_neuron_id"
+    ],
+    "non_prime": [
+     "status",
+     "neuron_type_id",
+     "label",
+     "created_at"
+    ],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {}
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "cc.neuron_mapping",
+    "schema": "cc",
+    "name": "neuron_mapping",
+    "group": "Identity",
+    "purpose": "A proposed or reviewed link from a dataset neuron to a canonical neuron.",
+    "attributes": [
+     "mapping_id",
+     "dataset_neuron_id",
+     "canonical_neuron_id",
+     "method",
+     "confidence",
+     "review_status",
+     "evidence",
+     "evidence_doc_id",
+     "model_version",
+     "provenance_id",
+     "mapped_at",
+     "reviewed_at",
+     "reviewed_by",
+     "score_details"
+    ],
+    "fds": [
+     "mapping_id \u2192 canonical_neuron_id, confidence, dataset_neuron_id, evidence, evidence_doc_id, mapped_at, method, model_version, provenance_id, review_status, reviewed_at, reviewed_by, score_details"
+    ],
+    "minimal_cover": [
+     "mapping_id \u2192 canonical_neuron_id, confidence, dataset_neuron_id, evidence, evidence_doc_id, mapped_at, method, model_version, provenance_id, review_status, reviewed_at, reviewed_by, score_details"
+    ],
+    "candidate_keys": [
+     [
+      "mapping_id"
+     ]
+    ],
+    "prime": [
+     "mapping_id"
+    ],
+    "non_prime": [
+     "dataset_neuron_id",
+     "canonical_neuron_id",
+     "method",
+     "confidence",
+     "review_status",
+     "evidence",
+     "evidence_doc_id",
+     "model_version",
+     "provenance_id",
+     "mapped_at",
+     "reviewed_at",
+     "reviewed_by",
+     "score_details"
+    ],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {
+      "evidence": "the matcher's evidence for one proposal, read as a whole by the reviewer",
+      "score_details": "an opaque document (run parameters / statistics) stored and read as a whole; no relational rule depends on a key inside it"
+     }
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "cc.diff_run",
+    "schema": "cc",
+    "name": "diff_run",
+    "group": "ConnectomeDiff",
+    "purpose": "One comparison of two release states at a transaction time.",
+    "attributes": [
+     "diff_run_id",
+     "mode",
+     "dataset_a",
+     "release_a",
+     "dataset_b",
+     "release_b",
+     "as_of",
+     "parameters",
+     "status",
+     "started_at",
+     "finished_at",
+     "stats"
+    ],
+    "fds": [
+     "diff_run_id \u2192 as_of, dataset_a, dataset_b, finished_at, mode, parameters, release_a, release_b, started_at, stats, status",
+     "release_a \u2192 dataset_a",
+     "release_b \u2192 dataset_b"
+    ],
+    "minimal_cover": [
+     "diff_run_id \u2192 as_of, finished_at, mode, parameters, release_a, release_b, started_at, stats, status",
+     "release_a \u2192 dataset_a",
+     "release_b \u2192 dataset_b"
+    ],
+    "candidate_keys": [
+     [
+      "diff_run_id"
+     ]
+    ],
+    "prime": [
+     "diff_run_id"
+    ],
+    "non_prime": [
+     "mode",
+     "dataset_a",
+     "release_a",
+     "dataset_b",
+     "release_b",
+     "as_of",
+     "parameters",
+     "status",
+     "started_at",
+     "finished_at",
+     "stats"
+    ],
+    "highest_form": "2NF",
+    "violations": [
+     {
+      "form": "3NF",
+      "fd": "release_a \u2192 dataset_a",
+      "reason": "transitive dependency: release_a is not a superkey and dataset_a is non-prime",
+      "documented": true
+     },
+     {
+      "form": "3NF",
+      "fd": "release_b \u2192 dataset_b",
+      "reason": "transitive dependency: release_b is not a superkey and dataset_b is non-prime",
+      "documented": true
+     }
+    ],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {
+      "parameters": "an opaque document (run parameters / statistics) stored and read as a whole; no relational rule depends on a key inside it",
+      "stats": "an opaque document (run parameters / statistics) stored and read as a whole; no relational rule depends on a key inside it"
+     }
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [
+     {
+      "fd": "release_a -> dataset_a",
+      "enforced_by": [
+       "diff_run_release_a_dataset_a_fkey",
+       "diff_run_check1"
+      ],
+      "why": "the CHECK constraints that keep temporal evolution (same dataset) apart from cross-dataset comparison need both dataset ids in the row; the composite key keeps them correct"
+     },
+     {
+      "fd": "release_b -> dataset_b",
+      "enforced_by": [
+       "diff_run_release_b_dataset_b_fkey"
+      ],
+      "why": "the composite foreign key (release_b, dataset_b) \u2192 release keeps the copy correct for the second release"
+     }
+    ],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": false,
+     "BCNF": false
+    },
+    "bcnf_decomposition": {
+     "parts": [
+      {
+       "attributes": [
+        "diff_run_id",
+        "mode",
+        "release_a",
+        "release_b",
+        "as_of",
+        "parameters",
+        "status",
+        "started_at",
+        "finished_at",
+        "stats"
+       ],
+       "fds": [
+        "diff_run_id \u2192 as_of, finished_at, mode, parameters, release_a, release_b, started_at, stats, status"
+       ],
+       "keys": [
+        [
+         "diff_run_id"
+        ]
+       ]
+      },
+      {
+       "attributes": [
+        "dataset_a",
+        "release_a"
+       ],
+       "fds": [
+        "release_a \u2192 dataset_a"
+       ],
+       "keys": [
+        [
+         "release_a"
+        ]
+       ]
+      },
+      {
+       "attributes": [
+        "dataset_b",
+        "release_b"
+       ],
+       "fds": [
+        "release_b \u2192 dataset_b"
+       ],
+       "keys": [
+        [
+         "release_b"
+        ]
+       ]
+      }
+     ],
+     "lossless": true,
+     "not_preserved": []
+    }
+   },
+   {
+    "relation": "cc.diff_event",
+    "schema": "cc",
+    "name": "diff_event",
+    "group": "ConnectomeDiff",
+    "purpose": "One change found by a diff run (added, removed, modified).",
+    "attributes": [
+     "diff_event_id",
+     "diff_run_id",
+     "entity_type",
+     "change_type",
+     "dataset_neuron_id",
+     "post_neuron_id",
+     "annotation_key",
+     "old_value",
+     "new_value",
+     "old_weight",
+     "new_weight",
+     "weight_delta",
+     "record_a_id",
+     "record_b_id"
+    ],
+    "fds": [
+     "diff_event_id \u2192 annotation_key, change_type, dataset_neuron_id, diff_run_id, entity_type, new_value, new_weight, old_value, old_weight, post_neuron_id, record_a_id, record_b_id, weight_delta",
+     "new_weight, old_weight \u2192 weight_delta"
+    ],
+    "minimal_cover": [
+     "diff_event_id \u2192 annotation_key, change_type, dataset_neuron_id, diff_run_id, entity_type, new_value, new_weight, old_value, old_weight, post_neuron_id, record_a_id, record_b_id",
+     "new_weight, old_weight \u2192 weight_delta"
+    ],
+    "candidate_keys": [
+     [
+      "diff_event_id"
+     ]
+    ],
+    "prime": [
+     "diff_event_id"
+    ],
+    "non_prime": [
+     "diff_run_id",
+     "entity_type",
+     "change_type",
+     "dataset_neuron_id",
+     "post_neuron_id",
+     "annotation_key",
+     "old_value",
+     "new_value",
+     "old_weight",
+     "new_weight",
+     "weight_delta",
+     "record_a_id",
+     "record_b_id"
+    ],
+    "highest_form": "2NF",
+    "violations": [
+     {
+      "form": "3NF",
+      "fd": "new_weight, old_weight \u2192 weight_delta",
+      "reason": "transitive dependency: new_weight, old_weight is not a superkey and weight_delta is non-prime",
+      "documented": true
+     }
+    ],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {}
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [
+     {
+      "fd": "old_weight, new_weight -> weight_delta",
+      "enforced_by": [
+       "GENERATED ALWAYS AS (stored)"
+      ],
+      "why": "a generated column: PostgreSQL computes it and rejects any write, so it cannot disagree; stored so that events can be ranked by change size with an index"
+     }
+    ],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": false,
+     "BCNF": false
+    },
+    "bcnf_decomposition": {
+     "parts": [
+      {
+       "attributes": [
+        "diff_event_id",
+        "diff_run_id",
+        "entity_type",
+        "change_type",
+        "dataset_neuron_id",
+        "post_neuron_id",
+        "annotation_key",
+        "old_value",
+        "new_value",
+        "old_weight",
+        "new_weight",
+        "record_a_id",
+        "record_b_id"
+       ],
+       "fds": [
+        "diff_event_id \u2192 annotation_key, change_type, dataset_neuron_id, diff_run_id, entity_type, new_value, new_weight, old_value, old_weight, post_neuron_id, record_a_id, record_b_id"
+       ],
+       "keys": [
+        [
+         "diff_event_id"
+        ]
+       ]
+      },
+      {
+       "attributes": [
+        "old_weight",
+        "new_weight",
+        "weight_delta"
+       ],
+       "fds": [
+        "new_weight, old_weight \u2192 weight_delta"
+       ],
+       "keys": [
+        [
+         "new_weight",
+         "old_weight"
+        ]
+       ]
+      }
+     ],
+     "lossless": true,
+     "not_preserved": []
+    }
+   },
+   {
+    "relation": "cc.shard",
+    "schema": "cc",
+    "name": "shard",
+    "group": "Distribution",
+    "purpose": "A PostgreSQL server holding a fragment of the connectome.",
+    "attributes": [
+     "shard_id",
+     "name",
+     "host",
+     "port"
+    ],
+    "fds": [
+     "shard_id \u2192 host, name, port",
+     "name \u2192 host, port, shard_id"
+    ],
+    "minimal_cover": [
+     "name \u2192 host, port, shard_id",
+     "shard_id \u2192 name"
+    ],
+    "candidate_keys": [
+     [
+      "name"
+     ],
+     [
+      "shard_id"
+     ]
+    ],
+    "prime": [
+     "name",
+     "shard_id"
+    ],
+    "non_prime": [
+     "host",
+     "port"
+    ],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {}
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "cc.partition_strategy",
+    "schema": "cc",
+    "name": "partition_strategy",
+    "group": "Distribution",
+    "purpose": "A way of placing neurons on shards (hash, anatomical, community).",
+    "attributes": [
+     "strategy_id",
+     "code",
+     "description",
+     "parameters",
+     "created_at"
+    ],
+    "fds": [
+     "strategy_id \u2192 code, created_at, description, parameters",
+     "code \u2192 created_at, description, parameters, strategy_id"
+    ],
+    "minimal_cover": [
+     "code \u2192 created_at, description, parameters, strategy_id",
+     "strategy_id \u2192 code"
+    ],
+    "candidate_keys": [
+     [
+      "code"
+     ],
+     [
+      "strategy_id"
+     ]
+    ],
+    "prime": [
+     "code",
+     "strategy_id"
+    ],
+    "non_prime": [
+     "description",
+     "parameters",
+     "created_at"
+    ],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {
+      "parameters": "an opaque document (run parameters / statistics) stored and read as a whole; no relational rule depends on a key inside it"
+     }
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "cc.partition_assignment",
+    "schema": "cc",
+    "name": "partition_assignment",
+    "group": "Distribution",
+    "purpose": "The shard (and group) of every neuron under every strategy.",
+    "attributes": [
+     "strategy_id",
+     "dataset_neuron_id",
+     "shard_id",
+     "assigned_at",
+     "group_key"
+    ],
+    "fds": [
+     "dataset_neuron_id, strategy_id \u2192 assigned_at, group_key, shard_id",
+     "group_key, strategy_id \u2192 shard_id"
+    ],
+    "minimal_cover": [
+     "dataset_neuron_id, strategy_id \u2192 assigned_at, group_key",
+     "group_key, strategy_id \u2192 shard_id"
+    ],
+    "candidate_keys": [
+     [
+      "dataset_neuron_id",
+      "strategy_id"
+     ]
+    ],
+    "prime": [
+     "dataset_neuron_id",
+     "strategy_id"
+    ],
+    "non_prime": [
+     "shard_id",
+     "assigned_at",
+     "group_key"
+    ],
+    "highest_form": "2NF",
+    "violations": [
+     {
+      "form": "3NF",
+      "fd": "group_key, strategy_id \u2192 shard_id",
+      "reason": "transitive dependency: group_key, strategy_id is not a superkey and shard_id is non-prime",
+      "documented": true
+     }
+    ],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {}
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [
+     {
+      "fd": "strategy_id, group_key -> shard_id",
+      "enforced_by": [
+       "partition_assignment_group_one_shard"
+      ],
+      "why": "the router looks up one neuron's shard by key; hash placement has no group, so shard_id cannot move to a group table. The exclusion constraint (strategy =, group =, shard <>) states the dependency itself"
+     }
+    ],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": false,
+     "BCNF": false
+    },
+    "bcnf_decomposition": {
+     "parts": [
+      {
+       "attributes": [
+        "strategy_id",
+        "dataset_neuron_id",
+        "assigned_at",
+        "group_key"
+       ],
+       "fds": [
+        "dataset_neuron_id, strategy_id \u2192 assigned_at, group_key"
+       ],
+       "keys": [
+        [
+         "dataset_neuron_id",
+         "strategy_id"
+        ]
+       ]
+      },
+      {
+       "attributes": [
+        "strategy_id",
+        "shard_id",
+        "group_key"
+       ],
+       "fds": [
+        "group_key, strategy_id \u2192 shard_id"
+       ],
+       "keys": [
+        [
+         "group_key",
+         "strategy_id"
+        ]
+       ]
+      }
+     ],
+     "lossless": true,
+     "not_preserved": []
+    }
+   },
+   {
+    "relation": "cc.query_execution",
+    "schema": "cc",
+    "name": "query_execution",
+    "group": "Distribution",
+    "purpose": "A routed query's measured cost.",
+    "attributes": [
+     "query_execution_id",
+     "strategy_id",
+     "query_kind",
+     "parameters",
+     "shards_touched",
+     "rows_returned",
+     "bytes_transferred",
+     "latency_ms",
+     "executed_at"
+    ],
+    "fds": [
+     "query_execution_id \u2192 bytes_transferred, executed_at, latency_ms, parameters, query_kind, rows_returned, shards_touched, strategy_id"
+    ],
+    "minimal_cover": [
+     "query_execution_id \u2192 bytes_transferred, executed_at, latency_ms, parameters, query_kind, rows_returned, shards_touched, strategy_id"
+    ],
+    "candidate_keys": [
+     [
+      "query_execution_id"
+     ]
+    ],
+    "prime": [
+     "query_execution_id"
+    ],
+    "non_prime": [
+     "strategy_id",
+     "query_kind",
+     "parameters",
+     "shards_touched",
+     "rows_returned",
+     "bytes_transferred",
+     "latency_ms",
+     "executed_at"
+    ],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {
+      "parameters": "an opaque document (run parameters / statistics) stored and read as a whole; no relational rule depends on a key inside it"
+     }
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "cc.shard_deployment",
+    "schema": "cc",
+    "name": "shard_deployment",
+    "group": "Distribution",
+    "purpose": "One shard's copy of one strategy's placement.",
+    "attributes": [
+     "deployment_id",
+     "strategy_id",
+     "shard_id",
+     "schema_name",
+     "neurons",
+     "connections",
+     "mirrors",
+     "bytes_on_shard",
+     "seconds",
+     "deployed_at",
+     "verified",
+     "batch_id"
+    ],
+    "fds": [
+     "deployment_id \u2192 batch_id, bytes_on_shard, connections, deployed_at, mirrors, neurons, schema_name, seconds, shard_id, strategy_id, verified",
+     "batch_id \u2192 strategy_id"
+    ],
+    "minimal_cover": [
+     "batch_id \u2192 strategy_id",
+     "deployment_id \u2192 batch_id, bytes_on_shard, connections, deployed_at, mirrors, neurons, schema_name, seconds, shard_id, verified"
+    ],
+    "candidate_keys": [
+     [
+      "deployment_id"
+     ]
+    ],
+    "prime": [
+     "deployment_id"
+    ],
+    "non_prime": [
+     "strategy_id",
+     "shard_id",
+     "schema_name",
+     "neurons",
+     "connections",
+     "mirrors",
+     "bytes_on_shard",
+     "seconds",
+     "deployed_at",
+     "verified",
+     "batch_id"
+    ],
+    "highest_form": "2NF",
+    "violations": [
+     {
+      "form": "3NF",
+      "fd": "batch_id \u2192 strategy_id",
+      "reason": "transitive dependency: batch_id is not a superkey and strategy_id is non-prime",
+      "documented": true
+     }
+    ],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {}
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [
+     {
+      "fd": "batch_id -> strategy_id",
+      "enforced_by": [
+       "shard_deployment_batch_strategy_fkey"
+      ],
+      "why": "rows from before deployment batches existed have no batch (batch_id NULL) and still need their strategy; the composite key keeps newer rows consistent with their batch"
+     }
+    ],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": false,
+     "BCNF": false
+    },
+    "bcnf_decomposition": {
+     "parts": [
+      {
+       "attributes": [
+        "deployment_id",
+        "shard_id",
+        "schema_name",
+        "neurons",
+        "connections",
+        "mirrors",
+        "bytes_on_shard",
+        "seconds",
+        "deployed_at",
+        "verified",
+        "batch_id"
+       ],
+       "fds": [
+        "deployment_id \u2192 batch_id, bytes_on_shard, connections, deployed_at, mirrors, neurons, schema_name, seconds, shard_id, verified"
+       ],
+       "keys": [
+        [
+         "deployment_id"
+        ]
+       ]
+      },
+      {
+       "attributes": [
+        "strategy_id",
+        "batch_id"
+       ],
+       "fds": [
+        "batch_id \u2192 strategy_id"
+       ],
+       "keys": [
+        [
+         "batch_id"
+        ]
+       ]
+      }
+     ],
+     "lossless": true,
+     "not_preserved": []
+    }
+   },
+   {
+    "relation": "cc.deployment_batch",
+    "schema": "cc",
+    "name": "deployment_batch",
+    "group": "Distribution",
+    "purpose": "One generation of shard copies for a strategy.",
+    "attributes": [
+     "batch_id",
+     "strategy_id",
+     "source_revision",
+     "placement_revision",
+     "status",
+     "details",
+     "created_at"
+    ],
+    "fds": [
+     "batch_id \u2192 created_at, details, placement_revision, source_revision, status, strategy_id"
+    ],
+    "minimal_cover": [
+     "batch_id \u2192 created_at, details, placement_revision, source_revision, status, strategy_id"
+    ],
+    "candidate_keys": [
+     [
+      "batch_id"
+     ]
+    ],
+    "prime": [
+     "batch_id"
+    ],
+    "non_prime": [
+     "strategy_id",
+     "source_revision",
+     "placement_revision",
+     "status",
+     "details",
+     "created_at"
+    ],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {
+      "details": "an opaque document (run parameters / statistics) stored and read as a whole; no relational rule depends on a key inside it"
+     }
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "cc.active_deployment",
+    "schema": "cc",
+    "name": "active_deployment",
+    "group": "Distribution",
+    "purpose": "The batch the router currently reads, per strategy.",
+    "attributes": [
+     "strategy_id",
+     "batch_id"
+    ],
+    "fds": [
+     "strategy_id \u2192 batch_id",
+     "batch_id \u2192 strategy_id"
+    ],
+    "minimal_cover": [
+     "batch_id \u2192 strategy_id",
+     "strategy_id \u2192 batch_id"
+    ],
+    "candidate_keys": [
+     [
+      "batch_id"
+     ],
+     [
+      "strategy_id"
+     ]
+    ],
+    "prime": [
+     "batch_id",
+     "strategy_id"
+    ],
+    "non_prime": [],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {}
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "cc.ml_model_run",
+    "schema": "cc",
+    "name": "ml_model_run",
+    "group": "Analysis",
+    "purpose": "One trained change-scoring model.",
+    "attributes": [
+     "model_run_id",
+     "model_kind",
+     "model_version",
+     "parameters",
+     "feature_schema",
+     "random_seed",
+     "artifact_path",
+     "artifact_sha256",
+     "created_at",
+     "metrics"
+    ],
+    "fds": [
+     "model_run_id \u2192 artifact_path, artifact_sha256, created_at, feature_schema, metrics, model_kind, model_version, parameters, random_seed",
+     "model_kind, model_version \u2192 artifact_path, artifact_sha256, created_at, feature_schema, metrics, model_run_id, parameters, random_seed"
+    ],
+    "minimal_cover": [
+     "model_run_id \u2192 model_kind, model_version",
+     "model_kind, model_version \u2192 artifact_path, artifact_sha256, created_at, feature_schema, metrics, model_run_id, parameters, random_seed"
+    ],
+    "candidate_keys": [
+     [
+      "model_run_id"
+     ],
+     [
+      "model_kind",
+      "model_version"
+     ]
+    ],
+    "prime": [
+     "model_kind",
+     "model_run_id",
+     "model_version"
+    ],
+    "non_prime": [
+     "parameters",
+     "feature_schema",
+     "random_seed",
+     "artifact_path",
+     "artifact_sha256",
+     "created_at",
+     "metrics"
+    ],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {
+      "parameters": "an opaque document (run parameters / statistics) stored and read as a whole; no relational rule depends on a key inside it",
+      "feature_schema": "an opaque document (run parameters / statistics) stored and read as a whole; no relational rule depends on a key inside it",
+      "metrics": "an opaque document (run parameters / statistics) stored and read as a whole; no relational rule depends on a key inside it"
+     }
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "cc.ml_model_input",
+    "schema": "cc",
+    "name": "ml_model_input",
+    "group": "Analysis",
+    "purpose": "The diff runs a model was trained on (was the array ml_model_run.diff_run_ids, 0013).",
+    "attributes": [
+     "model_run_id",
+     "diff_run_id"
+    ],
+    "fds": [],
+    "minimal_cover": [],
+    "candidate_keys": [
+     [
+      "diff_run_id",
+      "model_run_id"
+     ]
+    ],
+    "prime": [
+     "diff_run_id",
+     "model_run_id"
+    ],
+    "non_prime": [],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {}
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "cc.anomaly_result",
+    "schema": "cc",
+    "name": "anomaly_result",
+    "group": "Analysis",
+    "purpose": "A model's score for one diff event.",
+    "attributes": [
+     "model_run_id",
+     "diff_event_id",
+     "score",
+     "is_flagged",
+     "score_rank",
+     "features",
+     "explanation",
+     "baseline_flagged"
+    ],
+    "fds": [
+     "diff_event_id, model_run_id \u2192 baseline_flagged, explanation, features, is_flagged, score, score_rank"
+    ],
+    "minimal_cover": [
+     "diff_event_id, model_run_id \u2192 baseline_flagged, explanation, features, is_flagged, score, score_rank"
+    ],
+    "candidate_keys": [
+     [
+      "diff_event_id",
+      "model_run_id"
+     ]
+    ],
+    "prime": [
+     "diff_event_id",
+     "model_run_id"
+    ],
+    "non_prime": [
+     "score",
+     "is_flagged",
+     "score_rank",
+     "features",
+     "explanation",
+     "baseline_flagged"
+    ],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {
+      "features": "the feature vector of one scored event"
+     }
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "cc.metadata_sync",
+    "schema": "cc",
+    "name": "metadata_sync",
+    "group": "Document store",
+    "purpose": "One synchronisation of a release's source records into MongoDB.",
+    "attributes": [
+     "metadata_sync_id",
+     "release_id",
+     "mongo_database",
+     "mongo_collection",
+     "pipeline_version",
+     "status",
+     "started_at",
+     "finished_at",
+     "documents_written",
+     "records_written",
+     "stats",
+     "error_message"
+    ],
+    "fds": [
+     "metadata_sync_id \u2192 documents_written, error_message, finished_at, mongo_collection, mongo_database, pipeline_version, records_written, release_id, started_at, stats, status"
+    ],
+    "minimal_cover": [
+     "metadata_sync_id \u2192 documents_written, error_message, finished_at, mongo_collection, mongo_database, pipeline_version, records_written, release_id, started_at, stats, status"
+    ],
+    "candidate_keys": [
+     [
+      "metadata_sync_id"
+     ]
+    ],
+    "prime": [
+     "metadata_sync_id"
+    ],
+    "non_prime": [
+     "release_id",
+     "mongo_database",
+     "mongo_collection",
+     "pipeline_version",
+     "status",
+     "started_at",
+     "finished_at",
+     "documents_written",
+     "records_written",
+     "stats",
+     "error_message"
+    ],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {
+      "stats": "an opaque document (run parameters / statistics) stored and read as a whole; no relational rule depends on a key inside it"
+     }
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "cc.metadata_record_digest",
+    "schema": "cc",
+    "name": "metadata_record_digest",
+    "group": "Document store",
+    "purpose": "Expected count and checksum of a neuron's source records per release.",
+    "attributes": [
+     "dataset_neuron_id",
+     "release_id",
+     "record_count",
+     "sha256"
+    ],
+    "fds": [
+     "dataset_neuron_id, release_id \u2192 record_count, sha256"
+    ],
+    "minimal_cover": [
+     "dataset_neuron_id, release_id \u2192 record_count, sha256"
+    ],
+    "candidate_keys": [
+     [
+      "dataset_neuron_id",
+      "release_id"
+     ]
+    ],
+    "prime": [
+     "dataset_neuron_id",
+     "release_id"
+    ],
+    "non_prime": [
+     "record_count",
+     "sha256"
+    ],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {}
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "cc.workspace_job",
+    "schema": "cc",
+    "name": "workspace_job",
+    "group": "Workspace",
+    "purpose": "A background job (diff, scoring, matching, deployment).",
+    "attributes": [
+     "job_id",
+     "kind",
+     "status",
+     "request",
+     "result",
+     "progress",
+     "message",
+     "created_at",
+     "updated_at"
+    ],
+    "fds": [
+     "job_id \u2192 created_at, kind, message, progress, request, result, status, updated_at"
+    ],
+    "minimal_cover": [
+     "job_id \u2192 created_at, kind, message, progress, request, result, status, updated_at"
+    ],
+    "candidate_keys": [
+     [
+      "job_id"
+     ]
+    ],
+    "prime": [
+     "job_id"
+    ],
+    "non_prime": [
+     "kind",
+     "status",
+     "request",
+     "result",
+     "progress",
+     "message",
+     "created_at",
+     "updated_at"
+    ],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {
+      "request": "the job's request body, replayed as a whole",
+      "result": "the job's result body"
+     }
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "lab.dataset",
+    "schema": "lab",
+    "name": "dataset",
+    "group": "Lab",
+    "purpose": "Editable copy of cc.dataset (key columns).",
+    "attributes": [
+     "dataset_id",
+     "code",
+     "name",
+     "organism"
+    ],
+    "fds": [
+     "dataset_id \u2192 code, name, organism",
+     "code \u2192 dataset_id, name, organism"
+    ],
+    "minimal_cover": [
+     "code \u2192 dataset_id, name, organism",
+     "dataset_id \u2192 code"
+    ],
+    "candidate_keys": [
+     [
+      "code"
+     ],
+     [
+      "dataset_id"
+     ]
+    ],
+    "prime": [
+     "code",
+     "dataset_id"
+    ],
+    "non_prime": [
+     "name",
+     "organism"
+    ],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {}
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "lab.release",
+    "schema": "lab",
+    "name": "release",
+    "group": "Lab",
+    "purpose": "Editable copy of the loaded releases.",
+    "attributes": [
+     "release_id",
+     "dataset_id",
+     "version_label",
+     "release_order"
+    ],
+    "fds": [
+     "release_id \u2192 dataset_id, release_order, version_label",
+     "dataset_id, version_label \u2192 release_id, release_order",
+     "dataset_id, release_order \u2192 release_id, version_label"
+    ],
+    "minimal_cover": [
+     "release_id \u2192 dataset_id, version_label",
+     "dataset_id, release_order \u2192 release_id",
+     "dataset_id, version_label \u2192 release_order"
+    ],
+    "candidate_keys": [
+     [
+      "release_id"
+     ],
+     [
+      "dataset_id",
+      "release_order"
+     ],
+     [
+      "dataset_id",
+      "version_label"
+     ]
+    ],
+    "prime": [
+     "dataset_id",
+     "release_id",
+     "release_order",
+     "version_label"
+    ],
+    "non_prime": [],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {}
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "lab.neuron",
+    "schema": "lab",
+    "name": "neuron",
+    "group": "Lab",
+    "purpose": "Editable neurons with their current cell type, side and primary region.",
+    "attributes": [
+     "neuron_id",
+     "dataset_id",
+     "source_neuron_id",
+     "cell_type",
+     "side",
+     "primary_region"
+    ],
+    "fds": [
+     "neuron_id \u2192 cell_type, dataset_id, primary_region, side, source_neuron_id",
+     "dataset_id, source_neuron_id \u2192 cell_type, neuron_id, primary_region, side"
+    ],
+    "minimal_cover": [
+     "neuron_id \u2192 dataset_id, source_neuron_id",
+     "dataset_id, source_neuron_id \u2192 cell_type, neuron_id, primary_region, side"
+    ],
+    "candidate_keys": [
+     [
+      "neuron_id"
+     ],
+     [
+      "dataset_id",
+      "source_neuron_id"
+     ]
+    ],
+    "prime": [
+     "dataset_id",
+     "neuron_id",
+     "source_neuron_id"
+    ],
+    "non_prime": [
+     "cell_type",
+     "side",
+     "primary_region"
+    ],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {}
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "lab.connection",
+    "schema": "lab",
+    "name": "connection",
+    "group": "Lab",
+    "purpose": "Synapse count of a neuron pair in one release (BCNF: no dataset_id copy).",
+    "attributes": [
+     "release_id",
+     "pre_neuron_id",
+     "post_neuron_id",
+     "synapse_count"
+    ],
+    "fds": [
+     "post_neuron_id, pre_neuron_id, release_id \u2192 synapse_count"
+    ],
+    "minimal_cover": [
+     "post_neuron_id, pre_neuron_id, release_id \u2192 synapse_count"
+    ],
+    "candidate_keys": [
+     [
+      "post_neuron_id",
+      "pre_neuron_id",
+      "release_id"
+     ]
+    ],
+    "prime": [
+     "post_neuron_id",
+     "pre_neuron_id",
+     "release_id"
+    ],
+    "non_prime": [
+     "synapse_count"
+    ],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {}
+    },
+    "temporal": null,
+    "rules": [
+     {
+      "rule": "the release and both neurons belong to one dataset",
+      "enforced_by": "connection_same_dataset (constraint trigger)"
+     }
+    ],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "lab.change_log",
+    "schema": "lab",
+    "name": "change_log",
+    "group": "Lab",
+    "purpose": "Audit trail written by trigger for every lab change.",
+    "attributes": [
+     "change_id",
+     "changed_at",
+     "changed_by",
+     "table_name",
+     "operation",
+     "old_row",
+     "new_row"
+    ],
+    "fds": [
+     "change_id \u2192 changed_at, changed_by, new_row, old_row, operation, table_name"
+    ],
+    "minimal_cover": [
+     "change_id \u2192 changed_at, changed_by, new_row, old_row, operation, table_name"
+    ],
+    "candidate_keys": [
+     [
+      "change_id"
+     ]
+    ],
+    "prime": [
+     "change_id"
+    ],
+    "non_prime": [
+     "changed_at",
+     "changed_by",
+     "table_name",
+     "operation",
+     "old_row",
+     "new_row"
+    ],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {
+      "old_row": "a snapshot of the whole row before the change",
+      "new_row": "the row after it"
+     }
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   }
+  ],
+  "summary": {
+   "relations": 39,
+   "by_highest_form": {
+    "1NF": 1,
+    "2NF": 6,
+    "3NF": 1,
+    "BCNF": 31
+   },
+   "bcnf": 31,
+   "controlled_redundancy": [
+    "cc.provenance",
+    "cc.dataset_neuron",
+    "cc.connection",
+    "cc.neuron_region_synapses",
+    "cc.diff_run",
+    "cc.diff_event",
+    "cc.partition_assignment",
+    "cc.shard_deployment"
+   ],
+   "undocumented_violations": []
+  }
+ },
+ "verification": {
+  "ok": true,
+  "coverage": {
+   "missing": [],
+   "extra": [],
+   "column_mismatch": {},
+   "live_tables": 39
+  },
+  "relations": [
+   {
+    "relation": "cc.dataset",
+    "keys": [
+     {
+      "key": [
+       "code"
+      ],
+      "enforced_by": "dataset_code_key"
+     },
+     {
+      "key": [
+       "dataset_id"
+      ],
+      "enforced_by": "dataset_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "dataset_id \u2192 code, created_at, data_formats, description, license, name, organism, organization, repository, source_url",
+      "status": "enforced",
+      "by": "dataset_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     },
+     {
+      "fd": "code \u2192 created_at, data_formats, dataset_id, description, license, name, organism, organization, repository, source_url",
+      "status": "enforced",
+      "by": "dataset_code_key",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": []
+   },
+   {
+    "relation": "cc.release",
+    "keys": [
+     {
+      "key": [
+       "release_id"
+      ],
+      "enforced_by": "release_pkey"
+     },
+     {
+      "key": [
+       "dataset_id",
+       "release_order"
+      ],
+      "enforced_by": "release_dataset_id_release_order_key"
+     },
+     {
+      "key": [
+       "dataset_id",
+       "version_label"
+      ],
+      "enforced_by": "release_dataset_id_version_label_key"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "release_id \u2192 dataset_id, description, ingestion_status, loaded_at, manifest_hash, registered_at, release_date, release_order, version_label",
+      "status": "enforced",
+      "by": "release_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     },
+     {
+      "fd": "dataset_id, version_label \u2192 description, ingestion_status, loaded_at, manifest_hash, registered_at, release_date, release_id, release_order",
+      "status": "enforced",
+      "by": "release_dataset_id_version_label_key",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     },
+     {
+      "fd": "dataset_id, release_order \u2192 description, ingestion_status, loaded_at, manifest_hash, registered_at, release_date, release_id, version_label",
+      "status": "enforced",
+      "by": "release_dataset_id_release_order_key",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": []
+   },
+   {
+    "relation": "cc.ingestion_run",
+    "keys": [
+     {
+      "key": [
+       "run_id"
+      ],
+      "enforced_by": "ingestion_run_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "run_id \u2192 error_message, finished_at, pipeline_version, release_id, started_at, stats, status",
+      "status": "enforced",
+      "by": "ingestion_run_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": []
+   },
+   {
+    "relation": "cc.source_file",
+    "keys": [
+     {
+      "key": [
+       "source_file_id"
+      ],
+      "enforced_by": "source_file_pkey"
+     },
+     {
+      "key": [
+       "archive_path",
+       "member_path",
+       "release_id"
+      ],
+      "enforced_by": "source_file_release_id_archive_path_member_path_key"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "source_file_id \u2192 archive_path, member_path, release_id, row_count, sha256, size_bytes, source_url",
+      "status": "enforced",
+      "by": "source_file_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     },
+     {
+      "fd": "archive_path, member_path, release_id \u2192 row_count, sha256, size_bytes, source_file_id, source_url",
+      "status": "enforced",
+      "by": "source_file_release_id_archive_path_member_path_key",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": []
+   },
+   {
+    "relation": "cc.provenance",
+    "keys": [
+     {
+      "key": [
+       "provenance_id"
+      ],
+      "enforced_by": "provenance_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "provenance_id \u2192 created_at, dataset_id, ingestion_run_id, parameters, release_id, source_file_id, transformation_name, transformation_version",
+      "status": "enforced",
+      "by": "provenance_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     },
+     {
+      "fd": "release_id \u2192 dataset_id",
+      "status": "holds",
+      "violating_groups": 0,
+      "ms": 9.6,
+      "sql": "SELECT count(*) FROM (SELECT 1 FROM \"cc\".\"provenance\" WHERE \"release_id\" IS NOT NULL GROUP BY \"release_id\" HAVING count(DISTINCT \"dataset_id\") > 1 OR count(*) FILTER (WHERE \"dataset_id\" IS NULL) BETWEEN 1 AND count(*) - 1) bad"
+     },
+     {
+      "fd": "source_file_id \u2192 release_id",
+      "status": "holds",
+      "violating_groups": 0,
+      "ms": 7.7,
+      "sql": "SELECT count(*) FROM (SELECT 1 FROM \"cc\".\"provenance\" WHERE \"source_file_id\" IS NOT NULL GROUP BY \"source_file_id\" HAVING count(DISTINCT \"release_id\") > 1 OR count(*) FILTER (WHERE \"release_id\" IS NULL) BETWEEN 1 AND count(*) - 1) bad"
+     },
+     {
+      "fd": "ingestion_run_id \u2192 release_id",
+      "status": "holds",
+      "violating_groups": 0,
+      "ms": 10.6,
+      "sql": "SELECT count(*) FROM (SELECT 1 FROM \"cc\".\"provenance\" WHERE \"ingestion_run_id\" IS NOT NULL GROUP BY \"ingestion_run_id\" HAVING count(DISTINCT \"release_id\") > 1 OR count(*) FILTER (WHERE \"release_id\" IS NULL) BETWEEN 1 AND count(*) - 1) bad"
+     }
+    ],
+    "protections": [
+     {
+      "fd": "release_id -> dataset_id",
+      "constraint": "provenance_release_id_dataset_id_fkey",
+      "exists": true
+     },
+     {
+      "fd": "source_file_id -> release_id",
+      "constraint": "provenance_source_file_release_fkey",
+      "exists": true
+     },
+     {
+      "fd": "ingestion_run_id -> release_id",
+      "constraint": "provenance_run_release_fkey",
+      "exists": true
+     }
+    ]
+   },
+   {
+    "relation": "cc.provenance_parent",
+    "keys": [
+     {
+      "key": [
+       "parent_id",
+       "provenance_id"
+      ],
+      "enforced_by": "provenance_parent_pkey"
+     }
+    ],
+    "dependencies": [],
+    "protections": []
+   },
+   {
+    "relation": "cc.schema_mapping",
+    "keys": [
+     {
+      "key": [
+       "schema_mapping_id"
+      ],
+      "enforced_by": "schema_mapping_pkey"
+     },
+     {
+      "key": [
+       "canonical_entity",
+       "canonical_field",
+       "dataset_id",
+       "source_field",
+       "source_file_pattern"
+      ],
+      "enforced_by": "schema_mapping_dataset_id_source_file_pattern_source_field__key"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "schema_mapping_id \u2192 canonical_entity, canonical_field, dataset_id, notes, source_field, source_file_pattern, transform",
+      "status": "enforced",
+      "by": "schema_mapping_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     },
+     {
+      "fd": "canonical_entity, canonical_field, dataset_id, source_field, source_file_pattern \u2192 notes, schema_mapping_id, transform",
+      "status": "enforced",
+      "by": "schema_mapping_dataset_id_source_file_pattern_source_field__key",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": []
+   },
+   {
+    "relation": "cc.neuropil",
+    "keys": [
+     {
+      "key": [
+       "canonical_code"
+      ],
+      "enforced_by": "neuropil_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "canonical_code \u2192 super_region",
+      "status": "enforced",
+      "by": "neuropil_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": []
+   },
+   {
+    "relation": "cc.brain_region",
+    "keys": [
+     {
+      "key": [
+       "brain_region_id"
+      ],
+      "enforced_by": "brain_region_pkey"
+     },
+     {
+      "key": [
+       "canonical_code",
+       "hemisphere"
+      ],
+      "enforced_by": "brain_region_canonical_code_hemisphere_key"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "brain_region_id \u2192 canonical_code, hemisphere, name",
+      "status": "enforced",
+      "by": "brain_region_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     },
+     {
+      "fd": "canonical_code, hemisphere \u2192 brain_region_id, name",
+      "status": "enforced",
+      "by": "brain_region_canonical_code_hemisphere_key",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": []
+   },
+   {
+    "relation": "cc.brain_region_alias",
+    "keys": [
+     {
+      "key": [
+       "dataset_id",
+       "source_code"
+      ],
+      "enforced_by": "brain_region_alias_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "dataset_id, source_code \u2192 brain_region_id",
+      "status": "enforced",
+      "by": "brain_region_alias_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": []
+   },
+   {
+    "relation": "cc.neuron_type",
+    "keys": [
+     {
+      "key": [
+       "name"
+      ],
+      "enforced_by": "neuron_type_name_key"
+     },
+     {
+      "key": [
+       "neuron_type_id"
+      ],
+      "enforced_by": "neuron_type_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "neuron_type_id \u2192 name",
+      "status": "enforced",
+      "by": "neuron_type_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     },
+     {
+      "fd": "name \u2192 neuron_type_id",
+      "status": "enforced",
+      "by": "neuron_type_name_key",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": []
+   },
+   {
+    "relation": "cc.type_alias",
+    "keys": [
+     {
+      "key": [
+       "dataset_id",
+       "neuron_type_id",
+       "source_type"
+      ],
+      "enforced_by": "type_alias_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "dataset_id, neuron_type_id, source_type \u2192 method, provenance_id",
+      "status": "enforced",
+      "by": "type_alias_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": []
+   },
+   {
+    "relation": "cc.dataset_neuron",
+    "keys": [
+     {
+      "key": [
+       "dataset_neuron_id"
+      ],
+      "enforced_by": "dataset_neuron_pkey"
+     },
+     {
+      "key": [
+       "metadata_doc_id"
+      ],
+      "enforced_by": "dataset_neuron_metadata_doc_id_key"
+     },
+     {
+      "key": [
+       "dataset_id",
+       "source_neuron_id"
+      ],
+      "enforced_by": "dataset_neuron_dataset_id_source_neuron_id_key"
+     },
+     {
+      "key": [
+       "first_release_id",
+       "source_neuron_id"
+      ],
+      "enforced_by": "implied by dataset_neuron_dataset_id_source_neuron_id_key"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "dataset_neuron_id \u2192 dataset_id, first_release_id, metadata_doc_id, provenance_id, source_line, source_neuron_id",
+      "status": "enforced",
+      "by": "dataset_neuron_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     },
+     {
+      "fd": "dataset_id, source_neuron_id \u2192 dataset_neuron_id, first_release_id, metadata_doc_id, provenance_id, source_line",
+      "status": "enforced",
+      "by": "dataset_neuron_dataset_id_source_neuron_id_key",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     },
+     {
+      "fd": "metadata_doc_id \u2192 dataset_id, dataset_neuron_id, first_release_id, provenance_id, source_line, source_neuron_id",
+      "status": "enforced",
+      "by": "dataset_neuron_metadata_doc_id_key",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     },
+     {
+      "fd": "first_release_id \u2192 dataset_id",
+      "status": "holds",
+      "violating_groups": 0,
+      "ms": 169.6,
+      "sql": "SELECT count(*) FROM (SELECT 1 FROM \"cc\".\"dataset_neuron\" WHERE \"first_release_id\" IS NOT NULL GROUP BY \"first_release_id\" HAVING count(DISTINCT \"dataset_id\") > 1 OR count(*) FILTER (WHERE \"dataset_id\" IS NULL) BETWEEN 1 AND count(*) - 1) bad"
+     }
+    ],
+    "protections": [
+     {
+      "fd": "first_release_id -> dataset_id",
+      "constraint": "dataset_neuron_first_release_id_dataset_id_fkey",
+      "exists": true
+     }
+    ]
+   },
+   {
+    "relation": "cc.neuron_version",
+    "keys": [
+     {
+      "key": [
+       "neuron_version_id"
+      ],
+      "enforced_by": "neuron_version_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "neuron_version_id \u2192 dataset_neuron_id, provenance_id, source_line, tx, valid_rel",
+      "status": "enforced",
+      "by": "neuron_version_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": [
+     {
+      "fd": "dataset_neuron_id at each point of (valid_rel, tx)",
+      "constraint": "neuron_version_dataset_neuron_id_valid_rel_tx_excl",
+      "exists": true
+     }
+    ]
+   },
+   {
+    "relation": "cc.annotation",
+    "keys": [
+     {
+      "key": [
+       "annotation_id"
+      ],
+      "enforced_by": "annotation_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "annotation_id \u2192 annotation_key, annotation_value, dataset_neuron_id, provenance_id, source_line, tx, valid_rel",
+      "status": "enforced",
+      "by": "annotation_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": [
+     {
+      "fd": "(dataset_neuron_id, annotation_key) at each point of (valid_rel, tx) \u2192 annotation_value",
+      "constraint": "annotation_dataset_neuron_id_annotation_key_valid_rel_tx_excl",
+      "exists": true
+     }
+    ]
+   },
+   {
+    "relation": "cc.connection",
+    "keys": [
+     {
+      "key": [
+       "connection_id"
+      ],
+      "enforced_by": "connection_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "connection_id \u2192 dataset_id, post_neuron_id, pre_neuron_id, provenance_id, source_lines, synapse_count, tx, valid_rel",
+      "status": "enforced",
+      "by": "connection_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     },
+     {
+      "fd": "pre_neuron_id \u2192 dataset_id",
+      "status": "holds",
+      "violating_groups": 0,
+      "ms": 3016.4,
+      "sql": "SELECT count(*) FROM (SELECT 1 FROM \"cc\".\"connection\" WHERE \"pre_neuron_id\" IS NOT NULL GROUP BY \"pre_neuron_id\" HAVING count(DISTINCT \"dataset_id\") > 1 OR count(*) FILTER (WHERE \"dataset_id\" IS NULL) BETWEEN 1 AND count(*) - 1) bad"
+     },
+     {
+      "fd": "post_neuron_id \u2192 dataset_id",
+      "status": "holds",
+      "violating_groups": 0,
+      "ms": 18233.3,
+      "sql": "SELECT count(*) FROM (SELECT 1 FROM \"cc\".\"connection\" WHERE \"post_neuron_id\" IS NOT NULL GROUP BY \"post_neuron_id\" HAVING count(DISTINCT \"dataset_id\") > 1 OR count(*) FILTER (WHERE \"dataset_id\" IS NULL) BETWEEN 1 AND count(*) - 1) bad"
+     }
+    ],
+    "protections": [
+     {
+      "fd": "pre_neuron_id -> dataset_id",
+      "constraint": "connection_pre_neuron_id_dataset_id_fkey",
+      "exists": true
+     },
+     {
+      "fd": "post_neuron_id -> dataset_id",
+      "constraint": "connection_post_neuron_id_dataset_id_fkey",
+      "exists": true
+     },
+     {
+      "fd": "(pre_neuron_id, post_neuron_id) at each point of (valid_rel, tx)",
+      "constraint": "connection_pre_neuron_id_post_neuron_id_valid_rel_tx_excl",
+      "exists": true
+     }
+    ]
+   },
+   {
+    "relation": "cc.neuron_region_synapses",
+    "keys": [
+     {
+      "key": [
+       "brain_region_id",
+       "dataset_neuron_id",
+       "release_id"
+      ],
+      "enforced_by": "neuron_region_synapses_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "brain_region_id, dataset_neuron_id, release_id \u2192 dataset_id, post_synapses, pre_synapses, provenance_id",
+      "status": "enforced",
+      "by": "neuron_region_synapses_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     },
+     {
+      "fd": "release_id \u2192 dataset_id",
+      "status": "holds",
+      "violating_groups": 0,
+      "ms": 322.8,
+      "sql": "SELECT count(*) FROM (SELECT 1 FROM \"cc\".\"neuron_region_synapses\" WHERE \"release_id\" IS NOT NULL GROUP BY \"release_id\" HAVING count(DISTINCT \"dataset_id\") > 1 OR count(*) FILTER (WHERE \"dataset_id\" IS NULL) BETWEEN 1 AND count(*) - 1) bad"
+     },
+     {
+      "fd": "dataset_neuron_id \u2192 dataset_id",
+      "status": "holds",
+      "violating_groups": 0,
+      "ms": 888.2,
+      "sql": "SELECT count(*) FROM (SELECT 1 FROM \"cc\".\"neuron_region_synapses\" WHERE \"dataset_neuron_id\" IS NOT NULL GROUP BY \"dataset_neuron_id\" HAVING count(DISTINCT \"dataset_id\") > 1 OR count(*) FILTER (WHERE \"dataset_id\" IS NULL) BETWEEN 1 AND count(*) - 1) bad"
+     }
+    ],
+    "protections": [
+     {
+      "fd": "release_id -> dataset_id",
+      "constraint": "neuron_region_synapses_release_id_dataset_id_fkey",
+      "exists": true
+     },
+     {
+      "fd": "dataset_neuron_id -> dataset_id",
+      "constraint": "neuron_region_synapses_dataset_neuron_id_dataset_id_fkey",
+      "exists": true
+     }
+    ]
+   },
+   {
+    "relation": "cc.canonical_neuron",
+    "keys": [
+     {
+      "key": [
+       "canonical_neuron_id"
+      ],
+      "enforced_by": "canonical_neuron_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "canonical_neuron_id \u2192 created_at, label, neuron_type_id, status",
+      "status": "enforced",
+      "by": "canonical_neuron_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": []
+   },
+   {
+    "relation": "cc.neuron_mapping",
+    "keys": [
+     {
+      "key": [
+       "mapping_id"
+      ],
+      "enforced_by": "neuron_mapping_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "mapping_id \u2192 canonical_neuron_id, confidence, dataset_neuron_id, evidence, evidence_doc_id, mapped_at, method, model_version, provenance_id, review_status, reviewed_at, reviewed_by, score_details",
+      "status": "enforced",
+      "by": "neuron_mapping_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": []
+   },
+   {
+    "relation": "cc.diff_run",
+    "keys": [
+     {
+      "key": [
+       "diff_run_id"
+      ],
+      "enforced_by": "diff_run_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "diff_run_id \u2192 as_of, dataset_a, dataset_b, finished_at, mode, parameters, release_a, release_b, started_at, stats, status",
+      "status": "enforced",
+      "by": "diff_run_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     },
+     {
+      "fd": "release_a \u2192 dataset_a",
+      "status": "holds",
+      "violating_groups": 0,
+      "ms": 10.4,
+      "sql": "SELECT count(*) FROM (SELECT 1 FROM \"cc\".\"diff_run\" WHERE \"release_a\" IS NOT NULL GROUP BY \"release_a\" HAVING count(DISTINCT \"dataset_a\") > 1 OR count(*) FILTER (WHERE \"dataset_a\" IS NULL) BETWEEN 1 AND count(*) - 1) bad"
+     },
+     {
+      "fd": "release_b \u2192 dataset_b",
+      "status": "holds",
+      "violating_groups": 0,
+      "ms": 9.7,
+      "sql": "SELECT count(*) FROM (SELECT 1 FROM \"cc\".\"diff_run\" WHERE \"release_b\" IS NOT NULL GROUP BY \"release_b\" HAVING count(DISTINCT \"dataset_b\") > 1 OR count(*) FILTER (WHERE \"dataset_b\" IS NULL) BETWEEN 1 AND count(*) - 1) bad"
+     }
+    ],
+    "protections": [
+     {
+      "fd": "release_a -> dataset_a",
+      "constraint": "diff_run_release_a_dataset_a_fkey",
+      "exists": true
+     },
+     {
+      "fd": "release_a -> dataset_a",
+      "constraint": "diff_run_check1",
+      "exists": true
+     },
+     {
+      "fd": "release_b -> dataset_b",
+      "constraint": "diff_run_release_b_dataset_b_fkey",
+      "exists": true
+     }
+    ]
+   },
+   {
+    "relation": "cc.diff_event",
+    "keys": [
+     {
+      "key": [
+       "diff_event_id"
+      ],
+      "enforced_by": "diff_event_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "diff_event_id \u2192 annotation_key, change_type, dataset_neuron_id, diff_run_id, entity_type, new_value, new_weight, old_value, old_weight, post_neuron_id, record_a_id, record_b_id, weight_delta",
+      "status": "enforced",
+      "by": "diff_event_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     },
+     {
+      "fd": "new_weight, old_weight \u2192 weight_delta",
+      "status": "holds",
+      "violating_groups": 0,
+      "ms": 631.2,
+      "sql": "SELECT count(*) FROM (SELECT 1 FROM \"cc\".\"diff_event\" WHERE \"new_weight\" IS NOT NULL AND \"old_weight\" IS NOT NULL GROUP BY \"new_weight\", \"old_weight\" HAVING count(DISTINCT \"weight_delta\") > 1 OR count(*) FILTER (WHERE \"weight_delta\" IS NULL) BETWEEN 1 AND count(*) - 1) bad"
+     }
+    ],
+    "protections": [
+     {
+      "fd": "old_weight, new_weight -> weight_delta",
+      "constraint": "GENERATED ALWAYS AS (stored)",
+      "exists": true
+     }
+    ]
+   },
+   {
+    "relation": "cc.shard",
+    "keys": [
+     {
+      "key": [
+       "name"
+      ],
+      "enforced_by": "shard_name_key"
+     },
+     {
+      "key": [
+       "shard_id"
+      ],
+      "enforced_by": "shard_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "shard_id \u2192 host, name, port",
+      "status": "enforced",
+      "by": "shard_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     },
+     {
+      "fd": "name \u2192 host, port, shard_id",
+      "status": "enforced",
+      "by": "shard_name_key",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": []
+   },
+   {
+    "relation": "cc.partition_strategy",
+    "keys": [
+     {
+      "key": [
+       "code"
+      ],
+      "enforced_by": "partition_strategy_code_key"
+     },
+     {
+      "key": [
+       "strategy_id"
+      ],
+      "enforced_by": "partition_strategy_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "strategy_id \u2192 code, created_at, description, parameters",
+      "status": "enforced",
+      "by": "partition_strategy_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     },
+     {
+      "fd": "code \u2192 created_at, description, parameters, strategy_id",
+      "status": "enforced",
+      "by": "partition_strategy_code_key",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": []
+   },
+   {
+    "relation": "cc.partition_assignment",
+    "keys": [
+     {
+      "key": [
+       "dataset_neuron_id",
+       "strategy_id"
+      ],
+      "enforced_by": "partition_assignment_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "dataset_neuron_id, strategy_id \u2192 assigned_at, group_key, shard_id",
+      "status": "enforced",
+      "by": "partition_assignment_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     },
+     {
+      "fd": "group_key, strategy_id \u2192 shard_id",
+      "status": "holds",
+      "violating_groups": 0,
+      "ms": 290.8,
+      "sql": "SELECT count(*) FROM (SELECT 1 FROM \"cc\".\"partition_assignment\" WHERE \"group_key\" IS NOT NULL AND \"strategy_id\" IS NOT NULL GROUP BY \"group_key\", \"strategy_id\" HAVING count(DISTINCT \"shard_id\") > 1 OR count(*) FILTER (WHERE \"shard_id\" IS NULL) BETWEEN 1 AND count(*) - 1) bad"
+     }
+    ],
+    "protections": [
+     {
+      "fd": "strategy_id, group_key -> shard_id",
+      "constraint": "partition_assignment_group_one_shard",
+      "exists": true
+     }
+    ]
+   },
+   {
+    "relation": "cc.query_execution",
+    "keys": [
+     {
+      "key": [
+       "query_execution_id"
+      ],
+      "enforced_by": "query_execution_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "query_execution_id \u2192 bytes_transferred, executed_at, latency_ms, parameters, query_kind, rows_returned, shards_touched, strategy_id",
+      "status": "enforced",
+      "by": "query_execution_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": []
+   },
+   {
+    "relation": "cc.shard_deployment",
+    "keys": [
+     {
+      "key": [
+       "deployment_id"
+      ],
+      "enforced_by": "shard_deployment_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "deployment_id \u2192 batch_id, bytes_on_shard, connections, deployed_at, mirrors, neurons, schema_name, seconds, shard_id, strategy_id, verified",
+      "status": "enforced",
+      "by": "shard_deployment_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     },
+     {
+      "fd": "batch_id \u2192 strategy_id",
+      "status": "holds",
+      "violating_groups": 0,
+      "ms": 11.7,
+      "sql": "SELECT count(*) FROM (SELECT 1 FROM \"cc\".\"shard_deployment\" WHERE \"batch_id\" IS NOT NULL GROUP BY \"batch_id\" HAVING count(DISTINCT \"strategy_id\") > 1 OR count(*) FILTER (WHERE \"strategy_id\" IS NULL) BETWEEN 1 AND count(*) - 1) bad"
+     }
+    ],
+    "protections": [
+     {
+      "fd": "batch_id -> strategy_id",
+      "constraint": "shard_deployment_batch_strategy_fkey",
+      "exists": true
+     }
+    ]
+   },
+   {
+    "relation": "cc.deployment_batch",
+    "keys": [
+     {
+      "key": [
+       "batch_id"
+      ],
+      "enforced_by": "deployment_batch_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "batch_id \u2192 created_at, details, placement_revision, source_revision, status, strategy_id",
+      "status": "enforced",
+      "by": "deployment_batch_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": []
+   },
+   {
+    "relation": "cc.active_deployment",
+    "keys": [
+     {
+      "key": [
+       "batch_id"
+      ],
+      "enforced_by": "active_deployment_batch_key"
+     },
+     {
+      "key": [
+       "strategy_id"
+      ],
+      "enforced_by": "active_deployment_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "strategy_id \u2192 batch_id",
+      "status": "enforced",
+      "by": "active_deployment_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     },
+     {
+      "fd": "batch_id \u2192 strategy_id",
+      "status": "enforced",
+      "by": "active_deployment_batch_key",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": []
+   },
+   {
+    "relation": "cc.ml_model_run",
+    "keys": [
+     {
+      "key": [
+       "model_run_id"
+      ],
+      "enforced_by": "ml_model_run_pkey"
+     },
+     {
+      "key": [
+       "model_kind",
+       "model_version"
+      ],
+      "enforced_by": "ml_model_run_model_kind_model_version_key"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "model_run_id \u2192 artifact_path, artifact_sha256, created_at, feature_schema, metrics, model_kind, model_version, parameters, random_seed",
+      "status": "enforced",
+      "by": "ml_model_run_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     },
+     {
+      "fd": "model_kind, model_version \u2192 artifact_path, artifact_sha256, created_at, feature_schema, metrics, model_run_id, parameters, random_seed",
+      "status": "enforced",
+      "by": "ml_model_run_model_kind_model_version_key",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": []
+   },
+   {
+    "relation": "cc.ml_model_input",
+    "keys": [
+     {
+      "key": [
+       "diff_run_id",
+       "model_run_id"
+      ],
+      "enforced_by": "ml_model_input_pkey"
+     }
+    ],
+    "dependencies": [],
+    "protections": []
+   },
+   {
+    "relation": "cc.anomaly_result",
+    "keys": [
+     {
+      "key": [
+       "diff_event_id",
+       "model_run_id"
+      ],
+      "enforced_by": "anomaly_result_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "diff_event_id, model_run_id \u2192 baseline_flagged, explanation, features, is_flagged, score, score_rank",
+      "status": "enforced",
+      "by": "anomaly_result_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": []
+   },
+   {
+    "relation": "cc.metadata_sync",
+    "keys": [
+     {
+      "key": [
+       "metadata_sync_id"
+      ],
+      "enforced_by": "metadata_sync_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "metadata_sync_id \u2192 documents_written, error_message, finished_at, mongo_collection, mongo_database, pipeline_version, records_written, release_id, started_at, stats, status",
+      "status": "enforced",
+      "by": "metadata_sync_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": []
+   },
+   {
+    "relation": "cc.metadata_record_digest",
+    "keys": [
+     {
+      "key": [
+       "dataset_neuron_id",
+       "release_id"
+      ],
+      "enforced_by": "metadata_record_digest_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "dataset_neuron_id, release_id \u2192 record_count, sha256",
+      "status": "enforced",
+      "by": "metadata_record_digest_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": []
+   },
+   {
+    "relation": "cc.workspace_job",
+    "keys": [
+     {
+      "key": [
+       "job_id"
+      ],
+      "enforced_by": "workspace_job_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "job_id \u2192 created_at, kind, message, progress, request, result, status, updated_at",
+      "status": "enforced",
+      "by": "workspace_job_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": []
+   },
+   {
+    "relation": "lab.dataset",
+    "keys": [
+     {
+      "key": [
+       "code"
+      ],
+      "enforced_by": "dataset_code_key"
+     },
+     {
+      "key": [
+       "dataset_id"
+      ],
+      "enforced_by": "dataset_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "dataset_id \u2192 code, name, organism",
+      "status": "enforced",
+      "by": "dataset_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     },
+     {
+      "fd": "code \u2192 dataset_id, name, organism",
+      "status": "enforced",
+      "by": "dataset_code_key",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": []
+   },
+   {
+    "relation": "lab.release",
+    "keys": [
+     {
+      "key": [
+       "release_id"
+      ],
+      "enforced_by": "release_pkey"
+     },
+     {
+      "key": [
+       "dataset_id",
+       "release_order"
+      ],
+      "enforced_by": "release_dataset_id_release_order_key"
+     },
+     {
+      "key": [
+       "dataset_id",
+       "version_label"
+      ],
+      "enforced_by": "release_dataset_id_version_label_key"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "release_id \u2192 dataset_id, release_order, version_label",
+      "status": "enforced",
+      "by": "release_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     },
+     {
+      "fd": "dataset_id, version_label \u2192 release_id, release_order",
+      "status": "enforced",
+      "by": "release_dataset_id_version_label_key",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     },
+     {
+      "fd": "dataset_id, release_order \u2192 release_id, version_label",
+      "status": "enforced",
+      "by": "release_dataset_id_release_order_key",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": []
+   },
+   {
+    "relation": "lab.neuron",
+    "keys": [
+     {
+      "key": [
+       "neuron_id"
+      ],
+      "enforced_by": "neuron_pkey"
+     },
+     {
+      "key": [
+       "dataset_id",
+       "source_neuron_id"
+      ],
+      "enforced_by": "neuron_dataset_id_source_neuron_id_key"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "neuron_id \u2192 cell_type, dataset_id, primary_region, side, source_neuron_id",
+      "status": "enforced",
+      "by": "neuron_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     },
+     {
+      "fd": "dataset_id, source_neuron_id \u2192 cell_type, neuron_id, primary_region, side",
+      "status": "enforced",
+      "by": "neuron_dataset_id_source_neuron_id_key",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": []
+   },
+   {
+    "relation": "lab.connection",
+    "keys": [
+     {
+      "key": [
+       "post_neuron_id",
+       "pre_neuron_id",
+       "release_id"
+      ],
+      "enforced_by": "connection_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "post_neuron_id, pre_neuron_id, release_id \u2192 synapse_count",
+      "status": "enforced",
+      "by": "connection_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": [
+     {
+      "fd": "the release and both neurons belong to one dataset",
+      "constraint": "connection_same_dataset",
+      "exists": true
+     }
+    ]
+   },
+   {
+    "relation": "lab.change_log",
+    "keys": [
+     {
+      "key": [
+       "change_id"
+      ],
+      "enforced_by": "change_log_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "change_id \u2192 changed_at, changed_by, new_row, old_row, operation, table_name",
+      "status": "enforced",
+      "by": "change_log_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": []
+   }
+  ]
+ },
+ "verification_seconds": 24.6,
+ "walkthrough": [
+  {
+   "form": "UNF",
+   "title": "A release as published: one record per neuron with repeating groups",
+   "relations": [
+    {
+     "name": "release_record",
+     "attrs": [
+      "dataset_code",
+      "dataset_name",
+      "version_label",
+      "release_order",
+      "source_neuron_id",
+      "cell_type",
+      "side",
+      "primary_region",
+      "super_region",
+      "{partners: post_neuron_id, synapse_count}"
+     ],
+     "fds": [],
+     "note": "partners is a repeating group (a list inside the record): not a relation",
+     "rows": [
+      [
+       "hemibrain",
+       "Janelia FlyEM hemibrain",
+       "v1.2",
+       3,
+       "487144598",
+       "LHCENT3",
+       null,
+       "SMP_R",
+       "central",
+       "[328533761: 349; 579234980: 169; 5813021291: 168; \u2026 1876 partners]"
+      ]
+     ]
+    }
+   ],
+   "sample": {
+    "neuron": "hemibrain 487144598",
+    "release": "v1.2",
+    "partners_total": 1876,
+    "partners_shown": 3,
+    "note": "side is NULL: hemibrain publishes no side column (the side only appears as the suffix of `instance`, e.g. LHCENT3_R), and nothing is invented here"
+   }
+  },
+  {
+   "form": "1NF",
+   "title": "Flatten the repeating group: one row per (release, neuron, partner)",
+   "relations": [
+    {
+     "name": "connection_row",
+     "attrs": [
+      "dataset_code",
+      "dataset_name",
+      "version_label",
+      "release_order",
+      "source_neuron_id",
+      "cell_type",
+      "side",
+      "primary_region",
+      "super_region",
+      "post_neuron_id",
+      "synapse_count"
+     ],
+     "fds": [
+      "dataset_code -> dataset_name",
+      "dataset_code, version_label -> release_order",
+      "dataset_code, release_order -> version_label",
+      "dataset_code, version_label, source_neuron_id -> cell_type, side, primary_region",
+      "primary_region -> super_region",
+      "dataset_code, version_label, source_neuron_id, post_neuron_id -> synapse_count"
+     ],
+     "keys": [
+      [
+       "dataset_code",
+       "post_neuron_id",
+       "release_order",
+       "source_neuron_id"
+      ],
+      [
+       "dataset_code",
+       "post_neuron_id",
+       "source_neuron_id",
+       "version_label"
+      ]
+     ],
+     "highest_form": "1NF",
+     "violations": [
+      {
+       "form": "2NF",
+       "fd": "dataset_code \u2192 dataset_name",
+       "reason": "partial dependency: dataset_name depend(s) on dataset_code, a proper part of the key (dataset_code, post_neuron_id, release_order, source_neuron_id)"
+      },
+      {
+       "form": "2NF",
+       "fd": "dataset_code, release_order, source_neuron_id \u2192 cell_type, primary_region, side, super_region",
+       "reason": "partial dependency: cell_type, primary_region, side, super_region depend(s) on dataset_code, release_order, source_neuron_id, a proper part of the key (dataset_code, post_neuron_id, release_order, source_neuron_id)"
+      },
+      {
+       "form": "2NF",
+       "fd": "dataset_code, source_neuron_id, version_label \u2192 cell_type, primary_region, side, super_region",
+       "reason": "partial dependency: cell_type, primary_region, side, super_region depend(s) on dataset_code, source_neuron_id, version_label, a proper part of the key (dataset_code, post_neuron_id, source_neuron_id, version_label)"
+      },
+      {
+       "form": "3NF",
+       "fd": "primary_region \u2192 super_region",
+       "reason": "transitive dependency: primary_region is not a superkey and super_region is non-prime"
+      },
+      {
+       "form": "BCNF",
+       "fd": "dataset_code, release_order \u2192 version_label",
+       "reason": "dataset_code, release_order is not a superkey (allowed in 3NF because version_label is prime)"
+      },
+      {
+       "form": "BCNF",
+       "fd": "dataset_code, version_label \u2192 release_order",
+       "reason": "dataset_code, version_label is not a superkey (allowed in 3NF because release_order is prime)"
+      }
+     ],
+     "rows": [
+      [
+       "hemibrain",
+       "Janelia FlyEM hemibrain",
+       "v1.2",
+       3,
+       "487144598",
+       "LHCENT3",
+       null,
+       "SMP_R",
+       "central",
+       "328533761",
+       349
+      ],
+      [
+       "hemibrain",
+       "Janelia FlyEM hemibrain",
+       "v1.2",
+       3,
+       "487144598",
+       "LHCENT3",
+       null,
+       "SMP_R",
+       "central",
+       "579234980",
+       169
+      ],
+      [
+       "hemibrain",
+       "Janelia FlyEM hemibrain",
+       "v1.2",
+       3,
+       "487144598",
+       "LHCENT3",
+       null,
+       "SMP_R",
+       "central",
+       "5813021291",
+       168
+      ]
+     ]
+    }
+   ],
+   "sample": {
+    "neuron": "hemibrain 487144598",
+    "release": "v1.2",
+    "partners_total": 1876,
+    "partners_shown": 3
+   }
+  },
+  {
+   "form": "2NF",
+   "title": "Remove partial dependencies on the key (dataset, release, neuron, partner)",
+   "relations": [
+    {
+     "name": "dataset",
+     "attrs": [
+      "dataset_code",
+      "dataset_name"
+     ],
+     "fds": [
+      "dataset_code -> dataset_name"
+     ],
+     "keys": [
+      [
+       "dataset_code"
+      ]
+     ],
+     "highest_form": "BCNF",
+     "violations": [],
+     "rows": [
+      [
+       "hemibrain",
+       "Janelia FlyEM hemibrain"
+      ]
+     ]
+    },
+    {
+     "name": "release",
+     "attrs": [
+      "dataset_code",
+      "version_label",
+      "release_order"
+     ],
+     "fds": [
+      "dataset_code, version_label -> release_order",
+      "dataset_code, release_order -> version_label"
+     ],
+     "keys": [
+      [
+       "dataset_code",
+       "release_order"
+      ],
+      [
+       "dataset_code",
+       "version_label"
+      ]
+     ],
+     "highest_form": "BCNF",
+     "violations": [],
+     "rows": [
+      [
+       "hemibrain",
+       "v1.2",
+       3
+      ]
+     ]
+    },
+    {
+     "name": "neuron_in_release",
+     "attrs": [
+      "dataset_code",
+      "version_label",
+      "source_neuron_id",
+      "cell_type",
+      "side",
+      "primary_region",
+      "super_region"
+     ],
+     "fds": [
+      "dataset_code, version_label, source_neuron_id -> cell_type, side, primary_region",
+      "primary_region -> super_region"
+     ],
+     "keys": [
+      [
+       "dataset_code",
+       "source_neuron_id",
+       "version_label"
+      ]
+     ],
+     "highest_form": "2NF",
+     "violations": [
+      {
+       "form": "3NF",
+       "fd": "primary_region \u2192 super_region",
+       "reason": "transitive dependency: primary_region is not a superkey and super_region is non-prime"
+      }
+     ],
+     "rows": [
+      [
+       "hemibrain",
+       "v1.2",
+       "487144598",
+       "LHCENT3",
+       null,
+       "SMP_R",
+       "central"
+      ]
+     ]
+    },
+    {
+     "name": "connection",
+     "attrs": [
+      "dataset_code",
+      "version_label",
+      "source_neuron_id",
+      "post_neuron_id",
+      "synapse_count"
+     ],
+     "fds": [
+      "dataset_code, version_label, source_neuron_id, post_neuron_id -> synapse_count"
+     ],
+     "keys": [
+      [
+       "dataset_code",
+       "post_neuron_id",
+       "source_neuron_id",
+       "version_label"
+      ]
+     ],
+     "highest_form": "BCNF",
+     "violations": [],
+     "rows": [
+      [
+       "hemibrain",
+       "v1.2",
+       "487144598",
+       "328533761",
+       349
+      ],
+      [
+       "hemibrain",
+       "v1.2",
+       "487144598",
+       "579234980",
+       169
+      ],
+      [
+       "hemibrain",
+       "v1.2",
+       "487144598",
+       "5813021291",
+       168
+      ]
+     ]
+    }
+   ],
+   "sample": {
+    "neuron": "hemibrain 487144598",
+    "release": "v1.2",
+    "partners_total": 1876,
+    "partners_shown": 3
+   }
+  },
+  {
+   "form": "3NF",
+   "title": "Remove the transitive dependency primary_region \u2192 super_region",
+   "relations": [
+    {
+     "name": "neuron_in_release",
+     "attrs": [
+      "dataset_code",
+      "version_label",
+      "source_neuron_id",
+      "cell_type",
+      "side",
+      "primary_region"
+     ],
+     "fds": [
+      "dataset_code, version_label, source_neuron_id -> cell_type, side, primary_region"
+     ],
+     "keys": [
+      [
+       "dataset_code",
+       "source_neuron_id",
+       "version_label"
+      ]
+     ],
+     "highest_form": "BCNF",
+     "violations": [],
+     "rows": [
+      [
+       "hemibrain",
+       "v1.2",
+       "487144598",
+       "LHCENT3",
+       null,
+       "SMP_R"
+      ]
+     ]
+    },
+    {
+     "name": "neuropil",
+     "attrs": [
+      "primary_region",
+      "super_region"
+     ],
+     "fds": [
+      "primary_region -> super_region"
+     ],
+     "note": "this is the split made in the real schema by migration 0013 (cc.neuropil)",
+     "keys": [
+      [
+       "primary_region"
+      ]
+     ],
+     "highest_form": "BCNF",
+     "violations": [],
+     "rows": [
+      [
+       "SMP_R",
+       "central"
+      ]
+     ]
+    }
+   ],
+   "sample": {
+    "neuron": "hemibrain 487144598",
+    "release": "v1.2",
+    "partners_total": 1876,
+    "partners_shown": 3
+   }
+  },
+  {
+   "form": "BCNF",
+   "title": "Surrogate identity: a neuron is first seen in one release",
+   "relations": [
+    {
+     "name": "neuron_identity (3NF, not BCNF)",
+     "attrs": [
+      "dataset_code",
+      "source_neuron_id",
+      "first_release"
+     ],
+     "fds": [
+      "dataset_code, source_neuron_id -> first_release",
+      "first_release -> dataset_code"
+     ],
+     "note": "first_release \u2192 dataset_code: the left side is not a superkey, but dataset_code is prime, so 3NF holds and BCNF does not",
+     "keys": [
+      [
+       "dataset_code",
+       "source_neuron_id"
+      ],
+      [
+       "first_release",
+       "source_neuron_id"
+      ]
+     ],
+     "highest_form": "3NF",
+     "violations": [
+      {
+       "form": "BCNF",
+       "fd": "first_release \u2192 dataset_code",
+       "reason": "first_release is not a superkey (allowed in 3NF because dataset_code is prime)"
+      }
+     ],
+     "rows": [
+      [
+       "hemibrain",
+       "487144598",
+       "v1.0"
+      ]
+     ]
+    },
+    {
+     "name": "BCNF option A: release_of",
+     "attrs": [
+      "first_release",
+      "dataset_code"
+     ],
+     "fds": [
+      "first_release -> dataset_code"
+     ],
+     "keys": [
+      [
+       "first_release"
+      ]
+     ],
+     "highest_form": "BCNF",
+     "violations": [],
+     "rows": null
+    },
+    {
+     "name": "BCNF option A: neuron_first_seen",
+     "attrs": [
+      "first_release",
+      "source_neuron_id"
+     ],
+     "fds": [],
+     "note": "lossless, but (dataset_code, source_neuron_id) \u2192 first_release is no longer checked inside one relation: two releases of a dataset could both claim the same neuron",
+     "keys": [
+      [
+       "first_release",
+       "source_neuron_id"
+      ]
+     ],
+     "highest_form": "BCNF",
+     "violations": [],
+     "rows": null
+    }
+   ],
+   "decision": "cc.dataset_neuron keeps the 3NF form and protects first_release \u2192 dataset with the composite foreign key (first_release_id, dataset_id) \u2192 release, so both dependencies stay enforced. This is the classic case where BCNF and dependency preservation cannot both be had.",
+   "sample": {
+    "neuron": "hemibrain 487144598",
+    "release": "v1.2",
+    "partners_total": 1876,
+    "partners_shown": 3
+   }
+  }
+ ],
+ "anomalies": {
+  "redundancy": {
+   "unnormalised_rows": 9023,
+   "neuron": {
+    "neuron_id": 29354,
+    "source_neuron_id": "487144598",
+    "cell_type": "LHCENT3",
+    "copies": 129
+   },
+   "copies_of_its_cell_type": 129,
+   "normalised_copies": 1,
+   "repeated_neuron_facts": 8683
+  },
+  "update": {
+   "unnormalised": {
+    "sql": "UPDATE connection_flat SET pre_cell_type = 'renamed_type' WHERE pre_neuron_id = 29354 AND release_id = 1",
+    "ok": true,
+    "rows": 43,
+    "status": "UPDATE 43",
+    "result": "the neuron now has 2 different cell types: LHCENT3, renamed_type",
+    "distinct_values": 2
+   },
+   "normalised": {
+    "sql": "UPDATE lab.neuron SET cell_type = 'renamed_type' WHERE neuron_id = 29354",
+    "ok": true,
+    "rows": 1,
+    "status": "UPDATE 1",
+    "result": "one row changed; every connection sees the new type through the join",
+    "distinct_values": 1
+   }
+  },
+  "insert": {
+   "unnormalised": {
+    "sql": "INSERT INTO connection_flat (release_id, version_label, dataset_code, pre_neuron_id, pre_source_id, pre_cell_type) VALUES (4, 'v1.2', 'hemibrain', 900000000001, 'new-neuron', 'new_type')",
+    "ok": false,
+    "error": "null value in column \"post_neuron_id\" of relation \"connection_flat\" violates not-null constraint",
+    "sqlstate": "23502",
+    "result": "rejected: post_neuron_id is part of the key, so a neuron that has no connection yet cannot be recorded"
+   },
+   "normalised": {
+    "sql": "INSERT INTO lab.neuron (dataset_id, source_neuron_id, cell_type) VALUES (1, 'new-neuron', 'new_type')",
+    "ok": true,
+    "rows": 1,
+    "status": "INSERT 0 1",
+    "result": "recorded in lab.neuron; connections can be added later"
+   }
+  },
+  "delete": {
+   "neuron": {
+    "neuron_id": 165844,
+    "source_neuron_id": "720575940627692565",
+    "cell_type": "LHAV6g1",
+    "connections": 1
+   },
+   "unnormalised": {
+    "sql": "DELETE FROM connection_flat WHERE 165844 IN (pre_neuron_id, post_neuron_id)",
+    "ok": true,
+    "rows": 1,
+    "status": "DELETE 1",
+    "result": "no row mentions neuron 720575940627692565 any more (0 rows): its cell type 'LHAV6g1' is lost"
+   },
+   "normalised": {
+    "sql": "DELETE FROM lab.connection WHERE 165844 IN (pre_neuron_id, post_neuron_id)",
+    "ok": true,
+    "rows": 1,
+    "status": "DELETE 1",
+    "result": "the neuron stays in lab.neuron with cell type 'LHAV6g1'"
+   }
+  },
+  "unnormalised_definition": "CREATE TEMP TABLE connection_flat ON COMMIT DROP AS\nSELECT r.release_id, r.version_label, d.code AS dataset_code,\n       c.pre_neuron_id,  a.source_neuron_id AS pre_source_id,  a.cell_type AS pre_cell_type,\n       c.post_neuron_id, b.source_neuron_id AS post_source_id, b.cell_type AS post_cell_type,\n       c.synapse_count\nFROM lab.connection c\nJOIN lab.release r USING (release_id) JOIN lab.dataset d USING (dataset_id)\nJOIN lab.neuron a ON a.neuron_id = c.pre_neuron_id\nJOIN lab.neuron b ON b.neuron_id = c.post_neuron_id",
+  "rolled_back": true,
+  "seconds": 0.63
+ }
+}

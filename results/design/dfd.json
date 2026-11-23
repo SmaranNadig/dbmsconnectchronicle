@@ -1,0 +1,624 @@
+{
+ "generated_at": "2026-11-23 13:04 UTC",
+ "check": {
+  "ok": true,
+  "errors": [],
+  "rules": {
+   "R1": "every flow has a label and connects elements of its diagram",
+   "R2": "data moves only through a process: no external\u2192external, external\u2194store or store\u2192store flow",
+   "R3": "every process has at least one input and one output (no black hole, no miracle)",
+   "R4": "process numbers are hierarchical: a child of process n is numbered n.1, n.2, ...",
+   "R5": "process names start with a verb (verb + object); the context process names the system",
+   "R6": "a child diagram is balanced: its flows across the boundary are exactly the parent process's flows (data stores first shown on the child are local to the process)",
+   "R7": "the context diagram has one process (0) and no data stores",
+   "R8": "every data store is both written and read in the model",
+   "R9": "no flow is drawn twice (same source, target and label)"
+  },
+  "diagrams": {
+   "level0": {
+    "processes": 1,
+    "flows": 7,
+    "externals": 4,
+    "stores": 0
+   },
+   "level1": {
+    "processes": 8,
+    "flows": 46,
+    "externals": 4,
+    "stores": 8
+   },
+   "level2-2": {
+    "processes": 6,
+    "flows": 17,
+    "externals": 1,
+    "stores": 3
+   },
+   "level2-4": {
+    "processes": 5,
+    "flows": 12,
+    "externals": 1,
+    "stores": 3
+   }
+  }
+ },
+ "diagrams": [
+  {
+   "id": "level0",
+   "level": 0,
+   "parent": null,
+   "title": "Context diagram (level 0)",
+   "processes": [
+    {
+     "id": "0",
+     "name": "ConnectomeChronicle",
+     "by": "PostgreSQL + MongoDB + 3 shards"
+    }
+   ],
+   "flows": [
+    {
+     "from": "E1",
+     "to": "0",
+     "label": "release files"
+    },
+    {
+     "from": "E4",
+     "to": "0",
+     "label": "download, ingest, sync and deploy commands"
+    },
+    {
+     "from": "0",
+     "to": "E4",
+     "label": "manifest, load, consistency and verification reports"
+    },
+    {
+     "from": "E2",
+     "to": "0",
+     "label": "queries and diff requests"
+    },
+    {
+     "from": "0",
+     "to": "E2",
+     "label": "results, query plans and diff reports"
+    },
+    {
+     "from": "E3",
+     "to": "0",
+     "label": "review decisions and lab edits"
+    },
+    {
+     "from": "0",
+     "to": "E3",
+     "label": "proposals with evidence, statements and change log"
+    }
+   ]
+  },
+  {
+   "id": "level1",
+   "level": 1,
+   "parent": "0",
+   "title": "Level 1: the main processes",
+   "processes": [
+    {
+     "id": "1",
+     "name": "Acquire release files",
+     "by": "scripts/download_datasets.py"
+    },
+    {
+     "id": "2",
+     "name": "Load release",
+     "by": "backend/etl/loader.py"
+    },
+    {
+     "id": "3",
+     "name": "Synchronise source records",
+     "by": "backend/metadata.py"
+    },
+    {
+     "id": "6",
+     "name": "Distribute to shards",
+     "by": "backend/distributed/"
+    },
+    {
+     "id": "4",
+     "name": "Compare releases (ConnectomeDiff)",
+     "by": "0003_connectome_diff.sql"
+    },
+    {
+     "id": "5",
+     "name": "Resolve neuron identities",
+     "by": "0004_entity_resolution.sql"
+    },
+    {
+     "id": "7",
+     "name": "Answer queries",
+     "by": "main.py, console.py, router.py"
+    },
+    {
+     "id": "8",
+     "name": "Edit lab data",
+     "by": "backend/lab.py"
+    }
+   ],
+   "flows": [
+    {
+     "from": "E1",
+     "to": "1",
+     "label": "release files",
+     "part_of": "release files"
+    },
+    {
+     "from": "E4",
+     "to": "1",
+     "label": "download command",
+     "part_of": "download, ingest, sync and deploy commands"
+    },
+    {
+     "from": "1",
+     "to": "E4",
+     "label": "download manifest",
+     "part_of": "manifest, load, consistency and verification reports"
+    },
+    {
+     "from": "1",
+     "to": "D1",
+     "label": "checksummed files"
+    },
+    {
+     "from": "D1",
+     "to": "2",
+     "label": "verified source files"
+    },
+    {
+     "from": "E4",
+     "to": "2",
+     "label": "ingest command",
+     "part_of": "download, ingest, sync and deploy commands"
+    },
+    {
+     "from": "2",
+     "to": "E4",
+     "label": "load report",
+     "part_of": "manifest, load, consistency and verification reports"
+    },
+    {
+     "from": "D2",
+     "to": "2",
+     "label": "registered releases"
+    },
+    {
+     "from": "2",
+     "to": "D2",
+     "label": "release, run and provenance records"
+    },
+    {
+     "from": "D3",
+     "to": "2",
+     "label": "current neuron ids and open rows"
+    },
+    {
+     "from": "2",
+     "to": "D3",
+     "label": "versioned neurons, annotations, connections"
+    },
+    {
+     "from": "D1",
+     "to": "3",
+     "label": "source rows"
+    },
+    {
+     "from": "D3",
+     "to": "3",
+     "label": "neuron keys"
+    },
+    {
+     "from": "3",
+     "to": "D4",
+     "label": "neuron source documents"
+    },
+    {
+     "from": "3",
+     "to": "D2",
+     "label": "sync log and record digests"
+    },
+    {
+     "from": "E4",
+     "to": "3",
+     "label": "sync command",
+     "part_of": "download, ingest, sync and deploy commands"
+    },
+    {
+     "from": "3",
+     "to": "E4",
+     "label": "consistency report",
+     "part_of": "manifest, load, consistency and verification reports"
+    },
+    {
+     "from": "E4",
+     "to": "6",
+     "label": "deploy command",
+     "part_of": "download, ingest, sync and deploy commands"
+    },
+    {
+     "from": "6",
+     "to": "E4",
+     "label": "verification result",
+     "part_of": "manifest, load, consistency and verification reports"
+    },
+    {
+     "from": "D3",
+     "to": "6",
+     "label": "neurons and connections"
+    },
+    {
+     "from": "6",
+     "to": "D7",
+     "label": "assignments and shard copies"
+    },
+    {
+     "from": "D7",
+     "to": "6",
+     "label": "shard row counts"
+    },
+    {
+     "from": "E2",
+     "to": "4",
+     "label": "diff request",
+     "part_of": "queries and diff requests"
+    },
+    {
+     "from": "4",
+     "to": "E2",
+     "label": "diff report and change scores",
+     "part_of": "results, query plans and diff reports"
+    },
+    {
+     "from": "D2",
+     "to": "4",
+     "label": "release order"
+    },
+    {
+     "from": "D3",
+     "to": "4",
+     "label": "release states"
+    },
+    {
+     "from": "4",
+     "to": "D5",
+     "label": "diff runs, events and scores"
+    },
+    {
+     "from": "D5",
+     "to": "4",
+     "label": "diff events"
+    },
+    {
+     "from": "D3",
+     "to": "5",
+     "label": "neurons and annotations"
+    },
+    {
+     "from": "5",
+     "to": "D6",
+     "label": "proposed mappings"
+    },
+    {
+     "from": "D6",
+     "to": "5",
+     "label": "pending mappings"
+    },
+    {
+     "from": "5",
+     "to": "E3",
+     "label": "proposals with evidence",
+     "part_of": "proposals with evidence, statements and change log"
+    },
+    {
+     "from": "E3",
+     "to": "5",
+     "label": "review decision",
+     "part_of": "review decisions and lab edits"
+    },
+    {
+     "from": "E2",
+     "to": "7",
+     "label": "SQL, MongoDB and neuron queries",
+     "part_of": "queries and diff requests"
+    },
+    {
+     "from": "7",
+     "to": "E2",
+     "label": "results and query plans",
+     "part_of": "results, query plans and diff reports"
+    },
+    {
+     "from": "D3",
+     "to": "7",
+     "label": "connectome rows"
+    },
+    {
+     "from": "D4",
+     "to": "7",
+     "label": "source documents"
+    },
+    {
+     "from": "D5",
+     "to": "7",
+     "label": "changes"
+    },
+    {
+     "from": "D6",
+     "to": "7",
+     "label": "mappings"
+    },
+    {
+     "from": "D7",
+     "to": "7",
+     "label": "routed shard rows"
+    },
+    {
+     "from": "E3",
+     "to": "8",
+     "label": "row and document edits",
+     "part_of": "review decisions and lab edits"
+    },
+    {
+     "from": "8",
+     "to": "E3",
+     "label": "statements and change log",
+     "part_of": "proposals with evidence, statements and change log"
+    },
+    {
+     "from": "D3",
+     "to": "8",
+     "label": "real-data subset"
+    },
+    {
+     "from": "D4",
+     "to": "8",
+     "label": "subset documents"
+    },
+    {
+     "from": "8",
+     "to": "D8",
+     "label": "lab rows and documents"
+    },
+    {
+     "from": "D8",
+     "to": "8",
+     "label": "lab rows"
+    }
+   ]
+  },
+  {
+   "id": "level2-2",
+   "level": 2,
+   "parent": "2",
+   "title": "Level 2: process 2, Load release (one transaction: all-or-nothing)",
+   "processes": [
+    {
+     "id": "2.1",
+     "name": "Register release and run",
+     "by": "loader._register, _check_order"
+    },
+    {
+     "id": "2.2",
+     "name": "Stage source files",
+     "by": "loader._stage, COPY"
+    },
+    {
+     "id": "2.3",
+     "name": "Validate staged rows",
+     "by": "loader._validate_staged"
+    },
+    {
+     "id": "2.4",
+     "name": "Resolve source identifiers",
+     "by": "MERGE_SQL neuron_resolve"
+    },
+    {
+     "id": "2.5",
+     "name": "Merge versions",
+     "by": "MERGE_SQL *_close, *_open"
+    },
+    {
+     "id": "2.6",
+     "name": "Record load result",
+     "by": "loader: status, release_stats"
+    }
+   ],
+   "flows": [
+    {
+     "from": "E4",
+     "to": "2.1",
+     "label": "ingest command"
+    },
+    {
+     "from": "D2",
+     "to": "2.1",
+     "label": "registered releases"
+    },
+    {
+     "from": "2.1",
+     "to": "D2",
+     "label": "release and run rows",
+     "part_of": "release, run and provenance records"
+    },
+    {
+     "from": "2.1",
+     "to": "2.2",
+     "label": "release and run id"
+    },
+    {
+     "from": "D1",
+     "to": "2.2",
+     "label": "verified source files"
+    },
+    {
+     "from": "2.2",
+     "to": "D2",
+     "label": "source file and provenance rows",
+     "part_of": "release, run and provenance records"
+    },
+    {
+     "from": "2.2",
+     "to": "2.3",
+     "label": "staged rows"
+    },
+    {
+     "from": "2.3",
+     "to": "2.4",
+     "label": "valid staged rows"
+    },
+    {
+     "from": "2.3",
+     "to": "2.6",
+     "label": "validation errors"
+    },
+    {
+     "from": "D3",
+     "to": "2.4",
+     "label": "known source neuron ids",
+     "part_of": "current neuron ids and open rows"
+    },
+    {
+     "from": "2.4",
+     "to": "D3",
+     "label": "new dataset neurons",
+     "part_of": "versioned neurons, annotations, connections"
+    },
+    {
+     "from": "2.4",
+     "to": "2.5",
+     "label": "resolved facts"
+    },
+    {
+     "from": "D3",
+     "to": "2.5",
+     "label": "open versions",
+     "part_of": "current neuron ids and open rows"
+    },
+    {
+     "from": "2.5",
+     "to": "D3",
+     "label": "retired and new versions",
+     "part_of": "versioned neurons, annotations, connections"
+    },
+    {
+     "from": "2.5",
+     "to": "2.6",
+     "label": "merge statistics"
+    },
+    {
+     "from": "2.6",
+     "to": "D2",
+     "label": "load status and statistics",
+     "part_of": "release, run and provenance records"
+    },
+    {
+     "from": "2.6",
+     "to": "E4",
+     "label": "load report"
+    }
+   ]
+  },
+  {
+   "id": "level2-4",
+   "level": 2,
+   "parent": "4",
+   "title": "Level 2: process 4, Compare releases (ConnectomeDiff)",
+   "processes": [
+    {
+     "id": "4.1",
+     "name": "Validate comparison request",
+     "by": "run_temporal_diff checks"
+    },
+    {
+     "id": "4.2",
+     "name": "Reconstruct release states",
+     "by": "valid_rel and tx predicates"
+    },
+    {
+     "id": "4.3",
+     "name": "Compute changes",
+     "by": "FULL OUTER JOIN per entity class"
+    },
+    {
+     "id": "4.4",
+     "name": "Score changes",
+     "by": "analysis.score_diff"
+    },
+    {
+     "id": "4.5",
+     "name": "Report changes",
+     "by": "GET /api/v1/diffs/{id}/events"
+    }
+   ],
+   "flows": [
+    {
+     "from": "E2",
+     "to": "4.1",
+     "label": "diff request"
+    },
+    {
+     "from": "D2",
+     "to": "4.1",
+     "label": "release order"
+    },
+    {
+     "from": "4.1",
+     "to": "E2",
+     "label": "rejection (cross-dataset as temporal)",
+     "part_of": "diff report and change scores"
+    },
+    {
+     "from": "4.1",
+     "to": "4.2",
+     "label": "release pair and as-of time"
+    },
+    {
+     "from": "D3",
+     "to": "4.2",
+     "label": "release states"
+    },
+    {
+     "from": "4.2",
+     "to": "4.3",
+     "label": "state A and state B"
+    },
+    {
+     "from": "4.3",
+     "to": "D5",
+     "label": "diff run and events",
+     "part_of": "diff runs, events and scores"
+    },
+    {
+     "from": "D5",
+     "to": "4.4",
+     "label": "diff events"
+    },
+    {
+     "from": "4.4",
+     "to": "D5",
+     "label": "model run and scores",
+     "part_of": "diff runs, events and scores"
+    },
+    {
+     "from": "4.3",
+     "to": "4.4",
+     "label": "run id"
+    },
+    {
+     "from": "D5",
+     "to": "4.5",
+     "label": "events and scores",
+     "part_of": "diff events"
+    },
+    {
+     "from": "4.5",
+     "to": "E2",
+     "label": "diff report and change scores"
+    }
+   ]
+  }
+ ]
+}

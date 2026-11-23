@@ -1,0 +1,77 @@
+-- Descriptions of every table and of the columns whose meaning is not obvious
+-- from the name. Shown by psql (\d+), by the dashboard's data dictionary and
+-- docs/DATA_DICTIONARY.md, which are both read from the catalog.
+-- Table texts match backend/design/relations.py (tests check this).
+SET search_path = cc, public;
+
+COMMENT ON TABLE dataset IS 'A public connectome (hemibrain, FlyWire).';
+COMMENT ON TABLE release IS 'One published version of a dataset, ordered within the dataset.';
+COMMENT ON TABLE ingestion_run IS 'One attempt to load a release.';
+COMMENT ON TABLE source_file IS 'A checksummed file (or archive member) a release was read from.';
+COMMENT ON TABLE provenance IS 'How a set of facts was produced: run, source file, transformation.';
+COMMENT ON TABLE provenance_parent IS 'Lineage: which provenance records a derived record was computed from.';
+COMMENT ON TABLE schema_mapping IS 'How a source field maps to a canonical field.';
+COMMENT ON TABLE neuropil IS 'A canonical neuropil code and the super region it belongs to (split from brain_region, 0013).';
+COMMENT ON TABLE brain_region IS 'A neuropil in one hemisphere (NULL = unpaired).';
+COMMENT ON TABLE brain_region_alias IS 'A dataset''s own region code mapped to the canonical region.';
+COMMENT ON TABLE neuron_type IS 'A canonical cell type name.';
+COMMENT ON TABLE type_alias IS 'A dataset''s type name linked to a canonical type (many-to-many).';
+COMMENT ON TABLE dataset_neuron IS 'A neuron as identified by its dataset (original id kept as text).';
+COMMENT ON TABLE neuron_version IS 'Existence of a neuron over a range of releases (bitemporal).';
+COMMENT ON TABLE annotation IS 'One attribute value (cell type, side, ...) of a neuron over a range of releases.';
+COMMENT ON TABLE connection IS 'Synapse count between two neurons over a range of releases (bitemporal).';
+COMMENT ON TABLE neuron_region_synapses IS 'Per release, how many synapses a neuron has in each brain region.';
+COMMENT ON TABLE canonical_neuron IS 'A neuron identity across datasets.';
+COMMENT ON TABLE neuron_mapping IS 'A proposed or reviewed link from a dataset neuron to a canonical neuron.';
+COMMENT ON TABLE diff_run IS 'One comparison of two release states at a transaction time.';
+COMMENT ON TABLE diff_event IS 'One change found by a diff run (added, removed, modified).';
+COMMENT ON TABLE shard IS 'A PostgreSQL server holding a fragment of the connectome.';
+COMMENT ON TABLE partition_strategy IS 'A way of placing neurons on shards (hash, anatomical, community).';
+COMMENT ON TABLE partition_assignment IS 'The shard (and group) of every neuron under every strategy.';
+COMMENT ON TABLE query_execution IS 'A routed query''s measured cost.';
+COMMENT ON TABLE shard_deployment IS 'One shard''s copy of one strategy''s placement.';
+COMMENT ON TABLE deployment_batch IS 'One generation of shard copies for a strategy.';
+COMMENT ON TABLE active_deployment IS 'The batch the router currently reads, per strategy.';
+COMMENT ON TABLE ml_model_run IS 'One trained change-scoring model.';
+COMMENT ON TABLE ml_model_input IS 'The diff runs a model was trained on (was the array ml_model_run.diff_run_ids, 0013).';
+COMMENT ON TABLE anomaly_result IS 'A model''s score for one diff event.';
+COMMENT ON TABLE metadata_sync IS 'One synchronisation of a release''s source records into MongoDB.';
+COMMENT ON TABLE metadata_record_digest IS 'Expected count and checksum of a neuron''s source records per release.';
+COMMENT ON TABLE workspace_job IS 'A background job (diff, scoring, matching, deployment).';
+
+COMMENT ON COLUMN release.release_order IS 'position of the release within its dataset (1, 2, ...); valid_rel ranges are in these units';
+COMMENT ON COLUMN release.release_date IS 'official publication date; NULL when no date is confirmed (unknown valid time)';
+COMMENT ON COLUMN release.manifest_hash IS 'SHA-256 over the checksums of the release''s source files';
+COMMENT ON COLUMN release.ingestion_status IS 'registered, loading, loaded or failed';
+COMMENT ON COLUMN dataset_neuron.source_neuron_id IS 'the neuron id as published (hemibrain bodyId, FlyWire root_id), kept as text';
+COMMENT ON COLUMN dataset_neuron.first_release_id IS 'release in which the neuron first appeared (same dataset: composite foreign key)';
+COMMENT ON COLUMN dataset_neuron.metadata_doc_id IS '_id of the neuron''s MongoDB source document (dataset code:source id)';
+COMMENT ON COLUMN neuron_version.valid_rel IS 'valid time: [first release order it holds in, first order it no longer holds in); upper NULL = still holds';
+COMMENT ON COLUMN neuron_version.tx IS 'transaction time: when the database held this belief; upper NULL = current belief';
+COMMENT ON COLUMN annotation.annotation_key IS 'attribute name (cell_type, side, ...), mapped from source columns by schema_mapping';
+COMMENT ON COLUMN annotation.valid_rel IS 'valid time in release_order units of the neuron''s dataset';
+COMMENT ON COLUMN annotation.tx IS 'transaction time; closed (never deleted) when a later load retires the belief';
+COMMENT ON COLUMN annotation.source_line IS 'line of the source file the value was read from';
+COMMENT ON COLUMN connection.dataset_id IS 'copy of both endpoints'' dataset, checked by composite foreign keys (an edge cannot join two connectomes)';
+COMMENT ON COLUMN connection.synapse_count IS 'number of synapses from pre to post (summed over duplicate source rows)';
+COMMENT ON COLUMN connection.valid_rel IS 'valid time in release_order units; one row covers every release in which the count is unchanged';
+COMMENT ON COLUMN connection.tx IS 'transaction time; closed when a later load retires this version';
+COMMENT ON COLUMN connection.source_lines IS 'line numbers of the source rows summed into this edge (evidence, read as a whole)';
+COMMENT ON COLUMN provenance.transformation_name IS 'what was done (register_neuron, extract_annotation, aggregate_pair_synapses, ...)';
+COMMENT ON COLUMN provenance.parameters IS 'parameters of the transformation (columns used, policies)';
+COMMENT ON COLUMN neuron_mapping.method IS 'how the link was proposed (source_identity, published_type_crosswalk, rule_based, embedding, graphsage, manual)';
+COMMENT ON COLUMN neuron_mapping.confidence IS 'score between 0 and 1';
+COMMENT ON COLUMN neuron_mapping.review_status IS 'proposed, approved, rejected or unresolved (unresolved = no canonical neuron)';
+COMMENT ON COLUMN diff_run.mode IS 'temporal (two releases of one dataset) or cross_dataset (never reported as temporal change)';
+COMMENT ON COLUMN diff_run.as_of IS 'transaction time at which both release states were read (makes a diff repeatable)';
+COMMENT ON COLUMN diff_event.weight_delta IS 'new_weight - old_weight, generated by the database';
+COMMENT ON COLUMN diff_event.record_a_id IS 'versioned row (connection, annotation or neuron_version id) in release A';
+COMMENT ON COLUMN diff_event.record_b_id IS 'versioned row in release B';
+COMMENT ON COLUMN partition_assignment.group_key IS 'region or community the strategy grouped the neuron by; all of a group is on one shard';
+COMMENT ON COLUMN brain_region.hemisphere IS 'L or R; NULL for unpaired neuropils';
+COMMENT ON COLUMN neuropil.super_region IS 'optic, central, vnc or other';
+COMMENT ON COLUMN source_file.member_path IS 'path inside the archive ('''' when the file is not in an archive)';
+COMMENT ON COLUMN source_file.sha256 IS 'checksum of the file as downloaded';
+COMMENT ON COLUMN neuron_region_synapses.pre_synapses IS 'outgoing synapses of the neuron in the region';
+COMMENT ON COLUMN neuron_region_synapses.post_synapses IS 'incoming synapses of the neuron in the region';
+COMMENT ON COLUMN ml_model_input.diff_run_id IS 'a diff run whose events the model was trained on';

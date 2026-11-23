@@ -239,7 +239,7 @@ def test_lab_examples_run_on_the_fixtures(client):
     """Every published lab example runs, or is rejected exactly where it is meant to be."""
     ex = json.loads((PROJECT_ROOT / "frontend/public/examples.json").read_text(encoding="utf-8"))
     rejected = {"lab-check": "check constraint", "lab-fk": "foreign key", "lab-unique": "duplicate key",
-                "lab-no-real-writes": "permission denied"}
+                "lab-no-real-writes": "permission denied", "lab-same-dataset": "would join different datasets"}
     for e in (x for x in ex["sql"] if x.get("target") == "lab"):
         r = lab_sql(client, e["sql"])
         if e["id"] in rejected:

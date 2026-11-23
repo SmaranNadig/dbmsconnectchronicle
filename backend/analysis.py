@@ -106,18 +106,19 @@ def score_diff(diff_id, progress=lambda p, m: None):
     )
     with db_connection() as conn:
         mid = conn.execute(
-            """INSERT INTO ml_model_run(model_kind,model_version,parameters,feature_schema,diff_run_ids,
-            random_seed,artifact_path,artifact_sha256) VALUES (%s,%s,%s,%s,%s,42,%s,%s) RETURNING model_run_id""",
+            """INSERT INTO ml_model_run(model_kind,model_version,parameters,feature_schema,
+            random_seed,artifact_path,artifact_sha256) VALUES (%s,%s,%s,%s,42,%s,%s) RETURNING model_run_id""",
             (
                 "isolation_forest" if model is not None else "threshold",
                 version,
                 json.dumps(parameters),
                 json.dumps(FEATURES),
-                [diff_id],
                 artifact,
                 artifact_hash,
             ),
         ).fetchone()["model_run_id"]
+        # the diff runs a model was trained on (one row each, migration 0013)
+        conn.execute("INSERT INTO ml_model_input (model_run_id, diff_run_id) VALUES (%s, %s)", (mid, diff_id))
         flagged_count = baseline_count = agreement = done = 0
         with conn.cursor(name="scoring_features") as cursor:
             cursor.execute(FEATURE_SQL, (diff_id,))
@@ -204,7 +205,9 @@ def score_diff(diff_id, progress=lambda p, m: None):
 def models():
     with db_connection() as conn:
         return conn.execute(
-            "SELECT * FROM ml_model_run ORDER BY model_run_id DESC LIMIT 30"
+            """SELECT m.*, ARRAY(SELECT i.diff_run_id FROM ml_model_input i
+                                 WHERE i.model_run_id = m.model_run_id ORDER BY 1) AS diff_run_ids
+               FROM ml_model_run m ORDER BY m.model_run_id DESC LIMIT 30"""
         ).fetchall()
 
 

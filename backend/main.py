@@ -47,6 +47,8 @@ from backend import analysis  # registers model and matching routes on the works
 app.include_router(workspace.router)
 from backend.jobs import router as jobs_router
 app.include_router(jobs_router)
+from backend.design.api import router as design_router
+app.include_router(design_router)
 
 
 def db():

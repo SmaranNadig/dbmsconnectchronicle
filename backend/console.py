@@ -167,3 +167,26 @@ def run_mongo(op: str, filter: dict | None = None, projection: dict | None = Non
     ms = (time.perf_counter() - t0) * 1000
     return {"collection": COLLECTION, "op": op, "count": len(docs), "elapsed_ms": round(ms, 2),
             "documents": json.loads(json_util.dumps(docs, json_options=json_util.RELAXED_JSON_OPTIONS))}
+
+
+def explain_mongo(op: str, filter: dict | None = None, pipeline: list | None = None) -> dict:
+    """The server's query plan (explain, executionStats) for a find, count or
+    aggregate on the source records: which index the winning plan uses
+    (IXSCAN) or whether it reads the whole collection (COLLSCAN)."""
+    for part in (filter, pipeline):
+        _check(part)
+    if op == "find":
+        cmd = {"find": COLLECTION, "filter": filter or {}}
+    elif op == "count":
+        cmd = {"count": COLLECTION, "query": filter or {}}
+    elif op == "aggregate":
+        if not isinstance(pipeline, list):
+            raise QueryError("aggregate needs a pipeline: a JSON array of stages")
+        cmd = {"aggregate": COLLECTION, "pipeline": pipeline, "cursor": {}}
+    else:
+        raise QueryError("explain supports find, count and aggregate")
+    try:
+        out = mongo_db().command("explain", cmd, verbosity="executionStats", maxTimeMS=TIMEOUT_MS)
+    except Exception as e:     # noqa: BLE001
+        raise QueryError(str(e)) from e
+    return json.loads(json_util.dumps(out, json_options=json_util.RELAXED_JSON_OPTIONS))

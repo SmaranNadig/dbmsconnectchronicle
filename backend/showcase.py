@@ -144,6 +144,15 @@ SOURCES = {
     "backend/workspace.py": "release-aware search, bounded graphs, event explanations and exports",
     "backend/analysis.py": "reproducible anomaly features and correspondence ranking",
     "backend/jobs.py": "persisted operations and bounded local workers",
+    "config/dfd.yaml": "Design: the data flow diagrams as data (externals, stores, processes, flows)",
+    "backend/design/dfd.py": "Design: data flow diagram rules check and Gane–Sarson drawing",
+    "backend/design/fd.py": "Design: functional dependency algebra (closure, keys, minimal cover, normal forms, decomposition)",
+    "backend/design/relations.py": "Design: keys and dependencies of every relation",
+    "backend/design/normalisation.py": "Design: normal form of every relation, checked against the loaded data",
+    "backend/design/maintenance.py": "Design: anomaly demonstration, storage files and VACUUM / ANALYZE / REINDEX",
+    "config/query_catalogue.yaml": "Design: the SQL and MongoDB query catalogue with expected plans",
+    "backend/design/queries.py": "Design: runs the query catalogue with EXPLAIN and checks the plans",
+    "backend/design/dictionary.py": "Design: data dictionary read from the catalogs",
 }
 
 

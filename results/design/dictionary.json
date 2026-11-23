@@ -1,0 +1,5914 @@
+{
+ "generated_at": "2026-11-23 13:04 UTC",
+ "postgres": {
+  "tables": [
+   {
+    "schema": "cc",
+    "name": "active_deployment",
+    "description": "The batch the router currently reads, per strategy.",
+    "approx_rows": 3,
+    "total_bytes": 40960,
+    "columns": [
+     {
+      "position": 1,
+      "name": "strategy_id",
+      "type": "smallint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "PK FK"
+     },
+     {
+      "position": 2,
+      "name": "batch_id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     }
+    ],
+    "constraints": [
+     {
+      "name": "active_deployment_pkey",
+      "kind": "primary key",
+      "definition": "PRIMARY KEY (strategy_id)",
+      "deferrable": false
+     },
+     {
+      "name": "active_deployment_batch_key",
+      "kind": "unique",
+      "definition": "UNIQUE (batch_id)",
+      "deferrable": false
+     },
+     {
+      "name": "active_deployment_batch_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (batch_id) REFERENCES deployment_batch(batch_id)",
+      "deferrable": false
+     },
+     {
+      "name": "active_deployment_batch_strategy_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (batch_id, strategy_id) REFERENCES deployment_batch(batch_id, strategy_id)",
+      "deferrable": false
+     },
+     {
+      "name": "active_deployment_strategy_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (strategy_id) REFERENCES partition_strategy(strategy_id)",
+      "deferrable": false
+     }
+    ],
+    "indexes": [
+     {
+      "name": "active_deployment_batch_key",
+      "definition": "CREATE UNIQUE INDEX active_deployment_batch_key ON cc.active_deployment USING btree (batch_id)",
+      "is_unique": true,
+      "is_primary": false,
+      "bytes": 16384,
+      "method": "btree"
+     },
+     {
+      "name": "active_deployment_pkey",
+      "definition": "CREATE UNIQUE INDEX active_deployment_pkey ON cc.active_deployment USING btree (strategy_id)",
+      "is_unique": true,
+      "is_primary": true,
+      "bytes": 16384,
+      "method": "btree"
+     }
+    ],
+    "triggers": []
+   },
+   {
+    "schema": "cc",
+    "name": "annotation",
+    "description": "One attribute value (cell type, side, ...) of a neuron over a range of releases.",
+    "approx_rows": 1625410,
+    "total_bytes": 460029952,
+    "columns": [
+     {
+      "position": 1,
+      "name": "annotation_id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": true,
+      "description": null,
+      "key": "PK"
+     },
+     {
+      "position": 2,
+      "name": "dataset_neuron_id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     },
+     {
+      "position": 3,
+      "name": "annotation_key",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": "attribute name (cell_type, side, ...), mapped from source columns by schema_mapping",
+      "key": ""
+     },
+     {
+      "position": 4,
+      "name": "annotation_value",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 5,
+      "name": "valid_rel",
+      "type": "int4range",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": "valid time in release_order units of the neuron's dataset",
+      "key": ""
+     },
+     {
+      "position": 6,
+      "name": "tx",
+      "type": "tstzrange",
+      "not_null": true,
+      "default_expr": "tstzrange(now(), NULL::timestamp with time zone)",
+      "generated": false,
+      "identity": false,
+      "description": "transaction time; closed (never deleted) when a later load retires the belief",
+      "key": ""
+     },
+     {
+      "position": 7,
+      "name": "provenance_id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     },
+     {
+      "position": 8,
+      "name": "source_line",
+      "type": "integer",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": "line of the source file the value was read from",
+      "key": ""
+     }
+    ],
+    "constraints": [
+     {
+      "name": "annotation_pkey",
+      "kind": "primary key",
+      "definition": "PRIMARY KEY (annotation_id)",
+      "deferrable": false
+     },
+     {
+      "name": "annotation_dataset_neuron_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (dataset_neuron_id) REFERENCES dataset_neuron(dataset_neuron_id)",
+      "deferrable": false
+     },
+     {
+      "name": "annotation_provenance_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (provenance_id) REFERENCES provenance(provenance_id)",
+      "deferrable": false
+     },
+     {
+      "name": "annotation_dataset_neuron_id_annotation_key_valid_rel_tx_excl",
+      "kind": "exclusion",
+      "definition": "EXCLUDE USING gist (dataset_neuron_id WITH =, annotation_key WITH =, valid_rel WITH &&, tx WITH &&)",
+      "deferrable": false
+     },
+     {
+      "name": "annotation_annotation_key_check",
+      "kind": "check",
+      "definition": "CHECK ((annotation_key ~ '^[a-z][a-z0-9_]*$'::text))",
+      "deferrable": false
+     },
+     {
+      "name": "annotation_annotation_value_check",
+      "kind": "check",
+      "definition": "CHECK ((annotation_value <> ''::text))",
+      "deferrable": false
+     },
+     {
+      "name": "annotation_source_line_check",
+      "kind": "check",
+      "definition": "CHECK ((source_line > 0))",
+      "deferrable": false
+     },
+     {
+      "name": "annotation_tx_check",
+      "kind": "check",
+      "definition": "CHECK (((NOT isempty(tx)) AND (NOT lower_inf(tx))))",
+      "deferrable": false
+     },
+     {
+      "name": "annotation_valid_rel_check",
+      "kind": "check",
+      "definition": "CHECK (((NOT isempty(valid_rel)) AND (NOT lower_inf(valid_rel))))",
+      "deferrable": false
+     }
+    ],
+    "indexes": [
+     {
+      "name": "annotation_dataset_neuron_id_annotation_key_valid_rel_tx_excl",
+      "definition": "CREATE INDEX annotation_dataset_neuron_id_annotation_key_valid_rel_tx_excl ON cc.annotation USING gist (dataset_neuron_id, annotation_key, valid_rel, tx)",
+      "is_unique": false,
+      "is_primary": false,
+      "bytes": 193552384,
+      "method": "gist"
+     },
+     {
+      "name": "annotation_key_value_idx",
+      "definition": "CREATE INDEX annotation_key_value_idx ON cc.annotation USING btree (annotation_key, annotation_value) WHERE upper_inf(tx)",
+      "is_unique": false,
+      "is_primary": false,
+      "bytes": 14286848,
+      "method": "btree"
+     },
+     {
+      "name": "annotation_pkey",
+      "definition": "CREATE UNIQUE INDEX annotation_pkey ON cc.annotation USING btree (annotation_id)",
+      "is_unique": true,
+      "is_primary": true,
+      "bytes": 54452224,
+      "method": "btree"
+     }
+    ],
+    "triggers": [
+     {
+      "name": "annotation_history",
+      "definition": "CREATE TRIGGER annotation_history BEFORE DELETE OR UPDATE ON cc.annotation FOR EACH ROW EXECUTE FUNCTION guard_history()",
+      "constraint_trigger": false
+     }
+    ]
+   },
+   {
+    "schema": "cc",
+    "name": "anomaly_result",
+    "description": "A model's score for one diff event.",
+    "approx_rows": 0,
+    "total_bytes": 16384,
+    "columns": [
+     {
+      "position": 1,
+      "name": "model_run_id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "PK FK"
+     },
+     {
+      "position": 2,
+      "name": "diff_event_id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "PK FK"
+     },
+     {
+      "position": 3,
+      "name": "score",
+      "type": "double precision",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 4,
+      "name": "is_flagged",
+      "type": "boolean",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 5,
+      "name": "score_rank",
+      "type": "integer",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 6,
+      "name": "features",
+      "type": "jsonb",
+      "not_null": true,
+      "default_expr": "'{}'::jsonb",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 7,
+      "name": "explanation",
+      "type": "text",
+      "not_null": true,
+      "default_expr": "''::text",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 8,
+      "name": "baseline_flagged",
+      "type": "boolean",
+      "not_null": true,
+      "default_expr": "false",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     }
+    ],
+    "constraints": [
+     {
+      "name": "anomaly_result_pkey",
+      "kind": "primary key",
+      "definition": "PRIMARY KEY (model_run_id, diff_event_id)",
+      "deferrable": false
+     },
+     {
+      "name": "anomaly_result_diff_event_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (diff_event_id) REFERENCES diff_event(diff_event_id) ON DELETE CASCADE",
+      "deferrable": false
+     },
+     {
+      "name": "anomaly_result_model_run_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (model_run_id) REFERENCES ml_model_run(model_run_id) ON DELETE CASCADE",
+      "deferrable": false
+     },
+     {
+      "name": "anomaly_result_score_rank_check",
+      "kind": "check",
+      "definition": "CHECK ((score_rank > 0))",
+      "deferrable": false
+     }
+    ],
+    "indexes": [
+     {
+      "name": "anomaly_result_pkey",
+      "definition": "CREATE UNIQUE INDEX anomaly_result_pkey ON cc.anomaly_result USING btree (model_run_id, diff_event_id)",
+      "is_unique": true,
+      "is_primary": true,
+      "bytes": 8192,
+      "method": "btree"
+     }
+    ],
+    "triggers": []
+   },
+   {
+    "schema": "cc",
+    "name": "brain_region",
+    "description": "A neuropil in one hemisphere (NULL = unpaired).",
+    "approx_rows": 82,
+    "total_bytes": 81920,
+    "columns": [
+     {
+      "position": 1,
+      "name": "brain_region_id",
+      "type": "integer",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": true,
+      "description": null,
+      "key": "PK"
+     },
+     {
+      "position": 2,
+      "name": "canonical_code",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     },
+     {
+      "position": 3,
+      "name": "hemisphere",
+      "type": "character(1)",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": "L or R; NULL for unpaired neuropils",
+      "key": ""
+     },
+     {
+      "position": 5,
+      "name": "name",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     }
+    ],
+    "constraints": [
+     {
+      "name": "brain_region_pkey",
+      "kind": "primary key",
+      "definition": "PRIMARY KEY (brain_region_id)",
+      "deferrable": false
+     },
+     {
+      "name": "brain_region_canonical_code_hemisphere_key",
+      "kind": "unique",
+      "definition": "UNIQUE NULLS NOT DISTINCT (canonical_code, hemisphere)",
+      "deferrable": false
+     },
+     {
+      "name": "brain_region_neuropil_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (canonical_code) REFERENCES neuropil(canonical_code)",
+      "deferrable": false
+     },
+     {
+      "name": "brain_region_hemisphere_check",
+      "kind": "check",
+      "definition": "CHECK ((hemisphere = ANY (ARRAY['L'::bpchar, 'R'::bpchar])))",
+      "deferrable": false
+     }
+    ],
+    "indexes": [
+     {
+      "name": "brain_region_canonical_code_hemisphere_key",
+      "definition": "CREATE UNIQUE INDEX brain_region_canonical_code_hemisphere_key ON cc.brain_region USING btree (canonical_code, hemisphere) NULLS NOT DISTINCT",
+      "is_unique": true,
+      "is_primary": false,
+      "bytes": 16384,
+      "method": "btree"
+     },
+     {
+      "name": "brain_region_pkey",
+      "definition": "CREATE UNIQUE INDEX brain_region_pkey ON cc.brain_region USING btree (brain_region_id)",
+      "is_unique": true,
+      "is_primary": true,
+      "bytes": 16384,
+      "method": "btree"
+     }
+    ],
+    "triggers": []
+   },
+   {
+    "schema": "cc",
+    "name": "brain_region_alias",
+    "description": "A dataset's own region code mapped to the canonical region.",
+    "approx_rows": 141,
+    "total_bytes": 73728,
+    "columns": [
+     {
+      "position": 1,
+      "name": "dataset_id",
+      "type": "smallint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "PK FK"
+     },
+     {
+      "position": 2,
+      "name": "source_code",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "PK"
+     },
+     {
+      "position": 3,
+      "name": "brain_region_id",
+      "type": "integer",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     }
+    ],
+    "constraints": [
+     {
+      "name": "brain_region_alias_pkey",
+      "kind": "primary key",
+      "definition": "PRIMARY KEY (dataset_id, source_code)",
+      "deferrable": false
+     },
+     {
+      "name": "brain_region_alias_brain_region_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (brain_region_id) REFERENCES brain_region(brain_region_id)",
+      "deferrable": false
+     },
+     {
+      "name": "brain_region_alias_dataset_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (dataset_id) REFERENCES dataset(dataset_id)",
+      "deferrable": false
+     }
+    ],
+    "indexes": [
+     {
+      "name": "brain_region_alias_pkey",
+      "definition": "CREATE UNIQUE INDEX brain_region_alias_pkey ON cc.brain_region_alias USING btree (dataset_id, source_code)",
+      "is_unique": true,
+      "is_primary": true,
+      "bytes": 16384,
+      "method": "btree"
+     }
+    ],
+    "triggers": []
+   },
+   {
+    "schema": "cc",
+    "name": "canonical_neuron",
+    "description": "A neuron identity across datasets.",
+    "approx_rows": 182274,
+    "total_bytes": 32186368,
+    "columns": [
+     {
+      "position": 1,
+      "name": "canonical_neuron_id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": true,
+      "description": null,
+      "key": "PK"
+     },
+     {
+      "position": 2,
+      "name": "status",
+      "type": "text",
+      "not_null": true,
+      "default_expr": "'active'::text",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 3,
+      "name": "neuron_type_id",
+      "type": "integer",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     },
+     {
+      "position": 4,
+      "name": "label",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 5,
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     }
+    ],
+    "constraints": [
+     {
+      "name": "canonical_neuron_pkey",
+      "kind": "primary key",
+      "definition": "PRIMARY KEY (canonical_neuron_id)",
+      "deferrable": false
+     },
+     {
+      "name": "canonical_neuron_neuron_type_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (neuron_type_id) REFERENCES neuron_type(neuron_type_id)",
+      "deferrable": false
+     },
+     {
+      "name": "canonical_neuron_status_check",
+      "kind": "check",
+      "definition": "CHECK ((status = ANY (ARRAY['active'::text, 'merged'::text, 'retired'::text])))",
+      "deferrable": false
+     }
+    ],
+    "indexes": [
+     {
+      "name": "canonical_neuron_label_key",
+      "definition": "CREATE UNIQUE INDEX canonical_neuron_label_key ON cc.canonical_neuron USING btree (label)",
+      "is_unique": true,
+      "is_primary": false,
+      "bytes": 12804096,
+      "method": "btree"
+     },
+     {
+      "name": "canonical_neuron_pkey",
+      "definition": "CREATE UNIQUE INDEX canonical_neuron_pkey ON cc.canonical_neuron USING btree (canonical_neuron_id)",
+      "is_unique": true,
+      "is_primary": true,
+      "bytes": 4112384,
+      "method": "btree"
+     }
+    ],
+    "triggers": []
+   },
+   {
+    "schema": "cc",
+    "name": "connection",
+    "description": "Synapse count between two neurons over a range of releases (bitemporal).",
+    "approx_rows": 9001488,
+    "total_bytes": 3020906496,
+    "columns": [
+     {
+      "position": 1,
+      "name": "connection_id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": true,
+      "description": null,
+      "key": "PK"
+     },
+     {
+      "position": 2,
+      "name": "dataset_id",
+      "type": "smallint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": "copy of both endpoints' dataset, checked by composite foreign keys (an edge cannot join two connectomes)",
+      "key": "FK"
+     },
+     {
+      "position": 3,
+      "name": "pre_neuron_id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     },
+     {
+      "position": 4,
+      "name": "post_neuron_id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     },
+     {
+      "position": 5,
+      "name": "synapse_count",
+      "type": "integer",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": "number of synapses from pre to post (summed over duplicate source rows)",
+      "key": ""
+     },
+     {
+      "position": 6,
+      "name": "valid_rel",
+      "type": "int4range",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": "valid time in release_order units; one row covers every release in which the count is unchanged",
+      "key": ""
+     },
+     {
+      "position": 7,
+      "name": "tx",
+      "type": "tstzrange",
+      "not_null": true,
+      "default_expr": "tstzrange(now(), NULL::timestamp with time zone)",
+      "generated": false,
+      "identity": false,
+      "description": "transaction time; closed when a later load retires this version",
+      "key": ""
+     },
+     {
+      "position": 8,
+      "name": "provenance_id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     },
+     {
+      "position": 9,
+      "name": "source_lines",
+      "type": "integer[]",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": "line numbers of the source rows summed into this edge (evidence, read as a whole)",
+      "key": ""
+     }
+    ],
+    "constraints": [
+     {
+      "name": "connection_pkey",
+      "kind": "primary key",
+      "definition": "PRIMARY KEY (connection_id)",
+      "deferrable": false
+     },
+     {
+      "name": "connection_post_neuron_id_dataset_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (post_neuron_id, dataset_id) REFERENCES dataset_neuron(dataset_neuron_id, dataset_id)",
+      "deferrable": false
+     },
+     {
+      "name": "connection_pre_neuron_id_dataset_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (pre_neuron_id, dataset_id) REFERENCES dataset_neuron(dataset_neuron_id, dataset_id)",
+      "deferrable": false
+     },
+     {
+      "name": "connection_provenance_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (provenance_id) REFERENCES provenance(provenance_id)",
+      "deferrable": false
+     },
+     {
+      "name": "connection_pre_neuron_id_post_neuron_id_valid_rel_tx_excl",
+      "kind": "exclusion",
+      "definition": "EXCLUDE USING gist (pre_neuron_id WITH =, post_neuron_id WITH =, valid_rel WITH &&, tx WITH &&)",
+      "deferrable": false
+     },
+     {
+      "name": "connection_source_lines_check",
+      "kind": "check",
+      "definition": "CHECK ((cardinality(source_lines) > 0))",
+      "deferrable": false
+     },
+     {
+      "name": "connection_synapse_count_check",
+      "kind": "check",
+      "definition": "CHECK ((synapse_count >= 0))",
+      "deferrable": false
+     },
+     {
+      "name": "connection_tx_check",
+      "kind": "check",
+      "definition": "CHECK (((NOT isempty(tx)) AND (NOT lower_inf(tx))))",
+      "deferrable": false
+     },
+     {
+      "name": "connection_valid_rel_check",
+      "kind": "check",
+      "definition": "CHECK (((NOT isempty(valid_rel)) AND (NOT lower_inf(valid_rel))))",
+      "deferrable": false
+     }
+    ],
+    "indexes": [
+     {
+      "name": "connection_dataset_open_idx",
+      "definition": "CREATE INDEX connection_dataset_open_idx ON cc.connection USING btree (dataset_id) WHERE (upper_inf(tx) AND upper_inf(valid_rel))",
+      "is_unique": false,
+      "is_primary": false,
+      "bytes": 49168384,
+      "method": "btree"
+     },
+     {
+      "name": "connection_pkey",
+      "definition": "CREATE UNIQUE INDEX connection_pkey ON cc.connection USING btree (connection_id)",
+      "is_unique": true,
+      "is_primary": true,
+      "bytes": 263569408,
+      "method": "btree"
+     },
+     {
+      "name": "connection_post_idx",
+      "definition": "CREATE INDEX connection_post_idx ON cc.connection USING btree (post_neuron_id)",
+      "is_unique": false,
+      "is_primary": false,
+      "bytes": 97910784,
+      "method": "btree"
+     },
+     {
+      "name": "connection_pre_idx",
+      "definition": "CREATE INDEX connection_pre_idx ON cc.connection USING btree (pre_neuron_id)",
+      "is_unique": false,
+      "is_primary": false,
+      "bytes": 95723520,
+      "method": "btree"
+     },
+     {
+      "name": "connection_pre_neuron_id_post_neuron_id_valid_rel_tx_excl",
+      "definition": "CREATE INDEX connection_pre_neuron_id_post_neuron_id_valid_rel_tx_excl ON cc.connection USING gist (pre_neuron_id, post_neuron_id, valid_rel, tx)",
+      "is_unique": false,
+      "is_primary": false,
+      "bytes": 1140875264,
+      "method": "gist"
+     }
+    ],
+    "triggers": [
+     {
+      "name": "connection_history",
+      "definition": "CREATE TRIGGER connection_history BEFORE DELETE OR UPDATE ON cc.connection FOR EACH ROW EXECUTE FUNCTION guard_history()",
+      "constraint_trigger": false
+     }
+    ]
+   },
+   {
+    "schema": "cc",
+    "name": "dataset",
+    "description": "A public connectome (hemibrain, FlyWire).",
+    "approx_rows": 2,
+    "total_bytes": 49152,
+    "columns": [
+     {
+      "position": 1,
+      "name": "dataset_id",
+      "type": "smallint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": true,
+      "description": null,
+      "key": "PK"
+     },
+     {
+      "position": 2,
+      "name": "code",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 3,
+      "name": "name",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 4,
+      "name": "organism",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 5,
+      "name": "description",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 6,
+      "name": "source_url",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 7,
+      "name": "license",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 8,
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 9,
+      "name": "organization",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 10,
+      "name": "repository",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 11,
+      "name": "data_formats",
+      "type": "text[]",
+      "not_null": true,
+      "default_expr": "'{}'::text[]",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     }
+    ],
+    "constraints": [
+     {
+      "name": "dataset_pkey",
+      "kind": "primary key",
+      "definition": "PRIMARY KEY (dataset_id)",
+      "deferrable": false
+     },
+     {
+      "name": "dataset_code_key",
+      "kind": "unique",
+      "definition": "UNIQUE (code)",
+      "deferrable": false
+     },
+     {
+      "name": "dataset_code_check",
+      "kind": "check",
+      "definition": "CHECK ((code ~ '^[a-z][a-z0-9_]*$'::text))",
+      "deferrable": false
+     }
+    ],
+    "indexes": [
+     {
+      "name": "dataset_code_key",
+      "definition": "CREATE UNIQUE INDEX dataset_code_key ON cc.dataset USING btree (code)",
+      "is_unique": true,
+      "is_primary": false,
+      "bytes": 16384,
+      "method": "btree"
+     },
+     {
+      "name": "dataset_pkey",
+      "definition": "CREATE UNIQUE INDEX dataset_pkey ON cc.dataset USING btree (dataset_id)",
+      "is_unique": true,
+      "is_primary": true,
+      "bytes": 16384,
+      "method": "btree"
+     }
+    ],
+    "triggers": []
+   },
+   {
+    "schema": "cc",
+    "name": "dataset_neuron",
+    "description": "A neuron as identified by its dataset (original id kept as text).",
+    "approx_rows": 182274,
+    "total_bytes": 48906240,
+    "columns": [
+     {
+      "position": 1,
+      "name": "dataset_neuron_id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": true,
+      "description": null,
+      "key": "PK"
+     },
+     {
+      "position": 2,
+      "name": "dataset_id",
+      "type": "smallint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     },
+     {
+      "position": 3,
+      "name": "source_neuron_id",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": "the neuron id as published (hemibrain bodyId, FlyWire root_id), kept as text",
+      "key": ""
+     },
+     {
+      "position": 4,
+      "name": "first_release_id",
+      "type": "integer",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": "release in which the neuron first appeared (same dataset: composite foreign key)",
+      "key": "FK"
+     },
+     {
+      "position": 5,
+      "name": "provenance_id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     },
+     {
+      "position": 6,
+      "name": "source_line",
+      "type": "integer",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 7,
+      "name": "metadata_doc_id",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": "_id of the neuron's MongoDB source document (dataset code:source id)",
+      "key": ""
+     }
+    ],
+    "constraints": [
+     {
+      "name": "dataset_neuron_pkey",
+      "kind": "primary key",
+      "definition": "PRIMARY KEY (dataset_neuron_id)",
+      "deferrable": false
+     },
+     {
+      "name": "dataset_neuron_dataset_id_source_neuron_id_key",
+      "kind": "unique",
+      "definition": "UNIQUE (dataset_id, source_neuron_id)",
+      "deferrable": false
+     },
+     {
+      "name": "dataset_neuron_dataset_neuron_id_dataset_id_key",
+      "kind": "unique",
+      "definition": "UNIQUE (dataset_neuron_id, dataset_id)",
+      "deferrable": false
+     },
+     {
+      "name": "dataset_neuron_metadata_doc_id_key",
+      "kind": "unique",
+      "definition": "UNIQUE (metadata_doc_id)",
+      "deferrable": false
+     },
+     {
+      "name": "dataset_neuron_dataset_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (dataset_id) REFERENCES dataset(dataset_id)",
+      "deferrable": false
+     },
+     {
+      "name": "dataset_neuron_first_release_id_dataset_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (first_release_id, dataset_id) REFERENCES release(release_id, dataset_id)",
+      "deferrable": false
+     },
+     {
+      "name": "dataset_neuron_provenance_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (provenance_id) REFERENCES provenance(provenance_id)",
+      "deferrable": false
+     },
+     {
+      "name": "dataset_neuron_source_line_check",
+      "kind": "check",
+      "definition": "CHECK ((source_line > 0))",
+      "deferrable": false
+     },
+     {
+      "name": "dataset_neuron_source_neuron_id_check",
+      "kind": "check",
+      "definition": "CHECK ((source_neuron_id <> ''::text))",
+      "deferrable": false
+     }
+    ],
+    "indexes": [
+     {
+      "name": "dataset_neuron_dataset_id_source_neuron_id_key",
+      "definition": "CREATE UNIQUE INDEX dataset_neuron_dataset_id_source_neuron_id_key ON cc.dataset_neuron USING btree (dataset_id, source_neuron_id)",
+      "is_unique": true,
+      "is_primary": false,
+      "bytes": 10436608,
+      "method": "btree"
+     },
+     {
+      "name": "dataset_neuron_dataset_neuron_id_dataset_id_key",
+      "definition": "CREATE UNIQUE INDEX dataset_neuron_dataset_neuron_id_dataset_id_key ON cc.dataset_neuron USING btree (dataset_neuron_id, dataset_id)",
+      "is_unique": true,
+      "is_primary": false,
+      "bytes": 5767168,
+      "method": "btree"
+     },
+     {
+      "name": "dataset_neuron_metadata_doc_id_key",
+      "definition": "CREATE UNIQUE INDEX dataset_neuron_metadata_doc_id_key ON cc.dataset_neuron USING btree (metadata_doc_id)",
+      "is_unique": true,
+      "is_primary": false,
+      "bytes": 8896512,
+      "method": "btree"
+     },
+     {
+      "name": "dataset_neuron_pkey",
+      "definition": "CREATE UNIQUE INDEX dataset_neuron_pkey ON cc.dataset_neuron USING btree (dataset_neuron_id)",
+      "is_unique": true,
+      "is_primary": true,
+      "bytes": 4120576,
+      "method": "btree"
+     }
+    ],
+    "triggers": []
+   },
+   {
+    "schema": "cc",
+    "name": "deployment_batch",
+    "description": "One generation of shard copies for a strategy.",
+    "approx_rows": 3,
+    "total_bytes": 49152,
+    "columns": [
+     {
+      "position": 1,
+      "name": "batch_id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": true,
+      "description": null,
+      "key": "PK"
+     },
+     {
+      "position": 2,
+      "name": "strategy_id",
+      "type": "smallint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     },
+     {
+      "position": 3,
+      "name": "source_revision",
+      "type": "character(64)",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 4,
+      "name": "placement_revision",
+      "type": "character(64)",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 5,
+      "name": "status",
+      "type": "text",
+      "not_null": true,
+      "default_expr": "'building'::text",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 6,
+      "name": "details",
+      "type": "jsonb",
+      "not_null": true,
+      "default_expr": "'{}'::jsonb",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 7,
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     }
+    ],
+    "constraints": [
+     {
+      "name": "deployment_batch_pkey",
+      "kind": "primary key",
+      "definition": "PRIMARY KEY (batch_id)",
+      "deferrable": false
+     },
+     {
+      "name": "deployment_batch_id_strategy_key",
+      "kind": "unique",
+      "definition": "UNIQUE (batch_id, strategy_id)",
+      "deferrable": false
+     },
+     {
+      "name": "deployment_batch_strategy_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (strategy_id) REFERENCES partition_strategy(strategy_id)",
+      "deferrable": false
+     },
+     {
+      "name": "deployment_batch_status_check",
+      "kind": "check",
+      "definition": "CHECK ((status = ANY (ARRAY['building'::text, 'verified'::text, 'failed'::text])))",
+      "deferrable": false
+     }
+    ],
+    "indexes": [
+     {
+      "name": "deployment_batch_id_strategy_key",
+      "definition": "CREATE UNIQUE INDEX deployment_batch_id_strategy_key ON cc.deployment_batch USING btree (batch_id, strategy_id)",
+      "is_unique": true,
+      "is_primary": false,
+      "bytes": 16384,
+      "method": "btree"
+     },
+     {
+      "name": "deployment_batch_pkey",
+      "definition": "CREATE UNIQUE INDEX deployment_batch_pkey ON cc.deployment_batch USING btree (batch_id)",
+      "is_unique": true,
+      "is_primary": true,
+      "bytes": 16384,
+      "method": "btree"
+     }
+    ],
+    "triggers": []
+   },
+   {
+    "schema": "cc",
+    "name": "diff_event",
+    "description": "One change found by a diff run (added, removed, modified).",
+    "approx_rows": 3468914,
+    "total_bytes": 562102272,
+    "columns": [
+     {
+      "position": 1,
+      "name": "diff_event_id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": true,
+      "description": null,
+      "key": "PK"
+     },
+     {
+      "position": 2,
+      "name": "diff_run_id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     },
+     {
+      "position": 3,
+      "name": "entity_type",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 4,
+      "name": "change_type",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 5,
+      "name": "dataset_neuron_id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     },
+     {
+      "position": 6,
+      "name": "post_neuron_id",
+      "type": "bigint",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     },
+     {
+      "position": 7,
+      "name": "annotation_key",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 8,
+      "name": "old_value",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 9,
+      "name": "new_value",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 10,
+      "name": "old_weight",
+      "type": "integer",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 11,
+      "name": "new_weight",
+      "type": "integer",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 12,
+      "name": "weight_delta",
+      "type": "integer",
+      "not_null": false,
+      "default_expr": "(COALESCE(new_weight, 0) - COALESCE(old_weight, 0))",
+      "generated": true,
+      "identity": false,
+      "description": "new_weight - old_weight, generated by the database",
+      "key": ""
+     },
+     {
+      "position": 13,
+      "name": "record_a_id",
+      "type": "bigint",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": "versioned row (connection, annotation or neuron_version id) in release A",
+      "key": ""
+     },
+     {
+      "position": 14,
+      "name": "record_b_id",
+      "type": "bigint",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": "versioned row in release B",
+      "key": ""
+     }
+    ],
+    "constraints": [
+     {
+      "name": "diff_event_pkey",
+      "kind": "primary key",
+      "definition": "PRIMARY KEY (diff_event_id)",
+      "deferrable": false
+     },
+     {
+      "name": "diff_event_dataset_neuron_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (dataset_neuron_id) REFERENCES dataset_neuron(dataset_neuron_id)",
+      "deferrable": false
+     },
+     {
+      "name": "diff_event_diff_run_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (diff_run_id) REFERENCES diff_run(diff_run_id) ON DELETE CASCADE",
+      "deferrable": false
+     },
+     {
+      "name": "diff_event_post_neuron_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (post_neuron_id) REFERENCES dataset_neuron(dataset_neuron_id)",
+      "deferrable": false
+     },
+     {
+      "name": "diff_event_change_type_check",
+      "kind": "check",
+      "definition": "CHECK ((change_type = ANY (ARRAY['added'::text, 'removed'::text, 'modified'::text])))",
+      "deferrable": false
+     },
+     {
+      "name": "diff_event_check",
+      "kind": "check",
+      "definition": "CHECK (((entity_type = 'connection'::text) = (post_neuron_id IS NOT NULL)))",
+      "deferrable": false
+     },
+     {
+      "name": "diff_event_check1",
+      "kind": "check",
+      "definition": "CHECK (((entity_type = 'annotation'::text) = (annotation_key IS NOT NULL)))",
+      "deferrable": false
+     },
+     {
+      "name": "diff_event_check2",
+      "kind": "check",
+      "definition": "CHECK (((change_type <> 'added'::text) OR ((record_a_id IS NULL) AND (record_b_id IS NOT NULL))))",
+      "deferrable": false
+     },
+     {
+      "name": "diff_event_check3",
+      "kind": "check",
+      "definition": "CHECK (((change_type <> 'removed'::text) OR ((record_a_id IS NOT NULL) AND (record_b_id IS NULL))))",
+      "deferrable": false
+     },
+     {
+      "name": "diff_event_check4",
+      "kind": "check",
+      "definition": "CHECK (((change_type <> 'modified'::text) OR ((record_a_id IS NOT NULL) AND (record_b_id IS NOT NULL))))",
+      "deferrable": false
+     },
+     {
+      "name": "diff_event_entity_type_check",
+      "kind": "check",
+      "definition": "CHECK ((entity_type = ANY (ARRAY['neuron'::text, 'connection'::text, 'annotation'::text])))",
+      "deferrable": false
+     },
+     {
+      "name": "diff_event_new_weight_check",
+      "kind": "check",
+      "definition": "CHECK ((new_weight >= 0))",
+      "deferrable": false
+     },
+     {
+      "name": "diff_event_old_weight_check",
+      "kind": "check",
+      "definition": "CHECK ((old_weight >= 0))",
+      "deferrable": false
+     }
+    ],
+    "indexes": [
+     {
+      "name": "diff_event_pkey",
+      "definition": "CREATE UNIQUE INDEX diff_event_pkey ON cc.diff_event USING btree (diff_event_id)",
+      "is_unique": true,
+      "is_primary": true,
+      "bytes": 88473600,
+      "method": "btree"
+     },
+     {
+      "name": "diff_event_run_idx",
+      "definition": "CREATE INDEX diff_event_run_idx ON cc.diff_event USING btree (diff_run_id, entity_type, change_type)",
+      "is_unique": false,
+      "is_primary": false,
+      "bytes": 26230784,
+      "method": "btree"
+     }
+    ],
+    "triggers": []
+   },
+   {
+    "schema": "cc",
+    "name": "diff_run",
+    "description": "One comparison of two release states at a transaction time.",
+    "approx_rows": 5,
+    "total_bytes": 49152,
+    "columns": [
+     {
+      "position": 1,
+      "name": "diff_run_id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": true,
+      "description": null,
+      "key": "PK"
+     },
+     {
+      "position": 2,
+      "name": "mode",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": "temporal (two releases of one dataset) or cross_dataset (never reported as temporal change)",
+      "key": ""
+     },
+     {
+      "position": 3,
+      "name": "dataset_a",
+      "type": "smallint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     },
+     {
+      "position": 4,
+      "name": "release_a",
+      "type": "integer",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     },
+     {
+      "position": 5,
+      "name": "dataset_b",
+      "type": "smallint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     },
+     {
+      "position": 6,
+      "name": "release_b",
+      "type": "integer",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     },
+     {
+      "position": 7,
+      "name": "as_of",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": "transaction time at which both release states were read (makes a diff repeatable)",
+      "key": ""
+     },
+     {
+      "position": 8,
+      "name": "parameters",
+      "type": "jsonb",
+      "not_null": true,
+      "default_expr": "'{}'::jsonb",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 9,
+      "name": "status",
+      "type": "text",
+      "not_null": true,
+      "default_expr": "'running'::text",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 10,
+      "name": "started_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "clock_timestamp()",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 11,
+      "name": "finished_at",
+      "type": "timestamp with time zone",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 12,
+      "name": "stats",
+      "type": "jsonb",
+      "not_null": true,
+      "default_expr": "'{}'::jsonb",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     }
+    ],
+    "constraints": [
+     {
+      "name": "diff_run_pkey",
+      "kind": "primary key",
+      "definition": "PRIMARY KEY (diff_run_id)",
+      "deferrable": false
+     },
+     {
+      "name": "diff_run_release_a_dataset_a_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (release_a, dataset_a) REFERENCES release(release_id, dataset_id)",
+      "deferrable": false
+     },
+     {
+      "name": "diff_run_release_b_dataset_b_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (release_b, dataset_b) REFERENCES release(release_id, dataset_id)",
+      "deferrable": false
+     },
+     {
+      "name": "diff_run_check",
+      "kind": "check",
+      "definition": "CHECK ((release_a <> release_b))",
+      "deferrable": false
+     },
+     {
+      "name": "diff_run_check1",
+      "kind": "check",
+      "definition": "CHECK (((mode <> 'temporal'::text) OR (dataset_a = dataset_b)))",
+      "deferrable": false
+     },
+     {
+      "name": "diff_run_check2",
+      "kind": "check",
+      "definition": "CHECK (((mode <> 'cross_dataset'::text) OR (dataset_a <> dataset_b)))",
+      "deferrable": false
+     },
+     {
+      "name": "diff_run_mode_check",
+      "kind": "check",
+      "definition": "CHECK ((mode = ANY (ARRAY['temporal'::text, 'cross_dataset'::text])))",
+      "deferrable": false
+     },
+     {
+      "name": "diff_run_status_check",
+      "kind": "check",
+      "definition": "CHECK ((status = ANY (ARRAY['running'::text, 'succeeded'::text, 'failed'::text])))",
+      "deferrable": false
+     }
+    ],
+    "indexes": [
+     {
+      "name": "diff_run_idempotent",
+      "definition": "CREATE UNIQUE INDEX diff_run_idempotent ON cc.diff_run USING btree (mode, release_a, release_b, as_of, md5((parameters)::text))",
+      "is_unique": true,
+      "is_primary": false,
+      "bytes": 16384,
+      "method": "btree"
+     },
+     {
+      "name": "diff_run_pkey",
+      "definition": "CREATE UNIQUE INDEX diff_run_pkey ON cc.diff_run USING btree (diff_run_id)",
+      "is_unique": true,
+      "is_primary": true,
+      "bytes": 16384,
+      "method": "btree"
+     }
+    ],
+    "triggers": []
+   },
+   {
+    "schema": "cc",
+    "name": "ingestion_run",
+    "description": "One attempt to load a release.",
+    "approx_rows": 9,
+    "total_bytes": 81920,
+    "columns": [
+     {
+      "position": 1,
+      "name": "run_id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": true,
+      "description": null,
+      "key": "PK"
+     },
+     {
+      "position": 2,
+      "name": "release_id",
+      "type": "integer",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     },
+     {
+      "position": 3,
+      "name": "pipeline_version",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 4,
+      "name": "status",
+      "type": "text",
+      "not_null": true,
+      "default_expr": "'running'::text",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 5,
+      "name": "started_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "clock_timestamp()",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 6,
+      "name": "finished_at",
+      "type": "timestamp with time zone",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 7,
+      "name": "stats",
+      "type": "jsonb",
+      "not_null": true,
+      "default_expr": "'{}'::jsonb",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 8,
+      "name": "error_message",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     }
+    ],
+    "constraints": [
+     {
+      "name": "ingestion_run_pkey",
+      "kind": "primary key",
+      "definition": "PRIMARY KEY (run_id)",
+      "deferrable": false
+     },
+     {
+      "name": "ingestion_run_id_release_key",
+      "kind": "unique",
+      "definition": "UNIQUE (run_id, release_id)",
+      "deferrable": false
+     },
+     {
+      "name": "ingestion_run_release_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (release_id) REFERENCES release(release_id)",
+      "deferrable": false
+     },
+     {
+      "name": "ingestion_run_check",
+      "kind": "check",
+      "definition": "CHECK (((finished_at IS NULL) OR (finished_at >= started_at)))",
+      "deferrable": false
+     },
+     {
+      "name": "ingestion_run_check1",
+      "kind": "check",
+      "definition": "CHECK (((status = 'running'::text) = (finished_at IS NULL)))",
+      "deferrable": false
+     },
+     {
+      "name": "ingestion_run_status_check",
+      "kind": "check",
+      "definition": "CHECK ((status = ANY (ARRAY['running'::text, 'succeeded'::text, 'failed'::text])))",
+      "deferrable": false
+     }
+    ],
+    "indexes": [
+     {
+      "name": "ingestion_run_id_release_key",
+      "definition": "CREATE UNIQUE INDEX ingestion_run_id_release_key ON cc.ingestion_run USING btree (run_id, release_id)",
+      "is_unique": true,
+      "is_primary": false,
+      "bytes": 16384,
+      "method": "btree"
+     },
+     {
+      "name": "ingestion_run_pkey",
+      "definition": "CREATE UNIQUE INDEX ingestion_run_pkey ON cc.ingestion_run USING btree (run_id)",
+      "is_unique": true,
+      "is_primary": true,
+      "bytes": 16384,
+      "method": "btree"
+     }
+    ],
+    "triggers": []
+   },
+   {
+    "schema": "cc",
+    "name": "metadata_record_digest",
+    "description": "Expected count and checksum of a neuron's source records per release.",
+    "approx_rows": 0,
+    "total_bytes": 8192,
+    "columns": [
+     {
+      "position": 1,
+      "name": "dataset_neuron_id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "PK FK"
+     },
+     {
+      "position": 2,
+      "name": "release_id",
+      "type": "integer",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "PK FK"
+     },
+     {
+      "position": 3,
+      "name": "record_count",
+      "type": "integer",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 4,
+      "name": "sha256",
+      "type": "character(64)",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     }
+    ],
+    "constraints": [
+     {
+      "name": "metadata_record_digest_pkey",
+      "kind": "primary key",
+      "definition": "PRIMARY KEY (dataset_neuron_id, release_id)",
+      "deferrable": false
+     },
+     {
+      "name": "metadata_record_digest_dataset_neuron_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (dataset_neuron_id) REFERENCES dataset_neuron(dataset_neuron_id)",
+      "deferrable": false
+     },
+     {
+      "name": "metadata_record_digest_release_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (release_id) REFERENCES release(release_id)",
+      "deferrable": false
+     },
+     {
+      "name": "metadata_record_digest_record_count_check",
+      "kind": "check",
+      "definition": "CHECK ((record_count >= 0))",
+      "deferrable": false
+     }
+    ],
+    "indexes": [
+     {
+      "name": "metadata_record_digest_pkey",
+      "definition": "CREATE UNIQUE INDEX metadata_record_digest_pkey ON cc.metadata_record_digest USING btree (dataset_neuron_id, release_id)",
+      "is_unique": true,
+      "is_primary": true,
+      "bytes": 8192,
+      "method": "btree"
+     }
+    ],
+    "triggers": []
+   },
+   {
+    "schema": "cc",
+    "name": "metadata_sync",
+    "description": "One synchronisation of a release's source records into MongoDB.",
+    "approx_rows": 5,
+    "total_bytes": 49152,
+    "columns": [
+     {
+      "position": 1,
+      "name": "metadata_sync_id",
+      "type": "integer",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": true,
+      "description": null,
+      "key": "PK"
+     },
+     {
+      "position": 2,
+      "name": "release_id",
+      "type": "integer",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     },
+     {
+      "position": 3,
+      "name": "mongo_database",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 4,
+      "name": "mongo_collection",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 5,
+      "name": "pipeline_version",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 6,
+      "name": "status",
+      "type": "text",
+      "not_null": true,
+      "default_expr": "'running'::text",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 7,
+      "name": "started_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 8,
+      "name": "finished_at",
+      "type": "timestamp with time zone",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 9,
+      "name": "documents_written",
+      "type": "integer",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 10,
+      "name": "records_written",
+      "type": "integer",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 11,
+      "name": "stats",
+      "type": "jsonb",
+      "not_null": true,
+      "default_expr": "'{}'::jsonb",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 12,
+      "name": "error_message",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     }
+    ],
+    "constraints": [
+     {
+      "name": "metadata_sync_pkey",
+      "kind": "primary key",
+      "definition": "PRIMARY KEY (metadata_sync_id)",
+      "deferrable": false
+     },
+     {
+      "name": "metadata_sync_release_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (release_id) REFERENCES release(release_id)",
+      "deferrable": false
+     },
+     {
+      "name": "metadata_sync_check",
+      "kind": "check",
+      "definition": "CHECK (((status = 'running'::text) = (finished_at IS NULL)))",
+      "deferrable": false
+     },
+     {
+      "name": "metadata_sync_check1",
+      "kind": "check",
+      "definition": "CHECK (((status <> 'failed'::text) OR (error_message IS NOT NULL)))",
+      "deferrable": false
+     },
+     {
+      "name": "metadata_sync_documents_written_check",
+      "kind": "check",
+      "definition": "CHECK ((documents_written >= 0))",
+      "deferrable": false
+     },
+     {
+      "name": "metadata_sync_records_written_check",
+      "kind": "check",
+      "definition": "CHECK ((records_written >= 0))",
+      "deferrable": false
+     },
+     {
+      "name": "metadata_sync_status_check",
+      "kind": "check",
+      "definition": "CHECK ((status = ANY (ARRAY['running'::text, 'completed'::text, 'failed'::text])))",
+      "deferrable": false
+     }
+    ],
+    "indexes": [
+     {
+      "name": "metadata_sync_pkey",
+      "definition": "CREATE UNIQUE INDEX metadata_sync_pkey ON cc.metadata_sync USING btree (metadata_sync_id)",
+      "is_unique": true,
+      "is_primary": true,
+      "bytes": 16384,
+      "method": "btree"
+     },
+     {
+      "name": "metadata_sync_release_idx",
+      "definition": "CREATE INDEX metadata_sync_release_idx ON cc.metadata_sync USING btree (release_id, started_at DESC)",
+      "is_unique": false,
+      "is_primary": false,
+      "bytes": 16384,
+      "method": "btree"
+     }
+    ],
+    "triggers": []
+   },
+   {
+    "schema": "cc",
+    "name": "ml_model_input",
+    "description": "The diff runs a model was trained on (was the array ml_model_run.diff_run_ids, 0013).",
+    "approx_rows": 0,
+    "total_bytes": 16384,
+    "columns": [
+     {
+      "position": 1,
+      "name": "model_run_id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "PK FK"
+     },
+     {
+      "position": 2,
+      "name": "diff_run_id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": "a diff run whose events the model was trained on",
+      "key": "PK FK"
+     }
+    ],
+    "constraints": [
+     {
+      "name": "ml_model_input_pkey",
+      "kind": "primary key",
+      "definition": "PRIMARY KEY (model_run_id, diff_run_id)",
+      "deferrable": false
+     },
+     {
+      "name": "ml_model_input_diff_run_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (diff_run_id) REFERENCES diff_run(diff_run_id)",
+      "deferrable": false
+     },
+     {
+      "name": "ml_model_input_model_run_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (model_run_id) REFERENCES ml_model_run(model_run_id) ON DELETE CASCADE",
+      "deferrable": false
+     }
+    ],
+    "indexes": [
+     {
+      "name": "ml_model_input_diff_idx",
+      "definition": "CREATE INDEX ml_model_input_diff_idx ON cc.ml_model_input USING btree (diff_run_id)",
+      "is_unique": false,
+      "is_primary": false,
+      "bytes": 8192,
+      "method": "btree"
+     },
+     {
+      "name": "ml_model_input_pkey",
+      "definition": "CREATE UNIQUE INDEX ml_model_input_pkey ON cc.ml_model_input USING btree (model_run_id, diff_run_id)",
+      "is_unique": true,
+      "is_primary": true,
+      "bytes": 8192,
+      "method": "btree"
+     }
+    ],
+    "triggers": []
+   },
+   {
+    "schema": "cc",
+    "name": "ml_model_run",
+    "description": "One trained change-scoring model.",
+    "approx_rows": 0,
+    "total_bytes": 24576,
+    "columns": [
+     {
+      "position": 1,
+      "name": "model_run_id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": true,
+      "description": null,
+      "key": "PK"
+     },
+     {
+      "position": 2,
+      "name": "model_kind",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 3,
+      "name": "model_version",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 4,
+      "name": "parameters",
+      "type": "jsonb",
+      "not_null": true,
+      "default_expr": "'{}'::jsonb",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 5,
+      "name": "feature_schema",
+      "type": "jsonb",
+      "not_null": true,
+      "default_expr": "'[]'::jsonb",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 7,
+      "name": "random_seed",
+      "type": "integer",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 8,
+      "name": "artifact_path",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 9,
+      "name": "artifact_sha256",
+      "type": "character(64)",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 10,
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 11,
+      "name": "metrics",
+      "type": "jsonb",
+      "not_null": true,
+      "default_expr": "'{}'::jsonb",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     }
+    ],
+    "constraints": [
+     {
+      "name": "ml_model_run_pkey",
+      "kind": "primary key",
+      "definition": "PRIMARY KEY (model_run_id)",
+      "deferrable": false
+     },
+     {
+      "name": "ml_model_run_model_kind_model_version_key",
+      "kind": "unique",
+      "definition": "UNIQUE (model_kind, model_version)",
+      "deferrable": false
+     },
+     {
+      "name": "ml_model_run_model_kind_check",
+      "kind": "check",
+      "definition": "CHECK ((model_kind = ANY (ARRAY['isolation_forest'::text, 'threshold'::text, 'embedding'::text, 'graphsage'::text])))",
+      "deferrable": false
+     }
+    ],
+    "indexes": [
+     {
+      "name": "ml_model_run_model_kind_model_version_key",
+      "definition": "CREATE UNIQUE INDEX ml_model_run_model_kind_model_version_key ON cc.ml_model_run USING btree (model_kind, model_version)",
+      "is_unique": true,
+      "is_primary": false,
+      "bytes": 8192,
+      "method": "btree"
+     },
+     {
+      "name": "ml_model_run_pkey",
+      "definition": "CREATE UNIQUE INDEX ml_model_run_pkey ON cc.ml_model_run USING btree (model_run_id)",
+      "is_unique": true,
+      "is_primary": true,
+      "bytes": 8192,
+      "method": "btree"
+     }
+    ],
+    "triggers": []
+   },
+   {
+    "schema": "cc",
+    "name": "neuron_mapping",
+    "description": "A proposed or reviewed link from a dataset neuron to a canonical neuron.",
+    "approx_rows": 219781,
+    "total_bytes": 70074368,
+    "columns": [
+     {
+      "position": 1,
+      "name": "mapping_id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": true,
+      "description": null,
+      "key": "PK"
+     },
+     {
+      "position": 2,
+      "name": "dataset_neuron_id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     },
+     {
+      "position": 3,
+      "name": "canonical_neuron_id",
+      "type": "bigint",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     },
+     {
+      "position": 4,
+      "name": "method",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": "how the link was proposed (source_identity, published_type_crosswalk, rule_based, embedding, graphsage, manual)",
+      "key": ""
+     },
+     {
+      "position": 5,
+      "name": "confidence",
+      "type": "numeric(4,3)",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": "score between 0 and 1",
+      "key": ""
+     },
+     {
+      "position": 6,
+      "name": "review_status",
+      "type": "text",
+      "not_null": true,
+      "default_expr": "'proposed'::text",
+      "generated": false,
+      "identity": false,
+      "description": "proposed, approved, rejected or unresolved (unresolved = no canonical neuron)",
+      "key": ""
+     },
+     {
+      "position": 7,
+      "name": "evidence",
+      "type": "jsonb",
+      "not_null": true,
+      "default_expr": "'{}'::jsonb",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 8,
+      "name": "evidence_doc_id",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 9,
+      "name": "model_version",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 10,
+      "name": "provenance_id",
+      "type": "bigint",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     },
+     {
+      "position": 11,
+      "name": "mapped_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 12,
+      "name": "reviewed_at",
+      "type": "timestamp with time zone",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 13,
+      "name": "reviewed_by",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 14,
+      "name": "score_details",
+      "type": "jsonb",
+      "not_null": true,
+      "default_expr": "'{}'::jsonb",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     }
+    ],
+    "constraints": [
+     {
+      "name": "neuron_mapping_pkey",
+      "kind": "primary key",
+      "definition": "PRIMARY KEY (mapping_id)",
+      "deferrable": false
+     },
+     {
+      "name": "neuron_mapping_canonical_neuron_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (canonical_neuron_id) REFERENCES canonical_neuron(canonical_neuron_id)",
+      "deferrable": false
+     },
+     {
+      "name": "neuron_mapping_dataset_neuron_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (dataset_neuron_id) REFERENCES dataset_neuron(dataset_neuron_id)",
+      "deferrable": false
+     },
+     {
+      "name": "neuron_mapping_provenance_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (provenance_id) REFERENCES provenance(provenance_id)",
+      "deferrable": false
+     },
+     {
+      "name": "neuron_mapping_check",
+      "kind": "check",
+      "definition": "CHECK (((review_status = 'unresolved'::text) = (canonical_neuron_id IS NULL)))",
+      "deferrable": false
+     },
+     {
+      "name": "neuron_mapping_check1",
+      "kind": "check",
+      "definition": "CHECK (((method <> ALL (ARRAY['embedding'::text, 'graphsage'::text])) OR (model_version IS NOT NULL)))",
+      "deferrable": false
+     },
+     {
+      "name": "neuron_mapping_check2",
+      "kind": "check",
+      "definition": "CHECK (((review_status = ANY (ARRAY['proposed'::text, 'unresolved'::text])) OR (reviewed_at IS NOT NULL)))",
+      "deferrable": false
+     },
+     {
+      "name": "neuron_mapping_confidence_check",
+      "kind": "check",
+      "definition": "CHECK (((confidence >= (0)::numeric) AND (confidence <= (1)::numeric)))",
+      "deferrable": false
+     },
+     {
+      "name": "neuron_mapping_method_check",
+      "kind": "check",
+      "definition": "CHECK ((method = ANY (ARRAY['source_identity'::text, 'published_type_crosswalk'::text, 'rule_based'::text, 'embedding'::text, 'graphsage'::text, 'manual'::text])))",
+      "deferrable": false
+     },
+     {
+      "name": "neuron_mapping_review_status_check",
+      "kind": "check",
+      "definition": "CHECK ((review_status = ANY (ARRAY['proposed'::text, 'approved'::text, 'rejected'::text, 'unresolved'::text])))",
+      "deferrable": false
+     }
+    ],
+    "indexes": [
+     {
+      "name": "neuron_mapping_canonical_idx",
+      "definition": "CREATE INDEX neuron_mapping_canonical_idx ON cc.neuron_mapping USING btree (canonical_neuron_id)",
+      "is_unique": false,
+      "is_primary": false,
+      "bytes": 4767744,
+      "method": "btree"
+     },
+     {
+      "name": "neuron_mapping_no_dup",
+      "definition": "CREATE UNIQUE INDEX neuron_mapping_no_dup ON cc.neuron_mapping USING btree (dataset_neuron_id, canonical_neuron_id, method) WHERE (canonical_neuron_id IS NOT NULL)",
+      "is_unique": true,
+      "is_primary": false,
+      "bytes": 14139392,
+      "method": "btree"
+     },
+     {
+      "name": "neuron_mapping_one_approved",
+      "definition": "CREATE UNIQUE INDEX neuron_mapping_one_approved ON cc.neuron_mapping USING btree (dataset_neuron_id) WHERE (review_status = 'approved'::text)",
+      "is_unique": true,
+      "is_primary": false,
+      "bytes": 4505600,
+      "method": "btree"
+     },
+     {
+      "name": "neuron_mapping_pkey",
+      "definition": "CREATE UNIQUE INDEX neuron_mapping_pkey ON cc.neuron_mapping USING btree (mapping_id)",
+      "is_unique": true,
+      "is_primary": true,
+      "bytes": 4956160,
+      "method": "btree"
+     }
+    ],
+    "triggers": []
+   },
+   {
+    "schema": "cc",
+    "name": "neuron_region_synapses",
+    "description": "Per release, how many synapses a neuron has in each brain region.",
+    "approx_rows": 1083797,
+    "total_bytes": 154058752,
+    "columns": [
+     {
+      "position": 1,
+      "name": "release_id",
+      "type": "integer",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "PK FK"
+     },
+     {
+      "position": 2,
+      "name": "dataset_id",
+      "type": "smallint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     },
+     {
+      "position": 3,
+      "name": "dataset_neuron_id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "PK FK"
+     },
+     {
+      "position": 4,
+      "name": "brain_region_id",
+      "type": "integer",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "PK FK"
+     },
+     {
+      "position": 5,
+      "name": "pre_synapses",
+      "type": "integer",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": "outgoing synapses of the neuron in the region",
+      "key": ""
+     },
+     {
+      "position": 6,
+      "name": "post_synapses",
+      "type": "integer",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": "incoming synapses of the neuron in the region",
+      "key": ""
+     },
+     {
+      "position": 7,
+      "name": "provenance_id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     }
+    ],
+    "constraints": [
+     {
+      "name": "neuron_region_synapses_pkey",
+      "kind": "primary key",
+      "definition": "PRIMARY KEY (release_id, dataset_neuron_id, brain_region_id)",
+      "deferrable": false
+     },
+     {
+      "name": "neuron_region_synapses_brain_region_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (brain_region_id) REFERENCES brain_region(brain_region_id)",
+      "deferrable": false
+     },
+     {
+      "name": "neuron_region_synapses_dataset_neuron_id_dataset_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (dataset_neuron_id, dataset_id) REFERENCES dataset_neuron(dataset_neuron_id, dataset_id)",
+      "deferrable": false
+     },
+     {
+      "name": "neuron_region_synapses_provenance_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (provenance_id) REFERENCES provenance(provenance_id)",
+      "deferrable": false
+     },
+     {
+      "name": "neuron_region_synapses_release_id_dataset_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (release_id, dataset_id) REFERENCES release(release_id, dataset_id)",
+      "deferrable": false
+     },
+     {
+      "name": "neuron_region_synapses_check",
+      "kind": "check",
+      "definition": "CHECK (((pre_synapses + post_synapses) > 0))",
+      "deferrable": false
+     },
+     {
+      "name": "neuron_region_synapses_post_synapses_check",
+      "kind": "check",
+      "definition": "CHECK ((post_synapses >= 0))",
+      "deferrable": false
+     },
+     {
+      "name": "neuron_region_synapses_pre_synapses_check",
+      "kind": "check",
+      "definition": "CHECK ((pre_synapses >= 0))",
+      "deferrable": false
+     }
+    ],
+    "indexes": [
+     {
+      "name": "neuron_region_synapses_neuron_idx",
+      "definition": "CREATE INDEX neuron_region_synapses_neuron_idx ON cc.neuron_region_synapses USING btree (dataset_neuron_id, release_id DESC)",
+      "is_unique": false,
+      "is_primary": false,
+      "bytes": 18055168,
+      "method": "btree"
+     },
+     {
+      "name": "neuron_region_synapses_pkey",
+      "definition": "CREATE UNIQUE INDEX neuron_region_synapses_pkey ON cc.neuron_region_synapses USING btree (release_id, dataset_neuron_id, brain_region_id)",
+      "is_unique": true,
+      "is_primary": true,
+      "bytes": 53764096,
+      "method": "btree"
+     },
+     {
+      "name": "neuron_region_synapses_region_idx",
+      "definition": "CREATE INDEX neuron_region_synapses_region_idx ON cc.neuron_region_synapses USING btree (brain_region_id, release_id)",
+      "is_unique": false,
+      "is_primary": false,
+      "bytes": 8200192,
+      "method": "btree"
+     }
+    ],
+    "triggers": []
+   },
+   {
+    "schema": "cc",
+    "name": "neuron_type",
+    "description": "A canonical cell type name.",
+    "approx_rows": 9959,
+    "total_bytes": 1064960,
+    "columns": [
+     {
+      "position": 1,
+      "name": "neuron_type_id",
+      "type": "integer",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": true,
+      "description": null,
+      "key": "PK"
+     },
+     {
+      "position": 2,
+      "name": "name",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     }
+    ],
+    "constraints": [
+     {
+      "name": "neuron_type_pkey",
+      "kind": "primary key",
+      "definition": "PRIMARY KEY (neuron_type_id)",
+      "deferrable": false
+     },
+     {
+      "name": "neuron_type_name_key",
+      "kind": "unique",
+      "definition": "UNIQUE (name)",
+      "deferrable": false
+     },
+     {
+      "name": "neuron_type_name_check",
+      "kind": "check",
+      "definition": "CHECK ((name <> ''::text))",
+      "deferrable": false
+     }
+    ],
+    "indexes": [
+     {
+      "name": "neuron_type_name_key",
+      "definition": "CREATE UNIQUE INDEX neuron_type_name_key ON cc.neuron_type USING btree (name)",
+      "is_unique": true,
+      "is_primary": false,
+      "bytes": 327680,
+      "method": "btree"
+     },
+     {
+      "name": "neuron_type_pkey",
+      "definition": "CREATE UNIQUE INDEX neuron_type_pkey ON cc.neuron_type USING btree (neuron_type_id)",
+      "is_unique": true,
+      "is_primary": true,
+      "bytes": 245760,
+      "method": "btree"
+     }
+    ],
+    "triggers": []
+   },
+   {
+    "schema": "cc",
+    "name": "neuron_version",
+    "description": "Existence of a neuron over a range of releases (bitemporal).",
+    "approx_rows": 203554,
+    "total_bytes": 44589056,
+    "columns": [
+     {
+      "position": 1,
+      "name": "neuron_version_id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": true,
+      "description": null,
+      "key": "PK"
+     },
+     {
+      "position": 2,
+      "name": "dataset_neuron_id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     },
+     {
+      "position": 3,
+      "name": "valid_rel",
+      "type": "int4range",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": "valid time: [first release order it holds in, first order it no longer holds in); upper NULL = still holds",
+      "key": ""
+     },
+     {
+      "position": 4,
+      "name": "tx",
+      "type": "tstzrange",
+      "not_null": true,
+      "default_expr": "tstzrange(now(), NULL::timestamp with time zone)",
+      "generated": false,
+      "identity": false,
+      "description": "transaction time: when the database held this belief; upper NULL = current belief",
+      "key": ""
+     },
+     {
+      "position": 5,
+      "name": "provenance_id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     },
+     {
+      "position": 6,
+      "name": "source_line",
+      "type": "integer",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     }
+    ],
+    "constraints": [
+     {
+      "name": "neuron_version_pkey",
+      "kind": "primary key",
+      "definition": "PRIMARY KEY (neuron_version_id)",
+      "deferrable": false
+     },
+     {
+      "name": "neuron_version_dataset_neuron_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (dataset_neuron_id) REFERENCES dataset_neuron(dataset_neuron_id)",
+      "deferrable": false
+     },
+     {
+      "name": "neuron_version_provenance_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (provenance_id) REFERENCES provenance(provenance_id)",
+      "deferrable": false
+     },
+     {
+      "name": "neuron_version_dataset_neuron_id_valid_rel_tx_excl",
+      "kind": "exclusion",
+      "definition": "EXCLUDE USING gist (dataset_neuron_id WITH =, valid_rel WITH &&, tx WITH &&)",
+      "deferrable": false
+     },
+     {
+      "name": "neuron_version_source_line_check",
+      "kind": "check",
+      "definition": "CHECK ((source_line > 0))",
+      "deferrable": false
+     },
+     {
+      "name": "neuron_version_tx_check",
+      "kind": "check",
+      "definition": "CHECK (((NOT isempty(tx)) AND (NOT lower_inf(tx))))",
+      "deferrable": false
+     },
+     {
+      "name": "neuron_version_valid_rel_check",
+      "kind": "check",
+      "definition": "CHECK (((NOT isempty(valid_rel)) AND (NOT lower_inf(valid_rel))))",
+      "deferrable": false
+     }
+    ],
+    "indexes": [
+     {
+      "name": "neuron_version_dataset_neuron_id_valid_rel_tx_excl",
+      "definition": "CREATE INDEX neuron_version_dataset_neuron_id_valid_rel_tx_excl ON cc.neuron_version USING gist (dataset_neuron_id, valid_rel, tx)",
+      "is_unique": false,
+      "is_primary": false,
+      "bytes": 18276352,
+      "method": "gist"
+     },
+     {
+      "name": "neuron_version_pkey",
+      "definition": "CREATE UNIQUE INDEX neuron_version_pkey ON cc.neuron_version USING btree (neuron_version_id)",
+      "is_unique": true,
+      "is_primary": true,
+      "bytes": 6922240,
+      "method": "btree"
+     }
+    ],
+    "triggers": [
+     {
+      "name": "neuron_version_history",
+      "definition": "CREATE TRIGGER neuron_version_history BEFORE DELETE OR UPDATE ON cc.neuron_version FOR EACH ROW EXECUTE FUNCTION guard_history()",
+      "constraint_trigger": false
+     }
+    ]
+   },
+   {
+    "schema": "cc",
+    "name": "neuropil",
+    "description": "A canonical neuropil code and the super region it belongs to (split from brain_region, 0013).",
+    "approx_rows": 45,
+    "total_bytes": 32768,
+    "columns": [
+     {
+      "position": 1,
+      "name": "canonical_code",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "PK"
+     },
+     {
+      "position": 2,
+      "name": "super_region",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": "optic, central, vnc or other",
+      "key": ""
+     }
+    ],
+    "constraints": [
+     {
+      "name": "neuropil_pkey",
+      "kind": "primary key",
+      "definition": "PRIMARY KEY (canonical_code)",
+      "deferrable": false
+     },
+     {
+      "name": "neuropil_canonical_code_check",
+      "kind": "check",
+      "definition": "CHECK ((canonical_code ~ '^[A-Z][A-Z0-9_]*$'::text))",
+      "deferrable": false
+     },
+     {
+      "name": "neuropil_super_region_check",
+      "kind": "check",
+      "definition": "CHECK ((super_region = ANY (ARRAY['optic'::text, 'central'::text, 'vnc'::text, 'other'::text])))",
+      "deferrable": false
+     }
+    ],
+    "indexes": [
+     {
+      "name": "neuropil_pkey",
+      "definition": "CREATE UNIQUE INDEX neuropil_pkey ON cc.neuropil USING btree (canonical_code)",
+      "is_unique": true,
+      "is_primary": true,
+      "bytes": 16384,
+      "method": "btree"
+     }
+    ],
+    "triggers": []
+   },
+   {
+    "schema": "cc",
+    "name": "partition_assignment",
+    "description": "The shard (and group) of every neuron under every strategy.",
+    "approx_rows": 546822,
+    "total_bytes": 102424576,
+    "columns": [
+     {
+      "position": 1,
+      "name": "strategy_id",
+      "type": "smallint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "PK FK"
+     },
+     {
+      "position": 2,
+      "name": "dataset_neuron_id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "PK FK"
+     },
+     {
+      "position": 3,
+      "name": "shard_id",
+      "type": "smallint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     },
+     {
+      "position": 4,
+      "name": "assigned_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 5,
+      "name": "group_key",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": "region or community the strategy grouped the neuron by; all of a group is on one shard",
+      "key": ""
+     }
+    ],
+    "constraints": [
+     {
+      "name": "partition_assignment_pkey",
+      "kind": "primary key",
+      "definition": "PRIMARY KEY (strategy_id, dataset_neuron_id)",
+      "deferrable": false
+     },
+     {
+      "name": "partition_assignment_dataset_neuron_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (dataset_neuron_id) REFERENCES dataset_neuron(dataset_neuron_id)",
+      "deferrable": false
+     },
+     {
+      "name": "partition_assignment_shard_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (shard_id) REFERENCES shard(shard_id)",
+      "deferrable": false
+     },
+     {
+      "name": "partition_assignment_strategy_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (strategy_id) REFERENCES partition_strategy(strategy_id)",
+      "deferrable": false
+     },
+     {
+      "name": "partition_assignment_group_one_shard",
+      "kind": "exclusion",
+      "definition": "EXCLUDE USING gist (strategy_id WITH =, group_key WITH =, shard_id WITH <>)",
+      "deferrable": false
+     }
+    ],
+    "indexes": [
+     {
+      "name": "partition_assignment_group_one_shard",
+      "definition": "CREATE INDEX partition_assignment_group_one_shard ON cc.partition_assignment USING gist (strategy_id, group_key, shard_id)",
+      "is_unique": false,
+      "is_primary": false,
+      "bytes": 38412288,
+      "method": "gist"
+     },
+     {
+      "name": "partition_assignment_pkey",
+      "definition": "CREATE UNIQUE INDEX partition_assignment_pkey ON cc.partition_assignment USING btree (strategy_id, dataset_neuron_id)",
+      "is_unique": true,
+      "is_primary": true,
+      "bytes": 23109632,
+      "method": "btree"
+     },
+     {
+      "name": "partition_assignment_shard_idx",
+      "definition": "CREATE INDEX partition_assignment_shard_idx ON cc.partition_assignment USING btree (strategy_id, shard_id)",
+      "is_unique": false,
+      "is_primary": false,
+      "bytes": 3563520,
+      "method": "btree"
+     }
+    ],
+    "triggers": []
+   },
+   {
+    "schema": "cc",
+    "name": "partition_strategy",
+    "description": "A way of placing neurons on shards (hash, anatomical, community).",
+    "approx_rows": 3,
+    "total_bytes": 49152,
+    "columns": [
+     {
+      "position": 1,
+      "name": "strategy_id",
+      "type": "smallint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": true,
+      "description": null,
+      "key": "PK"
+     },
+     {
+      "position": 2,
+      "name": "code",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 3,
+      "name": "description",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 4,
+      "name": "parameters",
+      "type": "jsonb",
+      "not_null": true,
+      "default_expr": "'{}'::jsonb",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 5,
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     }
+    ],
+    "constraints": [
+     {
+      "name": "partition_strategy_pkey",
+      "kind": "primary key",
+      "definition": "PRIMARY KEY (strategy_id)",
+      "deferrable": false
+     },
+     {
+      "name": "partition_strategy_code_key",
+      "kind": "unique",
+      "definition": "UNIQUE (code)",
+      "deferrable": false
+     },
+     {
+      "name": "partition_strategy_code_check",
+      "kind": "check",
+      "definition": "CHECK ((code = ANY (ARRAY['hash'::text, 'anatomical'::text, 'community'::text])))",
+      "deferrable": false
+     }
+    ],
+    "indexes": [
+     {
+      "name": "partition_strategy_code_key",
+      "definition": "CREATE UNIQUE INDEX partition_strategy_code_key ON cc.partition_strategy USING btree (code)",
+      "is_unique": true,
+      "is_primary": false,
+      "bytes": 16384,
+      "method": "btree"
+     },
+     {
+      "name": "partition_strategy_pkey",
+      "definition": "CREATE UNIQUE INDEX partition_strategy_pkey ON cc.partition_strategy USING btree (strategy_id)",
+      "is_unique": true,
+      "is_primary": true,
+      "bytes": 16384,
+      "method": "btree"
+     }
+    ],
+    "triggers": []
+   },
+   {
+    "schema": "cc",
+    "name": "provenance",
+    "description": "How a set of facts was produced: run, source file, transformation.",
+    "approx_rows": 25,
+    "total_bytes": 32768,
+    "columns": [
+     {
+      "position": 1,
+      "name": "provenance_id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": true,
+      "description": null,
+      "key": "PK"
+     },
+     {
+      "position": 2,
+      "name": "dataset_id",
+      "type": "smallint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     },
+     {
+      "position": 3,
+      "name": "release_id",
+      "type": "integer",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     },
+     {
+      "position": 4,
+      "name": "source_file_id",
+      "type": "integer",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     },
+     {
+      "position": 5,
+      "name": "ingestion_run_id",
+      "type": "bigint",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     },
+     {
+      "position": 6,
+      "name": "transformation_name",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": "what was done (register_neuron, extract_annotation, aggregate_pair_synapses, ...)",
+      "key": ""
+     },
+     {
+      "position": 7,
+      "name": "transformation_version",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 8,
+      "name": "parameters",
+      "type": "jsonb",
+      "not_null": true,
+      "default_expr": "'{}'::jsonb",
+      "generated": false,
+      "identity": false,
+      "description": "parameters of the transformation (columns used, policies)",
+      "key": ""
+     },
+     {
+      "position": 9,
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     }
+    ],
+    "constraints": [
+     {
+      "name": "provenance_pkey",
+      "kind": "primary key",
+      "definition": "PRIMARY KEY (provenance_id)",
+      "deferrable": false
+     },
+     {
+      "name": "provenance_dataset_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (dataset_id) REFERENCES dataset(dataset_id)",
+      "deferrable": false
+     },
+     {
+      "name": "provenance_ingestion_run_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (ingestion_run_id) REFERENCES ingestion_run(run_id)",
+      "deferrable": false
+     },
+     {
+      "name": "provenance_release_id_dataset_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (release_id, dataset_id) REFERENCES release(release_id, dataset_id)",
+      "deferrable": false
+     },
+     {
+      "name": "provenance_run_release_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (ingestion_run_id, release_id) REFERENCES ingestion_run(run_id, release_id)",
+      "deferrable": false
+     },
+     {
+      "name": "provenance_source_file_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (source_file_id) REFERENCES source_file(source_file_id)",
+      "deferrable": false
+     },
+     {
+      "name": "provenance_source_file_release_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (source_file_id, release_id) REFERENCES source_file(source_file_id, release_id)",
+      "deferrable": false
+     }
+    ],
+    "indexes": [
+     {
+      "name": "provenance_pkey",
+      "definition": "CREATE UNIQUE INDEX provenance_pkey ON cc.provenance USING btree (provenance_id)",
+      "is_unique": true,
+      "is_primary": true,
+      "bytes": 16384,
+      "method": "btree"
+     }
+    ],
+    "triggers": []
+   },
+   {
+    "schema": "cc",
+    "name": "provenance_parent",
+    "description": "Lineage: which provenance records a derived record was computed from.",
+    "approx_rows": 0,
+    "total_bytes": 8192,
+    "columns": [
+     {
+      "position": 1,
+      "name": "provenance_id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "PK FK"
+     },
+     {
+      "position": 2,
+      "name": "parent_id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "PK FK"
+     }
+    ],
+    "constraints": [
+     {
+      "name": "provenance_parent_pkey",
+      "kind": "primary key",
+      "definition": "PRIMARY KEY (provenance_id, parent_id)",
+      "deferrable": false
+     },
+     {
+      "name": "provenance_parent_parent_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (parent_id) REFERENCES provenance(provenance_id)",
+      "deferrable": false
+     },
+     {
+      "name": "provenance_parent_provenance_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (provenance_id) REFERENCES provenance(provenance_id) ON DELETE CASCADE",
+      "deferrable": false
+     },
+     {
+      "name": "provenance_parent_check",
+      "kind": "check",
+      "definition": "CHECK ((provenance_id <> parent_id))",
+      "deferrable": false
+     }
+    ],
+    "indexes": [
+     {
+      "name": "provenance_parent_pkey",
+      "definition": "CREATE UNIQUE INDEX provenance_parent_pkey ON cc.provenance_parent USING btree (provenance_id, parent_id)",
+      "is_unique": true,
+      "is_primary": true,
+      "bytes": 8192,
+      "method": "btree"
+     }
+    ],
+    "triggers": []
+   },
+   {
+    "schema": "cc",
+    "name": "query_execution",
+    "description": "A routed query's measured cost.",
+    "approx_rows": 2644,
+    "total_bytes": 614400,
+    "columns": [
+     {
+      "position": 1,
+      "name": "query_execution_id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": true,
+      "description": null,
+      "key": "PK"
+     },
+     {
+      "position": 2,
+      "name": "strategy_id",
+      "type": "smallint",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     },
+     {
+      "position": 3,
+      "name": "query_kind",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 4,
+      "name": "parameters",
+      "type": "jsonb",
+      "not_null": true,
+      "default_expr": "'{}'::jsonb",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 5,
+      "name": "shards_touched",
+      "type": "smallint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 6,
+      "name": "rows_returned",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 7,
+      "name": "bytes_transferred",
+      "type": "bigint",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 8,
+      "name": "latency_ms",
+      "type": "double precision",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 9,
+      "name": "executed_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     }
+    ],
+    "constraints": [
+     {
+      "name": "query_execution_pkey",
+      "kind": "primary key",
+      "definition": "PRIMARY KEY (query_execution_id)",
+      "deferrable": false
+     },
+     {
+      "name": "query_execution_strategy_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (strategy_id) REFERENCES partition_strategy(strategy_id)",
+      "deferrable": false
+     },
+     {
+      "name": "query_execution_bytes_transferred_check",
+      "kind": "check",
+      "definition": "CHECK ((bytes_transferred >= 0))",
+      "deferrable": false
+     },
+     {
+      "name": "query_execution_latency_ms_check",
+      "kind": "check",
+      "definition": "CHECK ((latency_ms >= (0)::double precision))",
+      "deferrable": false
+     },
+     {
+      "name": "query_execution_rows_returned_check",
+      "kind": "check",
+      "definition": "CHECK ((rows_returned >= 0))",
+      "deferrable": false
+     },
+     {
+      "name": "query_execution_shards_touched_check",
+      "kind": "check",
+      "definition": "CHECK ((shards_touched >= 0))",
+      "deferrable": false
+     }
+    ],
+    "indexes": [
+     {
+      "name": "query_execution_pkey",
+      "definition": "CREATE UNIQUE INDEX query_execution_pkey ON cc.query_execution USING btree (query_execution_id)",
+      "is_unique": true,
+      "is_primary": true,
+      "bytes": 81920,
+      "method": "btree"
+     }
+    ],
+    "triggers": []
+   },
+   {
+    "schema": "cc",
+    "name": "release",
+    "description": "One published version of a dataset, ordered within the dataset.",
+    "approx_rows": 5,
+    "total_bytes": 81920,
+    "columns": [
+     {
+      "position": 1,
+      "name": "release_id",
+      "type": "integer",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": true,
+      "description": null,
+      "key": "PK"
+     },
+     {
+      "position": 2,
+      "name": "dataset_id",
+      "type": "smallint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     },
+     {
+      "position": 3,
+      "name": "version_label",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 4,
+      "name": "release_order",
+      "type": "integer",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": "position of the release within its dataset (1, 2, ...); valid_rel ranges are in these units",
+      "key": ""
+     },
+     {
+      "position": 5,
+      "name": "release_date",
+      "type": "date",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": "official publication date; NULL when no date is confirmed (unknown valid time)",
+      "key": ""
+     },
+     {
+      "position": 6,
+      "name": "manifest_hash",
+      "type": "character(64)",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": "SHA-256 over the checksums of the release's source files",
+      "key": ""
+     },
+     {
+      "position": 7,
+      "name": "ingestion_status",
+      "type": "text",
+      "not_null": true,
+      "default_expr": "'registered'::text",
+      "generated": false,
+      "identity": false,
+      "description": "registered, loading, loaded or failed",
+      "key": ""
+     },
+     {
+      "position": 8,
+      "name": "registered_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 9,
+      "name": "loaded_at",
+      "type": "timestamp with time zone",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 10,
+      "name": "description",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     }
+    ],
+    "constraints": [
+     {
+      "name": "release_pkey",
+      "kind": "primary key",
+      "definition": "PRIMARY KEY (release_id)",
+      "deferrable": false
+     },
+     {
+      "name": "release_dataset_id_release_order_key",
+      "kind": "unique",
+      "definition": "UNIQUE (dataset_id, release_order)",
+      "deferrable": false
+     },
+     {
+      "name": "release_dataset_id_version_label_key",
+      "kind": "unique",
+      "definition": "UNIQUE (dataset_id, version_label)",
+      "deferrable": false
+     },
+     {
+      "name": "release_release_id_dataset_id_key",
+      "kind": "unique",
+      "definition": "UNIQUE (release_id, dataset_id)",
+      "deferrable": false
+     },
+     {
+      "name": "release_dataset_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (dataset_id) REFERENCES dataset(dataset_id) ON DELETE RESTRICT",
+      "deferrable": false
+     },
+     {
+      "name": "release_check",
+      "kind": "check",
+      "definition": "CHECK (((ingestion_status <> 'loaded'::text) OR (loaded_at IS NOT NULL)))",
+      "deferrable": false
+     },
+     {
+      "name": "release_ingestion_status_check",
+      "kind": "check",
+      "definition": "CHECK ((ingestion_status = ANY (ARRAY['registered'::text, 'loading'::text, 'loaded'::text, 'failed'::text])))",
+      "deferrable": false
+     },
+     {
+      "name": "release_manifest_hash_check",
+      "kind": "check",
+      "definition": "CHECK ((manifest_hash ~ '^[0-9a-f]{64}$'::text))",
+      "deferrable": false
+     },
+     {
+      "name": "release_release_order_check",
+      "kind": "check",
+      "definition": "CHECK ((release_order > 0))",
+      "deferrable": false
+     },
+     {
+      "name": "release_version_label_check",
+      "kind": "check",
+      "definition": "CHECK ((version_label <> ''::text))",
+      "deferrable": false
+     }
+    ],
+    "indexes": [
+     {
+      "name": "release_dataset_id_release_order_key",
+      "definition": "CREATE UNIQUE INDEX release_dataset_id_release_order_key ON cc.release USING btree (dataset_id, release_order)",
+      "is_unique": true,
+      "is_primary": false,
+      "bytes": 16384,
+      "method": "btree"
+     },
+     {
+      "name": "release_dataset_id_version_label_key",
+      "definition": "CREATE UNIQUE INDEX release_dataset_id_version_label_key ON cc.release USING btree (dataset_id, version_label)",
+      "is_unique": true,
+      "is_primary": false,
+      "bytes": 16384,
+      "method": "btree"
+     },
+     {
+      "name": "release_pkey",
+      "definition": "CREATE UNIQUE INDEX release_pkey ON cc.release USING btree (release_id)",
+      "is_unique": true,
+      "is_primary": true,
+      "bytes": 16384,
+      "method": "btree"
+     },
+     {
+      "name": "release_release_id_dataset_id_key",
+      "definition": "CREATE UNIQUE INDEX release_release_id_dataset_id_key ON cc.release USING btree (release_id, dataset_id)",
+      "is_unique": true,
+      "is_primary": false,
+      "bytes": 16384,
+      "method": "btree"
+     }
+    ],
+    "triggers": []
+   },
+   {
+    "schema": "cc",
+    "name": "schema_mapping",
+    "description": "How a source field maps to a canonical field.",
+    "approx_rows": 27,
+    "total_bytes": 49152,
+    "columns": [
+     {
+      "position": 1,
+      "name": "schema_mapping_id",
+      "type": "integer",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": true,
+      "description": null,
+      "key": "PK"
+     },
+     {
+      "position": 2,
+      "name": "dataset_id",
+      "type": "smallint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     },
+     {
+      "position": 3,
+      "name": "source_file_pattern",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 4,
+      "name": "source_field",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 5,
+      "name": "canonical_entity",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 6,
+      "name": "canonical_field",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 7,
+      "name": "transform",
+      "type": "text",
+      "not_null": true,
+      "default_expr": "'identity'::text",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 8,
+      "name": "notes",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     }
+    ],
+    "constraints": [
+     {
+      "name": "schema_mapping_pkey",
+      "kind": "primary key",
+      "definition": "PRIMARY KEY (schema_mapping_id)",
+      "deferrable": false
+     },
+     {
+      "name": "schema_mapping_dataset_id_source_file_pattern_source_field__key",
+      "kind": "unique",
+      "definition": "UNIQUE (dataset_id, source_file_pattern, source_field, canonical_entity, canonical_field)",
+      "deferrable": false
+     },
+     {
+      "name": "schema_mapping_dataset_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (dataset_id) REFERENCES dataset(dataset_id)",
+      "deferrable": false
+     },
+     {
+      "name": "schema_mapping_canonical_entity_check",
+      "kind": "check",
+      "definition": "CHECK ((canonical_entity = ANY (ARRAY['dataset_neuron'::text, 'annotation'::text, 'connection'::text, 'brain_region'::text, 'neuron_type'::text])))",
+      "deferrable": false
+     }
+    ],
+    "indexes": [
+     {
+      "name": "schema_mapping_dataset_id_source_file_pattern_source_field__key",
+      "definition": "CREATE UNIQUE INDEX schema_mapping_dataset_id_source_file_pattern_source_field__key ON cc.schema_mapping USING btree (dataset_id, source_file_pattern, source_field, canonical_entity, canonical_field)",
+      "is_unique": true,
+      "is_primary": false,
+      "bytes": 16384,
+      "method": "btree"
+     },
+     {
+      "name": "schema_mapping_pkey",
+      "definition": "CREATE UNIQUE INDEX schema_mapping_pkey ON cc.schema_mapping USING btree (schema_mapping_id)",
+      "is_unique": true,
+      "is_primary": true,
+      "bytes": 16384,
+      "method": "btree"
+     }
+    ],
+    "triggers": []
+   },
+   {
+    "schema": "cc",
+    "name": "shard",
+    "description": "A PostgreSQL server holding a fragment of the connectome.",
+    "approx_rows": 3,
+    "total_bytes": 49152,
+    "columns": [
+     {
+      "position": 1,
+      "name": "shard_id",
+      "type": "smallint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "PK"
+     },
+     {
+      "position": 2,
+      "name": "name",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 3,
+      "name": "host",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 4,
+      "name": "port",
+      "type": "integer",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     }
+    ],
+    "constraints": [
+     {
+      "name": "shard_pkey",
+      "kind": "primary key",
+      "definition": "PRIMARY KEY (shard_id)",
+      "deferrable": false
+     },
+     {
+      "name": "shard_name_key",
+      "kind": "unique",
+      "definition": "UNIQUE (name)",
+      "deferrable": false
+     },
+     {
+      "name": "shard_port_check",
+      "kind": "check",
+      "definition": "CHECK (((port >= 1) AND (port <= 65535)))",
+      "deferrable": false
+     },
+     {
+      "name": "shard_shard_id_check",
+      "kind": "check",
+      "definition": "CHECK (((shard_id >= 1) AND (shard_id <= 64)))",
+      "deferrable": false
+     }
+    ],
+    "indexes": [
+     {
+      "name": "shard_name_key",
+      "definition": "CREATE UNIQUE INDEX shard_name_key ON cc.shard USING btree (name)",
+      "is_unique": true,
+      "is_primary": false,
+      "bytes": 16384,
+      "method": "btree"
+     },
+     {
+      "name": "shard_pkey",
+      "definition": "CREATE UNIQUE INDEX shard_pkey ON cc.shard USING btree (shard_id)",
+      "is_unique": true,
+      "is_primary": true,
+      "bytes": 16384,
+      "method": "btree"
+     }
+    ],
+    "triggers": []
+   },
+   {
+    "schema": "cc",
+    "name": "shard_deployment",
+    "description": "One shard's copy of one strategy's placement.",
+    "approx_rows": 18,
+    "total_bytes": 65536,
+    "columns": [
+     {
+      "position": 1,
+      "name": "deployment_id",
+      "type": "integer",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": true,
+      "description": null,
+      "key": "PK"
+     },
+     {
+      "position": 2,
+      "name": "strategy_id",
+      "type": "smallint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     },
+     {
+      "position": 3,
+      "name": "shard_id",
+      "type": "smallint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     },
+     {
+      "position": 4,
+      "name": "schema_name",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 5,
+      "name": "neurons",
+      "type": "integer",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 6,
+      "name": "connections",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 7,
+      "name": "mirrors",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 8,
+      "name": "bytes_on_shard",
+      "type": "bigint",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 9,
+      "name": "seconds",
+      "type": "double precision",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 10,
+      "name": "deployed_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 11,
+      "name": "verified",
+      "type": "boolean",
+      "not_null": true,
+      "default_expr": "false",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 12,
+      "name": "batch_id",
+      "type": "bigint",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     }
+    ],
+    "constraints": [
+     {
+      "name": "shard_deployment_pkey",
+      "kind": "primary key",
+      "definition": "PRIMARY KEY (deployment_id)",
+      "deferrable": false
+     },
+     {
+      "name": "shard_deployment_batch_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (batch_id) REFERENCES deployment_batch(batch_id)",
+      "deferrable": false
+     },
+     {
+      "name": "shard_deployment_batch_strategy_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (batch_id, strategy_id) REFERENCES deployment_batch(batch_id, strategy_id)",
+      "deferrable": false
+     },
+     {
+      "name": "shard_deployment_shard_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (shard_id) REFERENCES shard(shard_id)",
+      "deferrable": false
+     },
+     {
+      "name": "shard_deployment_strategy_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (strategy_id) REFERENCES partition_strategy(strategy_id)",
+      "deferrable": false
+     },
+     {
+      "name": "shard_deployment_bytes_on_shard_check",
+      "kind": "check",
+      "definition": "CHECK ((bytes_on_shard >= 0))",
+      "deferrable": false
+     },
+     {
+      "name": "shard_deployment_connections_check",
+      "kind": "check",
+      "definition": "CHECK ((connections >= 0))",
+      "deferrable": false
+     },
+     {
+      "name": "shard_deployment_mirrors_check",
+      "kind": "check",
+      "definition": "CHECK ((mirrors >= 0))",
+      "deferrable": false
+     },
+     {
+      "name": "shard_deployment_neurons_check",
+      "kind": "check",
+      "definition": "CHECK ((neurons >= 0))",
+      "deferrable": false
+     },
+     {
+      "name": "shard_deployment_seconds_check",
+      "kind": "check",
+      "definition": "CHECK ((seconds >= (0)::double precision))",
+      "deferrable": false
+     }
+    ],
+    "indexes": [
+     {
+      "name": "shard_deployment_batch",
+      "definition": "CREATE INDEX shard_deployment_batch ON cc.shard_deployment USING btree (batch_id, shard_id)",
+      "is_unique": false,
+      "is_primary": false,
+      "bytes": 16384,
+      "method": "btree"
+     },
+     {
+      "name": "shard_deployment_pkey",
+      "definition": "CREATE UNIQUE INDEX shard_deployment_pkey ON cc.shard_deployment USING btree (deployment_id)",
+      "is_unique": true,
+      "is_primary": true,
+      "bytes": 16384,
+      "method": "btree"
+     },
+     {
+      "name": "shard_deployment_strategy_idx",
+      "definition": "CREATE INDEX shard_deployment_strategy_idx ON cc.shard_deployment USING btree (strategy_id, deployed_at DESC)",
+      "is_unique": false,
+      "is_primary": false,
+      "bytes": 16384,
+      "method": "btree"
+     }
+    ],
+    "triggers": []
+   },
+   {
+    "schema": "cc",
+    "name": "source_file",
+    "description": "A checksummed file (or archive member) a release was read from.",
+    "approx_rows": 17,
+    "total_bytes": 65536,
+    "columns": [
+     {
+      "position": 1,
+      "name": "source_file_id",
+      "type": "integer",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": true,
+      "description": null,
+      "key": "PK"
+     },
+     {
+      "position": 2,
+      "name": "release_id",
+      "type": "integer",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     },
+     {
+      "position": 3,
+      "name": "archive_path",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 4,
+      "name": "member_path",
+      "type": "text",
+      "not_null": true,
+      "default_expr": "''::text",
+      "generated": false,
+      "identity": false,
+      "description": "path inside the archive ('' when the file is not in an archive)",
+      "key": ""
+     },
+     {
+      "position": 5,
+      "name": "sha256",
+      "type": "character(64)",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": "checksum of the file as downloaded",
+      "key": ""
+     },
+     {
+      "position": 6,
+      "name": "size_bytes",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 7,
+      "name": "source_url",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 8,
+      "name": "row_count",
+      "type": "bigint",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     }
+    ],
+    "constraints": [
+     {
+      "name": "source_file_pkey",
+      "kind": "primary key",
+      "definition": "PRIMARY KEY (source_file_id)",
+      "deferrable": false
+     },
+     {
+      "name": "source_file_id_release_key",
+      "kind": "unique",
+      "definition": "UNIQUE (source_file_id, release_id)",
+      "deferrable": false
+     },
+     {
+      "name": "source_file_release_id_archive_path_member_path_key",
+      "kind": "unique",
+      "definition": "UNIQUE (release_id, archive_path, member_path)",
+      "deferrable": false
+     },
+     {
+      "name": "source_file_release_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (release_id) REFERENCES release(release_id)",
+      "deferrable": false
+     },
+     {
+      "name": "source_file_row_count_check",
+      "kind": "check",
+      "definition": "CHECK ((row_count >= 0))",
+      "deferrable": false
+     },
+     {
+      "name": "source_file_sha256_check",
+      "kind": "check",
+      "definition": "CHECK ((sha256 ~ '^[0-9a-f]{64}$'::text))",
+      "deferrable": false
+     },
+     {
+      "name": "source_file_size_bytes_check",
+      "kind": "check",
+      "definition": "CHECK ((size_bytes >= 0))",
+      "deferrable": false
+     }
+    ],
+    "indexes": [
+     {
+      "name": "source_file_id_release_key",
+      "definition": "CREATE UNIQUE INDEX source_file_id_release_key ON cc.source_file USING btree (source_file_id, release_id)",
+      "is_unique": true,
+      "is_primary": false,
+      "bytes": 16384,
+      "method": "btree"
+     },
+     {
+      "name": "source_file_pkey",
+      "definition": "CREATE UNIQUE INDEX source_file_pkey ON cc.source_file USING btree (source_file_id)",
+      "is_unique": true,
+      "is_primary": true,
+      "bytes": 16384,
+      "method": "btree"
+     },
+     {
+      "name": "source_file_release_id_archive_path_member_path_key",
+      "definition": "CREATE UNIQUE INDEX source_file_release_id_archive_path_member_path_key ON cc.source_file USING btree (release_id, archive_path, member_path)",
+      "is_unique": true,
+      "is_primary": false,
+      "bytes": 16384,
+      "method": "btree"
+     }
+    ],
+    "triggers": []
+   },
+   {
+    "schema": "cc",
+    "name": "type_alias",
+    "description": "A dataset's type name linked to a canonical type (many-to-many).",
+    "approx_rows": 13601,
+    "total_bytes": 1597440,
+    "columns": [
+     {
+      "position": 1,
+      "name": "dataset_id",
+      "type": "smallint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "PK FK"
+     },
+     {
+      "position": 2,
+      "name": "source_type",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "PK"
+     },
+     {
+      "position": 3,
+      "name": "neuron_type_id",
+      "type": "integer",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "PK FK"
+     },
+     {
+      "position": 4,
+      "name": "method",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 5,
+      "name": "provenance_id",
+      "type": "bigint",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     }
+    ],
+    "constraints": [
+     {
+      "name": "type_alias_pkey",
+      "kind": "primary key",
+      "definition": "PRIMARY KEY (dataset_id, source_type, neuron_type_id)",
+      "deferrable": false
+     },
+     {
+      "name": "type_alias_dataset_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (dataset_id) REFERENCES dataset(dataset_id)",
+      "deferrable": false
+     },
+     {
+      "name": "type_alias_neuron_type_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (neuron_type_id) REFERENCES neuron_type(neuron_type_id)",
+      "deferrable": false
+     },
+     {
+      "name": "type_alias_provenance_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (provenance_id) REFERENCES provenance(provenance_id)",
+      "deferrable": false
+     },
+     {
+      "name": "type_alias_method_check",
+      "kind": "check",
+      "definition": "CHECK ((method = ANY (ARRAY['identical_name'::text, 'published_crosswalk'::text, 'manual'::text])))",
+      "deferrable": false
+     }
+    ],
+    "indexes": [
+     {
+      "name": "type_alias_pkey",
+      "definition": "CREATE UNIQUE INDEX type_alias_pkey ON cc.type_alias USING btree (dataset_id, source_type, neuron_type_id)",
+      "is_unique": true,
+      "is_primary": true,
+      "bytes": 671744,
+      "method": "btree"
+     }
+    ],
+    "triggers": []
+   },
+   {
+    "schema": "cc",
+    "name": "workspace_job",
+    "description": "A background job (diff, scoring, matching, deployment).",
+    "approx_rows": 1,
+    "total_bytes": 49152,
+    "columns": [
+     {
+      "position": 1,
+      "name": "job_id",
+      "type": "uuid",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "PK"
+     },
+     {
+      "position": 2,
+      "name": "kind",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 3,
+      "name": "status",
+      "type": "text",
+      "not_null": true,
+      "default_expr": "'queued'::text",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 4,
+      "name": "request",
+      "type": "jsonb",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 5,
+      "name": "result",
+      "type": "jsonb",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 6,
+      "name": "progress",
+      "type": "integer",
+      "not_null": true,
+      "default_expr": "0",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 7,
+      "name": "message",
+      "type": "text",
+      "not_null": true,
+      "default_expr": "'Waiting for a worker'::text",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 8,
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 9,
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "now()",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     }
+    ],
+    "constraints": [
+     {
+      "name": "workspace_job_pkey",
+      "kind": "primary key",
+      "definition": "PRIMARY KEY (job_id)",
+      "deferrable": false
+     },
+     {
+      "name": "workspace_job_kind_check",
+      "kind": "check",
+      "definition": "CHECK ((kind = ANY (ARRAY['diff'::text, 'anomalies'::text, 'matching'::text, 'deploy'::text])))",
+      "deferrable": false
+     },
+     {
+      "name": "workspace_job_progress_check",
+      "kind": "check",
+      "definition": "CHECK (((progress >= 0) AND (progress <= 100)))",
+      "deferrable": false
+     },
+     {
+      "name": "workspace_job_status_check",
+      "kind": "check",
+      "definition": "CHECK ((status = ANY (ARRAY['queued'::text, 'running'::text, 'succeeded'::text, 'failed'::text, 'cancelled'::text])))",
+      "deferrable": false
+     }
+    ],
+    "indexes": [
+     {
+      "name": "workspace_job_pkey",
+      "definition": "CREATE UNIQUE INDEX workspace_job_pkey ON cc.workspace_job USING btree (job_id)",
+      "is_unique": true,
+      "is_primary": true,
+      "bytes": 16384,
+      "method": "btree"
+     },
+     {
+      "name": "workspace_job_recent",
+      "definition": "CREATE INDEX workspace_job_recent ON cc.workspace_job USING btree (created_at DESC)",
+      "is_unique": false,
+      "is_primary": false,
+      "bytes": 16384,
+      "method": "btree"
+     }
+    ],
+    "triggers": []
+   },
+   {
+    "schema": "lab",
+    "name": "change_log",
+    "description": "Audit trail written by trigger for every lab change.",
+    "approx_rows": 0,
+    "total_bytes": 81920,
+    "columns": [
+     {
+      "position": 1,
+      "name": "change_id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": true,
+      "description": null,
+      "key": "PK"
+     },
+     {
+      "position": 2,
+      "name": "changed_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default_expr": "clock_timestamp()",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 3,
+      "name": "changed_by",
+      "type": "text",
+      "not_null": true,
+      "default_expr": "CURRENT_USER",
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 4,
+      "name": "table_name",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 5,
+      "name": "operation",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 6,
+      "name": "old_row",
+      "type": "jsonb",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 7,
+      "name": "new_row",
+      "type": "jsonb",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     }
+    ],
+    "constraints": [
+     {
+      "name": "change_log_pkey",
+      "kind": "primary key",
+      "definition": "PRIMARY KEY (change_id)",
+      "deferrable": false
+     },
+     {
+      "name": "change_log_operation_check",
+      "kind": "check",
+      "definition": "CHECK ((operation = ANY (ARRAY['INSERT'::text, 'UPDATE'::text, 'DELETE'::text])))",
+      "deferrable": false
+     }
+    ],
+    "indexes": [
+     {
+      "name": "change_log_pkey",
+      "definition": "CREATE UNIQUE INDEX change_log_pkey ON lab.change_log USING btree (change_id)",
+      "is_unique": true,
+      "is_primary": true,
+      "bytes": 16384,
+      "method": "btree"
+     }
+    ],
+    "triggers": []
+   },
+   {
+    "schema": "lab",
+    "name": "connection",
+    "description": "Synapse count of a neuron pair in one release (BCNF: no dataset_id copy).",
+    "approx_rows": 9023,
+    "total_bytes": 1236992,
+    "columns": [
+     {
+      "position": 1,
+      "name": "release_id",
+      "type": "integer",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "PK FK"
+     },
+     {
+      "position": 2,
+      "name": "pre_neuron_id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "PK FK"
+     },
+     {
+      "position": 3,
+      "name": "post_neuron_id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "PK FK"
+     },
+     {
+      "position": 4,
+      "name": "synapse_count",
+      "type": "integer",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     }
+    ],
+    "constraints": [
+     {
+      "name": "connection_pkey",
+      "kind": "primary key",
+      "definition": "PRIMARY KEY (release_id, pre_neuron_id, post_neuron_id)",
+      "deferrable": false
+     },
+     {
+      "name": "connection_post_neuron_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (post_neuron_id) REFERENCES lab.neuron(neuron_id) ON UPDATE CASCADE ON DELETE CASCADE",
+      "deferrable": false
+     },
+     {
+      "name": "connection_pre_neuron_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (pre_neuron_id) REFERENCES lab.neuron(neuron_id) ON UPDATE CASCADE ON DELETE CASCADE",
+      "deferrable": false
+     },
+     {
+      "name": "connection_release_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (release_id) REFERENCES lab.release(release_id) ON DELETE CASCADE",
+      "deferrable": false
+     },
+     {
+      "name": "connection_synapse_count_check",
+      "kind": "check",
+      "definition": "CHECK ((synapse_count > 0))",
+      "deferrable": false
+     },
+     {
+      "name": "connection_same_dataset",
+      "kind": "trigger",
+      "definition": "TRIGGER",
+      "deferrable": false
+     }
+    ],
+    "indexes": [
+     {
+      "name": "connection_pkey",
+      "definition": "CREATE UNIQUE INDEX connection_pkey ON lab.connection USING btree (release_id, pre_neuron_id, post_neuron_id)",
+      "is_unique": true,
+      "is_primary": true,
+      "bytes": 548864,
+      "method": "btree"
+     },
+     {
+      "name": "connection_post_idx",
+      "definition": "CREATE INDEX connection_post_idx ON lab.connection USING btree (post_neuron_id)",
+      "is_unique": false,
+      "is_primary": false,
+      "bytes": 106496,
+      "method": "btree"
+     }
+    ],
+    "triggers": [
+     {
+      "name": "connection_log",
+      "definition": "CREATE TRIGGER connection_log AFTER INSERT OR DELETE OR UPDATE ON lab.connection FOR EACH ROW EXECUTE FUNCTION lab.log_change()",
+      "constraint_trigger": false
+     },
+     {
+      "name": "connection_same_dataset",
+      "definition": "CREATE CONSTRAINT TRIGGER connection_same_dataset AFTER INSERT OR UPDATE ON lab.connection NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE FUNCTION lab.check_connection_dataset()",
+      "constraint_trigger": true
+     }
+    ]
+   },
+   {
+    "schema": "lab",
+    "name": "dataset",
+    "description": "Editable copy of cc.dataset (key columns).",
+    "approx_rows": 2,
+    "total_bytes": 81920,
+    "columns": [
+     {
+      "position": 1,
+      "name": "dataset_id",
+      "type": "smallint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": true,
+      "description": null,
+      "key": "PK"
+     },
+     {
+      "position": 2,
+      "name": "code",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 3,
+      "name": "name",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 4,
+      "name": "organism",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     }
+    ],
+    "constraints": [
+     {
+      "name": "dataset_pkey",
+      "kind": "primary key",
+      "definition": "PRIMARY KEY (dataset_id)",
+      "deferrable": false
+     },
+     {
+      "name": "dataset_code_key",
+      "kind": "unique",
+      "definition": "UNIQUE (code)",
+      "deferrable": false
+     },
+     {
+      "name": "dataset_code_check",
+      "kind": "check",
+      "definition": "CHECK ((code ~ '^[a-z][a-z0-9_]*$'::text))",
+      "deferrable": false
+     },
+     {
+      "name": "dataset_name_check",
+      "kind": "check",
+      "definition": "CHECK ((name <> ''::text))",
+      "deferrable": false
+     }
+    ],
+    "indexes": [
+     {
+      "name": "dataset_code_key",
+      "definition": "CREATE UNIQUE INDEX dataset_code_key ON lab.dataset USING btree (code)",
+      "is_unique": true,
+      "is_primary": false,
+      "bytes": 16384,
+      "method": "btree"
+     },
+     {
+      "name": "dataset_pkey",
+      "definition": "CREATE UNIQUE INDEX dataset_pkey ON lab.dataset USING btree (dataset_id)",
+      "is_unique": true,
+      "is_primary": true,
+      "bytes": 16384,
+      "method": "btree"
+     }
+    ],
+    "triggers": [
+     {
+      "name": "dataset_log",
+      "definition": "CREATE TRIGGER dataset_log AFTER INSERT OR DELETE OR UPDATE ON lab.dataset FOR EACH ROW EXECUTE FUNCTION lab.log_change()",
+      "constraint_trigger": false
+     }
+    ]
+   },
+   {
+    "schema": "lab",
+    "name": "neuron",
+    "description": "Editable neurons with their current cell type, side and primary region.",
+    "approx_rows": 360,
+    "total_bytes": 147456,
+    "columns": [
+     {
+      "position": 1,
+      "name": "neuron_id",
+      "type": "bigint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": true,
+      "description": null,
+      "key": "PK"
+     },
+     {
+      "position": 2,
+      "name": "dataset_id",
+      "type": "smallint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     },
+     {
+      "position": 3,
+      "name": "source_neuron_id",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 4,
+      "name": "cell_type",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 5,
+      "name": "side",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 6,
+      "name": "primary_region",
+      "type": "text",
+      "not_null": false,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     }
+    ],
+    "constraints": [
+     {
+      "name": "neuron_pkey",
+      "kind": "primary key",
+      "definition": "PRIMARY KEY (neuron_id)",
+      "deferrable": false
+     },
+     {
+      "name": "neuron_dataset_id_source_neuron_id_key",
+      "kind": "unique",
+      "definition": "UNIQUE (dataset_id, source_neuron_id)",
+      "deferrable": false
+     },
+     {
+      "name": "neuron_dataset_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (dataset_id) REFERENCES lab.dataset(dataset_id) ON DELETE RESTRICT",
+      "deferrable": false
+     },
+     {
+      "name": "neuron_side_check",
+      "kind": "check",
+      "definition": "CHECK ((side = ANY (ARRAY['L'::text, 'R'::text, 'center'::text])))",
+      "deferrable": false
+     },
+     {
+      "name": "neuron_source_neuron_id_check",
+      "kind": "check",
+      "definition": "CHECK ((source_neuron_id <> ''::text))",
+      "deferrable": false
+     },
+     {
+      "name": "neuron_same_dataset",
+      "kind": "trigger",
+      "definition": "TRIGGER",
+      "deferrable": false
+     }
+    ],
+    "indexes": [
+     {
+      "name": "neuron_cell_type_idx",
+      "definition": "CREATE INDEX neuron_cell_type_idx ON lab.neuron USING btree (cell_type)",
+      "is_unique": false,
+      "is_primary": false,
+      "bytes": 16384,
+      "method": "btree"
+     },
+     {
+      "name": "neuron_dataset_id_source_neuron_id_key",
+      "definition": "CREATE UNIQUE INDEX neuron_dataset_id_source_neuron_id_key ON lab.neuron USING btree (dataset_id, source_neuron_id)",
+      "is_unique": true,
+      "is_primary": false,
+      "bytes": 40960,
+      "method": "btree"
+     },
+     {
+      "name": "neuron_pkey",
+      "definition": "CREATE UNIQUE INDEX neuron_pkey ON lab.neuron USING btree (neuron_id)",
+      "is_unique": true,
+      "is_primary": true,
+      "bytes": 16384,
+      "method": "btree"
+     }
+    ],
+    "triggers": [
+     {
+      "name": "neuron_log",
+      "definition": "CREATE TRIGGER neuron_log AFTER INSERT OR DELETE OR UPDATE ON lab.neuron FOR EACH ROW EXECUTE FUNCTION lab.log_change()",
+      "constraint_trigger": false
+     },
+     {
+      "name": "neuron_same_dataset",
+      "definition": "CREATE CONSTRAINT TRIGGER neuron_same_dataset AFTER UPDATE OF dataset_id ON lab.neuron NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE FUNCTION lab.check_connection_dataset()",
+      "constraint_trigger": true
+     }
+    ]
+   },
+   {
+    "schema": "lab",
+    "name": "release",
+    "description": "Editable copy of the loaded releases.",
+    "approx_rows": 5,
+    "total_bytes": 98304,
+    "columns": [
+     {
+      "position": 1,
+      "name": "release_id",
+      "type": "integer",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": true,
+      "description": null,
+      "key": "PK"
+     },
+     {
+      "position": 2,
+      "name": "dataset_id",
+      "type": "smallint",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": "FK"
+     },
+     {
+      "position": 3,
+      "name": "version_label",
+      "type": "text",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     },
+     {
+      "position": 4,
+      "name": "release_order",
+      "type": "integer",
+      "not_null": true,
+      "default_expr": null,
+      "generated": false,
+      "identity": false,
+      "description": null,
+      "key": ""
+     }
+    ],
+    "constraints": [
+     {
+      "name": "release_pkey",
+      "kind": "primary key",
+      "definition": "PRIMARY KEY (release_id)",
+      "deferrable": false
+     },
+     {
+      "name": "release_dataset_id_release_order_key",
+      "kind": "unique",
+      "definition": "UNIQUE (dataset_id, release_order)",
+      "deferrable": false
+     },
+     {
+      "name": "release_dataset_id_version_label_key",
+      "kind": "unique",
+      "definition": "UNIQUE (dataset_id, version_label)",
+      "deferrable": false
+     },
+     {
+      "name": "release_dataset_id_fkey",
+      "kind": "foreign key",
+      "definition": "FOREIGN KEY (dataset_id) REFERENCES lab.dataset(dataset_id) ON DELETE RESTRICT",
+      "deferrable": false
+     },
+     {
+      "name": "release_release_order_check",
+      "kind": "check",
+      "definition": "CHECK ((release_order > 0))",
+      "deferrable": false
+     },
+     {
+      "name": "release_version_label_check",
+      "kind": "check",
+      "definition": "CHECK ((version_label <> ''::text))",
+      "deferrable": false
+     },
+     {
+      "name": "release_same_dataset",
+      "kind": "trigger",
+      "definition": "TRIGGER",
+      "deferrable": false
+     }
+    ],
+    "indexes": [
+     {
+      "name": "release_dataset_id_release_order_key",
+      "definition": "CREATE UNIQUE INDEX release_dataset_id_release_order_key ON lab.release USING btree (dataset_id, release_order)",
+      "is_unique": true,
+      "is_primary": false,
+      "bytes": 16384,
+      "method": "btree"
+     },
+     {
+      "name": "release_dataset_id_version_label_key",
+      "definition": "CREATE UNIQUE INDEX release_dataset_id_version_label_key ON lab.release USING btree (dataset_id, version_label)",
+      "is_unique": true,
+      "is_primary": false,
+      "bytes": 16384,
+      "method": "btree"
+     },
+     {
+      "name": "release_pkey",
+      "definition": "CREATE UNIQUE INDEX release_pkey ON lab.release USING btree (release_id)",
+      "is_unique": true,
+      "is_primary": true,
+      "bytes": 16384,
+      "method": "btree"
+     }
+    ],
+    "triggers": [
+     {
+      "name": "release_log",
+      "definition": "CREATE TRIGGER release_log AFTER INSERT OR DELETE OR UPDATE ON lab.release FOR EACH ROW EXECUTE FUNCTION lab.log_change()",
+      "constraint_trigger": false
+     },
+     {
+      "name": "release_same_dataset",
+      "definition": "CREATE CONSTRAINT TRIGGER release_same_dataset AFTER UPDATE OF dataset_id ON lab.release NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE FUNCTION lab.check_connection_dataset()",
+      "constraint_trigger": true
+     }
+    ]
+   }
+  ],
+  "views": [
+   {
+    "schema": "cc",
+    "name": "brain_region_label",
+    "materialized": false,
+    "description": null,
+    "definition": " SELECT b.brain_region_id,\n    b.canonical_code || COALESCE('_'::text || b.hemisphere::text, ''::text) AS code,\n    b.name,\n    n.super_region\n   FROM brain_region b\n     JOIN neuropil n USING (canonical_code);"
+   },
+   {
+    "schema": "cc",
+    "name": "connection_history",
+    "materialized": false,
+    "description": null,
+    "definition": " SELECT c.connection_id,\n    c.dataset_id,\n    d.code AS dataset,\n    pre.source_neuron_id AS pre_source_id,\n    post.source_neuron_id AS post_source_id,\n    c.synapse_count,\n    release_label(c.dataset_id, lower(c.valid_rel)) AS valid_from_release,\n    release_label(c.dataset_id, upper(c.valid_rel)) AS valid_until_release,\n    lower(c.tx) AS recorded_from,\n    upper(c.tx) AS recorded_until,\n    c.provenance_id,\n    c.source_lines\n   FROM connection c\n     JOIN dataset d USING (dataset_id)\n     JOIN dataset_neuron pre ON pre.dataset_neuron_id = c.pre_neuron_id\n     JOIN dataset_neuron post ON post.dataset_neuron_id = c.post_neuron_id;"
+   },
+   {
+    "schema": "cc",
+    "name": "diff_event_detail",
+    "materialized": false,
+    "description": null,
+    "definition": " SELECT e.diff_event_id,\n    e.diff_run_id,\n    e.entity_type,\n    e.change_type,\n    n.source_neuron_id AS neuron_source_id,\n    p.source_neuron_id AS post_source_id,\n    e.annotation_key,\n    e.old_value,\n    e.new_value,\n    e.old_weight,\n    e.new_weight,\n    e.weight_delta,\n    ra.version_label AS release_a,\n    rb.version_label AS release_b,\n    d.code AS dataset,\n    e.record_a_id,\n    e.record_b_id\n   FROM diff_event e\n     JOIN diff_run r USING (diff_run_id)\n     JOIN release ra ON ra.release_id = r.release_a\n     JOIN release rb ON rb.release_id = r.release_b\n     JOIN dataset d ON d.dataset_id = r.dataset_a\n     JOIN dataset_neuron n ON n.dataset_neuron_id = e.dataset_neuron_id\n     LEFT JOIN dataset_neuron p ON p.dataset_neuron_id = e.post_neuron_id;"
+   },
+   {
+    "schema": "cc",
+    "name": "neuron_latest_region",
+    "materialized": false,
+    "description": null,
+    "definition": " SELECT DISTINCT ON (s.dataset_neuron_id) s.dataset_neuron_id,\n    l.code,\n    s.brain_region_id\n   FROM neuron_region_synapses s\n     JOIN release r USING (release_id)\n     JOIN brain_region_label l USING (brain_region_id)\n  ORDER BY s.dataset_neuron_id, r.release_order DESC, (s.pre_synapses + s.post_synapses) DESC, s.brain_region_id;"
+   },
+   {
+    "schema": "cc",
+    "name": "neuron_primary_region",
+    "materialized": false,
+    "description": null,
+    "definition": " SELECT DISTINCT ON (release_id, dataset_neuron_id) release_id,\n    dataset_id,\n    dataset_neuron_id,\n    brain_region_id,\n    pre_synapses + post_synapses AS synapses\n   FROM neuron_region_synapses\n  ORDER BY release_id, dataset_neuron_id, (pre_synapses + post_synapses) DESC, brain_region_id;"
+   },
+   {
+    "schema": "cc",
+    "name": "release_overview",
+    "materialized": false,
+    "description": null,
+    "definition": " SELECT r.release_id,\n    d.code AS dataset,\n    r.version_label,\n    r.release_order,\n    r.release_date,\n    r.ingestion_status,\n    r.loaded_at,\n    ( SELECT count(*) AS count\n           FROM neuron_version nv\n             JOIN dataset_neuron dn USING (dataset_neuron_id)\n          WHERE dn.dataset_id = r.dataset_id AND nv.valid_rel @> r.release_order AND upper_inf(nv.tx)) AS neurons,\n    ( SELECT count(*) AS count\n           FROM connection c\n          WHERE c.dataset_id = r.dataset_id AND c.valid_rel @> r.release_order AND upper_inf(c.tx)) AS connections\n   FROM release r\n     JOIN dataset d USING (dataset_id);"
+   },
+   {
+    "schema": "cc",
+    "name": "release_stats",
+    "materialized": true,
+    "description": null,
+    "definition": " SELECT release_id,\n    neurons,\n    connections,\n    now() AS computed_at\n   FROM release_overview;"
+   },
+   {
+    "schema": "lab",
+    "name": "neuron_degree",
+    "materialized": false,
+    "description": null,
+    "definition": " SELECT r.release_id,\n    r.version_label,\n    n.neuron_id,\n    n.source_neuron_id,\n    n.cell_type,\n    ( SELECT count(*) AS count\n           FROM lab.connection c\n          WHERE c.release_id = r.release_id AND c.pre_neuron_id = n.neuron_id) AS out_partners,\n    ( SELECT COALESCE(sum(c.synapse_count), 0::bigint) AS \"coalesce\"\n           FROM lab.connection c\n          WHERE c.release_id = r.release_id AND c.pre_neuron_id = n.neuron_id) AS out_synapses,\n    ( SELECT count(*) AS count\n           FROM lab.connection c\n          WHERE c.release_id = r.release_id AND c.post_neuron_id = n.neuron_id) AS in_partners,\n    ( SELECT COALESCE(sum(c.synapse_count), 0::bigint) AS \"coalesce\"\n           FROM lab.connection c\n          WHERE c.release_id = r.release_id AND c.post_neuron_id = n.neuron_id) AS in_synapses\n   FROM lab.neuron n\n     JOIN lab.release r USING (dataset_id);"
+   }
+  ],
+  "functions": [
+   {
+    "schema": "cc",
+    "name": "annotation_history",
+    "arguments": "p_neuron bigint",
+    "returns": "TABLE(annotation_key text, annotation_value text, valid_from_release text, valid_until_release text, recorded_from timestamp with time zone, recorded_until timestamp with time zone, annotation_id bigint)",
+    "language": "sql",
+    "volatility": "stable",
+    "security_definer": false,
+    "description": null
+   },
+   {
+    "schema": "cc",
+    "name": "assign_source_identity",
+    "arguments": "p_dataset text",
+    "returns": "bigint",
+    "language": "sql",
+    "volatility": "volatile",
+    "security_definer": false,
+    "description": null
+   },
+   {
+    "schema": "cc",
+    "name": "build_type_crosswalk",
+    "arguments": "",
+    "returns": "jsonb",
+    "language": "plpgsql",
+    "volatility": "volatile",
+    "security_definer": false,
+    "description": null
+   },
+   {
+    "schema": "cc",
+    "name": "connections_at_release",
+    "arguments": "p_neuron bigint, p_release integer, p_as_of timestamp with time zone, p_min_weight integer",
+    "returns": "TABLE(direction text, partner_neuron_id bigint, partner_source_id text, synapse_count integer, connection_id bigint)",
+    "language": "sql",
+    "volatility": "stable",
+    "security_definer": false,
+    "description": null
+   },
+   {
+    "schema": "cc",
+    "name": "find_neuron",
+    "arguments": "p_dataset text, p_source_id text",
+    "returns": "bigint",
+    "language": "sql",
+    "volatility": "stable",
+    "security_definer": false,
+    "description": null
+   },
+   {
+    "schema": "cc",
+    "name": "guard_history",
+    "arguments": "",
+    "returns": "trigger",
+    "language": "plpgsql",
+    "volatility": "volatile",
+    "security_definer": false,
+    "description": null
+   },
+   {
+    "schema": "cc",
+    "name": "neuron_as_of",
+    "arguments": "p_neuron bigint, p_as_of timestamp with time zone",
+    "returns": "TABLE(annotation_key text, annotation_value text, valid_from_release text, valid_until_release text)",
+    "language": "sql",
+    "volatility": "stable",
+    "security_definer": false,
+    "description": null
+   },
+   {
+    "schema": "cc",
+    "name": "neuron_at_release",
+    "arguments": "p_neuron bigint, p_release integer, p_as_of timestamp with time zone",
+    "returns": "TABLE(dataset_neuron_id bigint, source_neuron_id text, release text, present boolean, annotations jsonb)",
+    "language": "sql",
+    "volatility": "stable",
+    "security_definer": false,
+    "description": null
+   },
+   {
+    "schema": "cc",
+    "name": "partition_quality",
+    "arguments": "p_strategy text",
+    "returns": "TABLE(shard_id smallint, neurons bigint, owned_rows bigint, mirrored_in bigint, share_of_rows numeric, cut_fraction numeric)",
+    "language": "plpgsql",
+    "volatility": "stable",
+    "security_definer": false,
+    "description": null
+   },
+   {
+    "schema": "cc",
+    "name": "propose_crosswalk_mappings",
+    "arguments": "p_fw_release integer, p_hb_release integer, p_max_candidates integer",
+    "returns": "jsonb",
+    "language": "plpgsql",
+    "volatility": "volatile",
+    "security_definer": false,
+    "description": null
+   },
+   {
+    "schema": "cc",
+    "name": "release_label",
+    "arguments": "p_dataset smallint, p_order integer",
+    "returns": "text",
+    "language": "sql",
+    "volatility": "stable",
+    "security_definer": false,
+    "description": null
+   },
+   {
+    "schema": "cc",
+    "name": "review_mapping",
+    "arguments": "p_mapping bigint, p_decision text, p_reviewer text",
+    "returns": "void",
+    "language": "plpgsql",
+    "volatility": "volatile",
+    "security_definer": false,
+    "description": null
+   },
+   {
+    "schema": "cc",
+    "name": "run_temporal_diff",
+    "arguments": "p_release_a integer, p_release_b integer, p_as_of timestamp with time zone",
+    "returns": "bigint",
+    "language": "plpgsql",
+    "volatility": "volatile",
+    "security_definer": false,
+    "description": null
+   },
+   {
+    "schema": "cc",
+    "name": "trace_provenance",
+    "arguments": "p_table text, p_id bigint",
+    "returns": "jsonb",
+    "language": "plpgsql",
+    "volatility": "stable",
+    "security_definer": false,
+    "description": null
+   },
+   {
+    "schema": "lab",
+    "name": "check_connection_dataset",
+    "arguments": "",
+    "returns": "trigger",
+    "language": "plpgsql",
+    "volatility": "volatile",
+    "security_definer": false,
+    "description": null
+   },
+   {
+    "schema": "lab",
+    "name": "log_change",
+    "arguments": "",
+    "returns": "trigger",
+    "language": "plpgsql",
+    "volatility": "volatile",
+    "security_definer": false,
+    "description": null
+   },
+   {
+    "schema": "lab",
+    "name": "same_dataset_violation",
+    "arguments": "p_release integer, p_pre bigint, p_post bigint",
+    "returns": "boolean",
+    "language": "sql",
+    "volatility": "stable",
+    "security_definer": false,
+    "description": null
+   }
+  ]
+ },
+ "mongo": [
+  {
+   "database": "connectome_meta",
+   "name": "neuron_source_record",
+   "documents": 182274,
+   "validator": null,
+   "validation_level": null,
+   "indexes": [
+    {
+     "name": "_id_",
+     "keys": {
+      "_id": 1
+     },
+     "unique": false,
+     "partial": null
+    },
+    {
+     "name": "dataset_1_source_neuron_id_1",
+     "keys": {
+      "dataset": 1,
+      "source_neuron_id": 1
+     },
+     "unique": true,
+     "partial": null
+    },
+    {
+     "name": "dataset_neuron_id_1",
+     "keys": {
+      "dataset_neuron_id": 1
+     },
+     "unique": true,
+     "partial": null
+    }
+   ]
+  },
+  {
+   "database": "connectome_meta_lab",
+   "name": "neuron_source_record",
+   "documents": 360,
+   "validator": {
+    "$jsonSchema": {
+     "bsonType": "object",
+     "required": [
+      "dataset",
+      "source_neuron_id",
+      "dataset_neuron_id"
+     ],
+     "properties": {
+      "dataset": {
+       "bsonType": "string",
+       "description": "dataset code, e.g. hemibrain"
+      },
+      "source_neuron_id": {
+       "bsonType": "string",
+       "description": "the id used by the source, as text"
+      },
+      "dataset_neuron_id": {
+       "bsonType": [
+        "int",
+        "long"
+       ],
+       "description": "key of the neuron in PostgreSQL"
+      },
+      "releases": {
+       "bsonType": "object",
+       "description": "original source rows per release id"
+      }
+     }
+    }
+   },
+   "validation_level": null,
+   "indexes": [
+    {
+     "name": "_id_",
+     "keys": {
+      "_id": 1
+     },
+     "unique": false,
+     "partial": null
+    },
+    {
+     "name": "dataset_1_source_neuron_id_1",
+     "keys": {
+      "dataset": 1,
+      "source_neuron_id": 1
+     },
+     "unique": true,
+     "partial": null
+    },
+    {
+     "name": "dataset_neuron_id_1",
+     "keys": {
+      "dataset_neuron_id": 1
+     },
+     "unique": true,
+     "partial": null
+    }
+   ]
+  }
+ ],
+ "summary": {
+  "tables": 39,
+  "columns": 268,
+  "described_tables": 39,
+  "constraints": 222,
+  "foreign_keys": 65,
+  "checks": 89,
+  "exclusions": 4,
+  "indexes": 85,
+  "triggers": 10,
+  "views": 8,
+  "functions": 17,
+  "mongo_collections": 2
+ }
+}

@@ -279,3 +279,13 @@ details.doc summary { cursor: pointer; display: flex; align-items: center; gap: 
 #ed-structure summary { cursor: pointer; color: var(--ink-2); }
 #ed-meta code { font-size: 11.5px; }
 @media (max-width: 760px) { .editor-grid { grid-template-columns: 1fr; } }
+
+/* ---- design */
+.dfd-frame { margin: 12px 0; border: 1px solid var(--border); border-radius: 8px; background: #fff; overflow: auto; }
+.dfd-img { display: block; width: 100%; height: auto; min-width: 760px; }
+#design .panel h4, #design h4 { margin: 6px 0; }
+#design details.panel { margin: 8px 0; }
+#design details.panel > summary { cursor: pointer; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.bad-text { color: var(--critical); font-weight: 600; }
+#dz-nf-rel td:first-child code, #dz-files-list td:first-child code { white-space: nowrap; word-break: normal; }
+#dz-nf-rel td { vertical-align: top; }

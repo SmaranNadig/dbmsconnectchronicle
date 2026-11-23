@@ -1,0 +1,3159 @@
+{
+ "generated_at": "2026-11-23 13:04 UTC",
+ "categories": [
+  {
+   "id": "select",
+   "title": "Selection and projection"
+  },
+  {
+   "id": "join",
+   "title": "Joins"
+  },
+  {
+   "id": "aggregate",
+   "title": "Aggregation and grouping"
+  },
+  {
+   "id": "subquery",
+   "title": "Subqueries and set operations"
+  },
+  {
+   "id": "window",
+   "title": "Window functions"
+  },
+  {
+   "id": "recursive",
+   "title": "Recursive queries"
+  },
+  {
+   "id": "temporal",
+   "title": "Bitemporal queries"
+  },
+  {
+   "id": "views",
+   "title": "Views and stored functions"
+  },
+  {
+   "id": "analysis",
+   "title": "ConnectomeDiff and distribution"
+  },
+  {
+   "id": "dml",
+   "title": "Inserting, updating and deleting"
+  },
+  {
+   "id": "nosql",
+   "title": "MongoDB (NoSQL)"
+  }
+ ],
+ "results": [
+  {
+   "id": "q-releases",
+   "category": "select",
+   "question": "Which releases are loaded, in order, for each dataset?",
+   "why": "The two catalogue tables are tiny, so a plain join is optimal; release_order (not the label) gives the true order, because labels such as \"630\" and \"783\" do not sort like versions.",
+   "language": "sql",
+   "target": "read",
+   "code": "SELECT d.code AS dataset, r.version_label, r.release_order, r.release_date, r.loaded_at\nFROM release r\nJOIN dataset d USING (dataset_id)\nWHERE r.ingestion_status = 'loaded'\nORDER BY d.code, r.release_order;\n",
+   "result": {
+    "columns": [
+     "dataset",
+     "version_label",
+     "release_order",
+     "release_date",
+     "loaded_at"
+    ],
+    "rows": [
+     [
+      "flywire",
+      "630",
+      1,
+      null,
+      "2026-11-03T10:43:34.645028+00:00"
+     ],
+     [
+      "flywire",
+      "783",
+      2,
+      null,
+      "2026-11-03T10:47:07.302475+00:00"
+     ],
+     [
+      "hemibrain",
+      "v1.0",
+      1,
+      null,
+      "2026-11-03T10:14:24.981338+00:00"
+     ],
+     [
+      "hemibrain",
+      "v1.1",
+      2,
+      null,
+      "2026-11-03T10:23:31.555167+00:00"
+     ],
+     [
+      "hemibrain",
+      "v1.2",
+      3,
+      null,
+      "2026-11-03T10:31:48.709173+00:00"
+     ]
+    ],
+    "row_count": 5,
+    "truncated": false,
+    "elapsed_ms": 26.9,
+    "status": "SELECT 5",
+    "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
+   },
+   "plan": {
+    "planning_ms": 0.945,
+    "execution_ms": 0.1,
+    "top_node": "Sort",
+    "nodes": [
+     "Index Scan",
+     "Nested Loop",
+     "Seq Scan",
+     "Sort"
+    ],
+    "scans": [
+     {
+      "node": "Seq Scan",
+      "relation": "release",
+      "index": null,
+      "rows": 5,
+      "loops": 1
+     },
+     {
+      "node": "Index Scan",
+      "relation": "dataset",
+      "index": "dataset_pkey",
+      "rows": 1,
+      "loops": 5
+     }
+    ],
+    "indexes": [
+     "dataset_pkey"
+    ],
+    "seq_scans": [
+     "release"
+    ],
+    "shared_hit_blocks": 17,
+    "shared_read_blocks": 0
+   },
+   "checks": [
+    {
+     "check": "runs without error",
+     "ok": true
+    },
+    {
+     "check": "at least 5 row(s)",
+     "ok": true
+    }
+   ],
+   "ok": true,
+   "seconds": 0.3
+  },
+  {
+   "id": "q-find-neuron",
+   "category": "select",
+   "question": "Which internal id does hemibrain neuron 1688868386 have, and in which release did it first appear?",
+   "why": "The predicate matches the natural key (dataset_id, source_neuron_id) exactly, so the UNIQUE constraint's index finds the row without reading the 182,274-row table; the id is compared as text because published ids are kept losslessly as text.",
+   "language": "sql",
+   "target": "read",
+   "code": "SELECT dn.dataset_neuron_id, dn.source_neuron_id, r.version_label AS first_release\nFROM dataset_neuron dn\nJOIN release r ON r.release_id = dn.first_release_id\nWHERE dn.dataset_id = (SELECT dataset_id FROM dataset WHERE code = 'hemibrain')\n  AND dn.source_neuron_id = '1688868386';\n",
+   "result": {
+    "columns": [
+     "dataset_neuron_id",
+     "source_neuron_id",
+     "first_release"
+    ],
+    "rows": [
+     [
+      41903,
+      "1688868386",
+      "v1.0"
+     ]
+    ],
+    "row_count": 1,
+    "truncated": false,
+    "elapsed_ms": 22.11,
+    "status": "SELECT 1",
+    "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
+   },
+   "plan": {
+    "planning_ms": 1.67,
+    "execution_ms": 0.159,
+    "top_node": "Nested Loop",
+    "nodes": [
+     "Index Scan",
+     "Nested Loop"
+    ],
+    "scans": [
+     {
+      "node": "Index Scan",
+      "relation": "dataset",
+      "index": "dataset_code_key",
+      "rows": 1,
+      "loops": 1
+     },
+     {
+      "node": "Index Scan",
+      "relation": "dataset_neuron",
+      "index": "dataset_neuron_dataset_id_source_neuron_id_key",
+      "rows": 1,
+      "loops": 1
+     },
+     {
+      "node": "Index Scan",
+      "relation": "release",
+      "index": "release_release_id_dataset_id_key",
+      "rows": 1,
+      "loops": 1
+     }
+    ],
+    "indexes": [
+     "dataset_code_key",
+     "dataset_neuron_dataset_id_source_neuron_id_key",
+     "release_release_id_dataset_id_key"
+    ],
+    "seq_scans": [],
+    "shared_hit_blocks": 8,
+    "shared_read_blocks": 0
+   },
+   "checks": [
+    {
+     "check": "runs without error",
+     "ok": true
+    },
+    {
+     "check": "at least 1 row(s)",
+     "ok": true
+    },
+    {
+     "check": "plan uses index dataset_neuron_dataset_id_source_neuron_id_key",
+     "ok": true
+    }
+   ],
+   "ok": true,
+   "seconds": 0.28
+  },
+  {
+   "id": "q-strongest-partners",
+   "category": "join",
+   "question": "What are the 10 strongest current outgoing connections of hemibrain neuron 487144598 (an LHCENT3 neuron), with each partner's cell type?",
+   "why": "Starts from the one neuron (index connection_pre_idx), so only its edges are read, not 9 M rows; upper_inf(tx) AND upper_inf(valid_rel) is the bitemporal \"current\" filter; LEFT JOIN keeps partners that have no cell type.",
+   "language": "sql",
+   "target": "read",
+   "code": "SELECT post.source_neuron_id AS partner, t.annotation_value AS partner_type, c.synapse_count\nFROM connection c\nJOIN dataset_neuron post ON post.dataset_neuron_id = c.post_neuron_id\nLEFT JOIN annotation t ON t.dataset_neuron_id = c.post_neuron_id\n                      AND t.annotation_key = 'cell_type'\n                      AND upper_inf(t.tx) AND upper_inf(t.valid_rel)\nWHERE c.pre_neuron_id = cc.find_neuron('hemibrain', '487144598')\n  AND upper_inf(c.tx) AND upper_inf(c.valid_rel)\nORDER BY c.synapse_count DESC\nLIMIT 10;\n",
+   "result": {
+    "columns": [
+     "partner",
+     "partner_type",
+     "synapse_count"
+    ],
+    "rows": [
+     [
+      "328533761",
+      "PPL201",
+      349
+     ],
+     [
+      "579234980",
+      "LHPD2c7",
+      169
+     ],
+     [
+      "5813021291",
+      "MB-C1",
+      168
+     ],
+     [
+      "5813075020",
+      "MB-C1",
+      138
+     ],
+     [
+      "576502536",
+      "LHPD2c7",
+      133
+     ],
+     [
+      "517506265",
+      "LHCENT4",
+      97
+     ],
+     [
+      "5813049920",
+      "LHPV6g1",
+      91
+     ],
+     [
+      "638481581",
+      "OA-VUMa2",
+      81
+     ],
+     [
+      "1670265016",
+      "OA-VUMa2",
+      74
+     ],
+     [
+      "5813055949",
+      "SMP175",
+      68
+     ]
+    ],
+    "row_count": 10,
+    "truncated": false,
+    "elapsed_ms": 366.37,
+    "status": "SELECT 10",
+    "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
+   },
+   "plan": {
+    "planning_ms": 2.827,
+    "execution_ms": 31.159,
+    "top_node": "Limit",
+    "nodes": [
+     "Index Scan",
+     "Limit",
+     "Nested Loop",
+     "Sort"
+    ],
+    "scans": [
+     {
+      "node": "Index Scan",
+      "relation": "connection",
+      "index": "connection_pre_idx",
+      "rows": 1876,
+      "loops": 1
+     },
+     {
+      "node": "Index Scan",
+      "relation": "dataset_neuron",
+      "index": "dataset_neuron_dataset_neuron_id_dataset_id_key",
+      "rows": 1,
+      "loops": 1876
+     },
+     {
+      "node": "Index Scan",
+      "relation": "annotation",
+      "index": "annotation_dataset_neuron_id_annotation_key_valid_rel_tx_excl",
+      "rows": 1,
+      "loops": 1876
+     }
+    ],
+    "indexes": [
+     "annotation_dataset_neuron_id_annotation_key_valid_rel_tx_excl",
+     "connection_pre_idx",
+     "dataset_neuron_dataset_neuron_id_dataset_id_key"
+    ],
+    "seq_scans": [],
+    "shared_hit_blocks": 20407,
+    "shared_read_blocks": 0
+   },
+   "checks": [
+    {
+     "check": "runs without error",
+     "ok": true
+    },
+    {
+     "check": "at least 1 row(s)",
+     "ok": true
+    },
+    {
+     "check": "plan uses index connection_pre_idx",
+     "ok": true
+    },
+    {
+     "check": "no sequential scan of connection",
+     "ok": true
+    },
+    {
+     "check": "no sequential scan of annotation",
+     "ok": true
+    }
+   ],
+   "ok": true,
+   "seconds": 0.64
+  },
+  {
+   "id": "q-untyped",
+   "category": "join",
+   "question": "How many FlyWire neurons of the latest release have no cell type annotation?",
+   "why": "NOT EXISTS is an anti-join (it stops at the first match and, unlike NOT IN, is correct when NULLs are present); the existence filter on neuron_version keeps only neurons present in the latest release.",
+   "language": "sql",
+   "target": "read",
+   "code": "SELECT count(*) AS neurons_without_type\nFROM dataset_neuron dn\nJOIN neuron_version v ON v.dataset_neuron_id = dn.dataset_neuron_id\n                     AND upper_inf(v.tx) AND upper_inf(v.valid_rel)\nWHERE dn.dataset_id = (SELECT dataset_id FROM dataset WHERE code = 'flywire')\n  AND NOT EXISTS (SELECT 1 FROM annotation a\n                  WHERE a.dataset_neuron_id = dn.dataset_neuron_id\n                    AND a.annotation_key = 'cell_type'\n                    AND upper_inf(a.tx) AND upper_inf(a.valid_rel));\n",
+   "result": {
+    "columns": [
+     "neurons_without_type"
+    ],
+    "rows": [
+     [
+      928
+     ]
+    ],
+    "row_count": 1,
+    "truncated": false,
+    "elapsed_ms": 1843.82,
+    "status": "SELECT 1",
+    "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
+   },
+   "plan": {
+    "planning_ms": 1.743,
+    "execution_ms": 915.371,
+    "top_node": "Aggregate",
+    "nodes": [
+     "Aggregate",
+     "Gather",
+     "Hash",
+     "Hash Join",
+     "Index Only Scan",
+     "Index Scan",
+     "Nested Loop",
+     "Seq Scan"
+    ],
+    "scans": [
+     {
+      "node": "Index Scan",
+      "relation": "dataset",
+      "index": "dataset_code_key",
+      "rows": 1,
+      "loops": 1
+     },
+     {
+      "node": "Seq Scan",
+      "relation": "dataset_neuron",
+      "index": null,
+      "rows": 80224,
+      "loops": 2
+     },
+     {
+      "node": "Seq Scan",
+      "relation": "neuron_version",
+      "index": null,
+      "rows": 80497,
+      "loops": 2
+     },
+     {
+      "node": "Index Only Scan",
+      "relation": "annotation",
+      "index": "annotation_dataset_neuron_id_annotation_key_valid_rel_tx_excl",
+      "rows": 1,
+      "loops": 139255
+     }
+    ],
+    "indexes": [
+     "annotation_dataset_neuron_id_annotation_key_valid_rel_tx_excl",
+     "dataset_code_key"
+    ],
+    "seq_scans": [
+     "dataset_neuron",
+     "neuron_version"
+    ],
+    "shared_hit_blocks": 571776,
+    "shared_read_blocks": 0
+   },
+   "checks": [
+    {
+     "check": "runs without error",
+     "ok": true
+    }
+   ],
+   "ok": true,
+   "seconds": 3.03
+  },
+  {
+   "id": "q-release-sizes",
+   "category": "aggregate",
+   "question": "How many neurons and connections does each release have?",
+   "why": "Counting the 9 M connection rows per release on every request would take seconds; the materialized view release_stats is refreshed in the same transaction that loads a release, so it is never stale and the query reads 5 rows.",
+   "language": "sql",
+   "target": "read",
+   "code": "SELECT d.code AS dataset, r.version_label, s.neurons, s.connections, s.computed_at\nFROM release_stats s\nJOIN release r USING (release_id)\nJOIN dataset d USING (dataset_id)\nORDER BY d.code, r.release_order;\n",
+   "result": {
+    "columns": [
+     "dataset",
+     "version_label",
+     "neurons",
+     "connections",
+     "computed_at"
+    ],
+    "rows": [
+     [
+      "flywire",
+      "630",
+      127978,
+      2613129,
+      "2026-11-03T11:50:40.379358+00:00"
+     ],
+     [
+      "flywire",
+      "783",
+      139255,
+      2700513,
+      "2026-11-03T11:50:40.379358+00:00"
+     ],
+     [
+      "hemibrain",
+      "v1.0",
+      21663,
+      3413160,
+      "2026-11-03T11:50:40.379358+00:00"
+     ],
+     [
+      "hemibrain",
+      "v1.1",
+      21733,
+      3521163,
+      "2026-11-03T11:50:40.379358+00:00"
+     ],
+     [
+      "hemibrain",
+      "v1.2",
+      21739,
+      3550403,
+      "2026-11-03T11:50:40.379358+00:00"
+     ]
+    ],
+    "row_count": 5,
+    "truncated": false,
+    "elapsed_ms": 16.54,
+    "status": "SELECT 5",
+    "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
+   },
+   "plan": {
+    "planning_ms": 1.624,
+    "execution_ms": 0.339,
+    "top_node": "Sort",
+    "nodes": [
+     "Hash",
+     "Hash Join",
+     "Index Scan",
+     "Nested Loop",
+     "Seq Scan",
+     "Sort"
+    ],
+    "scans": [
+     {
+      "node": "Seq Scan",
+      "relation": "release",
+      "index": null,
+      "rows": 5,
+      "loops": 1
+     },
+     {
+      "node": "Seq Scan",
+      "relation": "release_stats",
+      "index": null,
+      "rows": 5,
+      "loops": 1
+     },
+     {
+      "node": "Index Scan",
+      "relation": "dataset",
+      "index": "dataset_pkey",
+      "rows": 1,
+      "loops": 5
+     }
+    ],
+    "indexes": [
+     "dataset_pkey"
+    ],
+    "seq_scans": [
+     "release",
+     "release_stats"
+    ],
+    "shared_hit_blocks": 18,
+    "shared_read_blocks": 0
+   },
+   "checks": [
+    {
+     "check": "runs without error",
+     "ok": true
+    },
+    {
+     "check": "at least 5 row(s)",
+     "ok": true
+    }
+   ],
+   "ok": true,
+   "seconds": 0.29
+  },
+  {
+   "id": "q-top-types",
+   "category": "aggregate",
+   "question": "Which 10 cell types have the most neurons in hemibrain v1.2?",
+   "why": "valid_rel @> order selects the facts valid in that release, whichever release they were first loaded in; the partial index annotation_key_value_idx (current rows only) serves the key filter.",
+   "language": "sql",
+   "target": "read",
+   "code": "SELECT a.annotation_value AS cell_type, count(*) AS neurons\nFROM annotation a\nJOIN dataset_neuron dn USING (dataset_neuron_id)\nWHERE dn.dataset_id = (SELECT dataset_id FROM dataset WHERE code = 'hemibrain')\n  AND a.annotation_key = 'cell_type'\n  AND a.valid_rel @> (SELECT release_order FROM release r JOIN dataset d USING (dataset_id)\n                      WHERE d.code = 'hemibrain' AND r.version_label = 'v1.2')\n  AND upper_inf(a.tx)\nGROUP BY a.annotation_value\nORDER BY neurons DESC, cell_type\nLIMIT 10;\n",
+   "result": {
+    "columns": [
+     "cell_type",
+     "neurons"
+    ],
+    "rows": [
+     [
+      "KCg-m",
+      590
+     ],
+     [
+      "LC10",
+      448
+     ],
+     [
+      "KCab-m",
+      354
+     ],
+     [
+      "MC61",
+      346
+     ],
+     [
+      "KCab-c",
+      252
+     ],
+     [
+      "LC12",
+      226
+     ],
+     [
+      "KCab-s",
+      223
+     ],
+     [
+      "LC17",
+      186
+     ],
+     [
+      "LC9",
+      135
+     ],
+     [
+      "KCa'b'-ap2",
+      127
+     ]
+    ],
+    "row_count": 10,
+    "truncated": false,
+    "elapsed_ms": 1196.57,
+    "status": "SELECT 10",
+    "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
+   },
+   "plan": {
+    "planning_ms": 2.208,
+    "execution_ms": 534.629,
+    "top_node": "Limit",
+    "nodes": [
+     "Aggregate",
+     "Bitmap Heap Scan",
+     "Bitmap Index Scan",
+     "Index Only Scan",
+     "Index Scan",
+     "Limit",
+     "Nested Loop",
+     "Seq Scan",
+     "Sort"
+    ],
+    "scans": [
+     {
+      "node": "Index Scan",
+      "relation": "dataset",
+      "index": "dataset_code_key",
+      "rows": 1,
+      "loops": 1
+     },
+     {
+      "node": "Seq Scan",
+      "relation": "release",
+      "index": null,
+      "rows": 1,
+      "loops": 1
+     },
+     {
+      "node": "Index Scan",
+      "relation": "dataset",
+      "index": "dataset_code_key",
+      "rows": 1,
+      "loops": 1
+     },
+     {
+      "node": "Bitmap Heap Scan",
+      "relation": "annotation",
+      "index": null,
+      "rows": 158050,
+      "loops": 1
+     },
+     {
+      "node": "Bitmap Index Scan",
+      "relation": null,
+      "index": "annotation_dataset_neuron_id_annotation_key_valid_rel_tx_excl",
+      "rows": 176856,
+      "loops": 1
+     },
+     {
+      "node": "Index Only Scan",
+      "relation": "dataset_neuron",
+      "index": "dataset_neuron_dataset_neuron_id_dataset_id_key",
+      "rows": 0,
+      "loops": 158050
+     }
+    ],
+    "indexes": [
+     "annotation_dataset_neuron_id_annotation_key_valid_rel_tx_excl",
+     "dataset_code_key",
+     "dataset_neuron_dataset_neuron_id_dataset_id_key"
+    ],
+    "seq_scans": [
+     "release"
+    ],
+    "shared_hit_blocks": 505765,
+    "shared_read_blocks": 0
+   },
+   "checks": [
+    {
+     "check": "runs without error",
+     "ok": true
+    },
+    {
+     "check": "at least 10 row(s)",
+     "ok": true
+    }
+   ],
+   "ok": true,
+   "seconds": 1.98
+  },
+  {
+   "id": "q-regions",
+   "category": "aggregate",
+   "question": "In the latest FlyWire release, which brain regions hold more than 1 million synapses?",
+   "why": "WHERE filters rows before grouping, HAVING filters groups after it; super_region now comes from neuropil through the view (normalised in migration 0013).",
+   "language": "sql",
+   "target": "read",
+   "code": "SELECT l.code, l.name, l.super_region, sum(s.pre_synapses + s.post_synapses) AS synapses\nFROM neuron_region_synapses s\nJOIN brain_region_label l USING (brain_region_id)\nWHERE s.release_id = (SELECT r.release_id FROM release r JOIN dataset d USING (dataset_id)\n                      WHERE d.code = 'flywire' ORDER BY r.release_order DESC LIMIT 1)\nGROUP BY l.code, l.name, l.super_region\nHAVING sum(s.pre_synapses + s.post_synapses) > 1000000\nORDER BY synapses DESC;\n",
+   "result": {
+    "columns": [
+     "code",
+     "name",
+     "super_region",
+     "synapses"
+    ],
+    "rows": [
+     [
+      "ME_R",
+      "medulla",
+      "optic",
+      10625714
+     ],
+     [
+      "ME_L",
+      "medulla",
+      "optic",
+      8814982
+     ],
+     [
+      "GNG",
+      "gnathal ganglia",
+      "central",
+      4200702
+     ],
+     [
+      "LO_R",
+      "lobula",
+      "optic",
+      3992672
+     ],
+     [
+      "LO_L",
+      "lobula",
+      "optic",
+      3799530
+     ],
+     [
+      "AVLP_R",
+      "anterior ventrolateral protocerebrum",
+      "central",
+      2992638
+     ],
+     [
+      "AVLP_L",
+      "anterior ventrolateral protocerebrum",
+      "central",
+      2186224
+     ],
+     [
+      "LOP_R",
+      "lobula plate",
+      "optic",
+      2133020
+     ],
+     [
+      "PVLP_L",
+      "posterior ventrolateral protocerebrum",
+      "central",
+      1225592
+     ],
+     [
+      "FB",
+      "fan-shaped body",
+      "central",
+      1206510
+     ]
+    ],
+    "row_count": 15,
+    "truncated": false,
+    "elapsed_ms": 152.77,
+    "status": "SELECT 15",
+    "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
+   },
+   "plan": {
+    "planning_ms": 1.777,
+    "execution_ms": 169.991,
+    "top_node": "Sort",
+    "nodes": [
+     "Aggregate",
+     "Gather",
+     "Hash",
+     "Hash Join",
+     "Index Scan",
+     "Limit",
+     "Nested Loop",
+     "Seq Scan",
+     "Sort"
+    ],
+    "scans": [
+     {
+      "node": "Index Scan",
+      "relation": "dataset",
+      "index": "dataset_code_key",
+      "rows": 1,
+      "loops": 1
+     },
+     {
+      "node": "Index Scan",
+      "relation": "release",
+      "index": "release_dataset_id_release_order_key",
+      "rows": 2,
+      "loops": 1
+     },
+     {
+      "node": "Seq Scan",
+      "relation": "neuron_region_synapses",
+      "index": null,
+      "rows": 128139,
+      "loops": 3
+     },
+     {
+      "node": "Seq Scan",
+      "relation": "brain_region",
+      "index": null,
+      "rows": 82,
+      "loops": 3
+     },
+     {
+      "node": "Seq Scan",
+      "relation": "neuropil",
+      "index": null,
+      "rows": 45,
+      "loops": 3
+     }
+    ],
+    "indexes": [
+     "dataset_code_key",
+     "release_dataset_id_release_order_key"
+    ],
+    "seq_scans": [
+     "brain_region",
+     "neuron_region_synapses",
+     "neuropil"
+    ],
+    "shared_hit_blocks": 9075,
+    "shared_read_blocks": 0
+   },
+   "checks": [
+    {
+     "check": "runs without error",
+     "ok": true
+    },
+    {
+     "check": "at least 1 row(s)",
+     "ok": true
+    }
+   ],
+   "ok": true,
+   "seconds": 0.59
+  },
+  {
+   "id": "q-types-gone",
+   "category": "subquery",
+   "question": "Which hemibrain cell types existed in v1.0 but no longer exist in v1.2?",
+   "why": "EXCEPT states the question directly as a set difference and removes duplicates; valid_rel holds release orders, so @> 1 and @> 3 mean \"valid in v1.0\" and \"valid in v1.2\".",
+   "language": "sql",
+   "target": "read",
+   "code": "WITH hb AS (SELECT dataset_id FROM dataset WHERE code = 'hemibrain')\nSELECT a.annotation_value AS cell_type\nFROM annotation a JOIN dataset_neuron dn USING (dataset_neuron_id) JOIN hb USING (dataset_id)\nWHERE a.annotation_key = 'cell_type' AND upper_inf(a.tx) AND a.valid_rel @> 1   -- v1.0\nEXCEPT\nSELECT a.annotation_value\nFROM annotation a JOIN dataset_neuron dn USING (dataset_neuron_id) JOIN hb USING (dataset_id)\nWHERE a.annotation_key = 'cell_type' AND upper_inf(a.tx) AND a.valid_rel @> 3   -- v1.2\nORDER BY cell_type\nLIMIT 20;\n",
+   "result": {
+    "columns": [
+     "cell_type"
+    ],
+    "rows": [
+     [
+      "5th s-LNv"
+     ],
+     [
+      "ADL01a_pct"
+     ],
+     [
+      "ADL01b_pct"
+     ],
+     [
+      "ADL01c_pct"
+     ],
+     [
+      "ADL01d_pct"
+     ],
+     [
+      "ADL01e_pct"
+     ],
+     [
+      "ADL01f_pct"
+     ],
+     [
+      "ADL01g_pct"
+     ],
+     [
+      "ADL01h_a_pct"
+     ],
+     [
+      "ADL01h_b_pct"
+     ]
+    ],
+    "row_count": 20,
+    "truncated": false,
+    "elapsed_ms": 318.54,
+    "status": "SELECT 20",
+    "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
+   },
+   "plan": {
+    "planning_ms": 2.787,
+    "execution_ms": 318.944,
+    "top_node": "Limit",
+    "nodes": [
+     "Append",
+     "Bitmap Heap Scan",
+     "Bitmap Index Scan",
+     "CTE Scan",
+     "Hash",
+     "Hash Join",
+     "Index Scan",
+     "Limit",
+     "Seq Scan",
+     "SetOp",
+     "Sort",
+     "Subquery Scan"
+    ],
+    "scans": [
+     {
+      "node": "Index Scan",
+      "relation": "dataset",
+      "index": "dataset_code_key",
+      "rows": 1,
+      "loops": 1
+     },
+     {
+      "node": "Subquery Scan",
+      "relation": null,
+      "index": null,
+      "rows": 18837,
+      "loops": 1
+     },
+     {
+      "node": "Bitmap Heap Scan",
+      "relation": "annotation",
+      "index": null,
+      "rows": 37439,
+      "loops": 1
+     },
+     {
+      "node": "Bitmap Index Scan",
+      "relation": null,
+      "index": "annotation_key_value_idx",
+      "rows": 176856,
+      "loops": 1
+     },
+     {
+      "node": "Seq Scan",
+      "relation": "dataset_neuron",
+      "index": null,
+      "rows": 182274,
+      "loops": 1
+     },
+     {
+      "node": "CTE Scan",
+      "relation": null,
+      "index": null,
+      "rows": 1,
+      "loops": 1
+     },
+     {
+      "node": "Subquery Scan",
+      "relation": null,
+      "index": null,
+      "rows": 19723,
+      "loops": 1
+     },
+     {
+      "node": "Bitmap Heap Scan",
+      "relation": "annotation",
+      "index": null,
+      "rows": 158050,
+      "loops": 1
+     },
+     {
+      "node": "Bitmap Index Scan",
+      "relation": null,
+      "index": "annotation_key_value_idx",
+      "rows": 176856,
+      "loops": 1
+     },
+     {
+      "node": "Seq Scan",
+      "relation": "dataset_neuron",
+      "index": null,
+      "rows": 182274,
+      "loops": 1
+     },
+     {
+      "node": "CTE Scan",
+      "relation": null,
+      "index": null,
+      "rows": 1,
+      "loops": 1
+     }
+    ],
+    "indexes": [
+     "annotation_key_value_idx",
+     "dataset_code_key"
+    ],
+    "seq_scans": [
+     "dataset_neuron"
+    ],
+    "shared_hit_blocks": 21573,
+    "shared_read_blocks": 0
+   },
+   "checks": [
+    {
+     "check": "runs without error",
+     "ok": true
+    },
+    {
+     "check": "at least 1 row(s)",
+     "ok": true
+    }
+   ],
+   "ok": true,
+   "seconds": 0.89
+  },
+  {
+   "id": "q-shared-types",
+   "category": "subquery",
+   "question": "How many cell type names appear in both hemibrain and FlyWire (current releases)?",
+   "why": "INTERSECT on the names is the cross-dataset comparison (kept separate from temporal change); identical names are only a starting point for entity resolution, which uses the published crosswalk and review.",
+   "language": "sql",
+   "target": "read",
+   "code": "SELECT count(*) AS shared_type_names FROM (\n  SELECT a.annotation_value FROM annotation a JOIN dataset_neuron dn USING (dataset_neuron_id)\n  JOIN dataset d USING (dataset_id)\n  WHERE d.code = 'hemibrain' AND a.annotation_key = 'cell_type' AND upper_inf(a.tx) AND upper_inf(a.valid_rel)\n  INTERSECT\n  SELECT a.annotation_value FROM annotation a JOIN dataset_neuron dn USING (dataset_neuron_id)\n  JOIN dataset d USING (dataset_id)\n  WHERE d.code = 'flywire' AND a.annotation_key = 'cell_type' AND upper_inf(a.tx) AND upper_inf(a.valid_rel)\n) shared;\n",
+   "result": {
+    "columns": [
+     "shared_type_names"
+    ],
+    "rows": [
+     [
+      2954
+     ]
+    ],
+    "row_count": 1,
+    "truncated": false,
+    "elapsed_ms": 924.77,
+    "status": "SELECT 1",
+    "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
+   },
+   "plan": {
+    "planning_ms": 1.656,
+    "execution_ms": 1018.407,
+    "top_node": "Aggregate",
+    "nodes": [
+     "Aggregate",
+     "Append",
+     "Gather",
+     "Hash",
+     "Hash Join",
+     "Index Scan",
+     "Nested Loop",
+     "Seq Scan",
+     "SetOp",
+     "Subquery Scan"
+    ],
+    "scans": [
+     {
+      "node": "Subquery Scan",
+      "relation": null,
+      "index": null,
+      "rows": 2954,
+      "loops": 1
+     },
+     {
+      "node": "Subquery Scan",
+      "relation": null,
+      "index": null,
+      "rows": 19723,
+      "loops": 1
+     },
+     {
+      "node": "Seq Scan",
+      "relation": "dataset_neuron",
+      "index": null,
+      "rows": 91137,
+      "loops": 2
+     },
+     {
+      "node": "Index Scan",
+      "relation": "dataset",
+      "index": "dataset_code_key",
+      "rows": 1,
+      "loops": 2
+     },
+     {
+      "node": "Index Scan",
+      "relation": "annotation",
+      "index": "annotation_dataset_neuron_id_annotation_key_valid_rel_tx_excl",
+      "rows": 1,
+      "loops": 21826
+     },
+     {
+      "node": "Subquery Scan",
+      "relation": null,
+      "index": null,
+      "rows": 138327,
+      "loops": 1
+     },
+     {
+      "node": "Seq Scan",
+      "relation": "dataset_neuron",
+      "index": null,
+      "rows": 91137,
+      "loops": 2
+     },
+     {
+      "node": "Index Scan",
+      "relation": "dataset",
+      "index": "dataset_code_key",
+      "rows": 1,
+      "loops": 2
+     },
+     {
+      "node": "Index Scan",
+      "relation": "annotation",
+      "index": "annotation_dataset_neuron_id_annotation_key_valid_rel_tx_excl",
+      "rows": 1,
+      "loops": 160448
+     }
+    ],
+    "indexes": [
+     "annotation_dataset_neuron_id_annotation_key_valid_rel_tx_excl",
+     "dataset_code_key"
+    ],
+    "seq_scans": [
+     "dataset_neuron"
+    ],
+    "shared_hit_blocks": 951707,
+    "shared_read_blocks": 0
+   },
+   "checks": [
+    {
+     "check": "runs without error",
+     "ok": true
+    }
+   ],
+   "ok": true,
+   "seconds": 2.2
+  },
+  {
+   "id": "q-above-average",
+   "category": "subquery",
+   "question": "Which current hemibrain connections are more than 100 times stronger than the dataset's average connection?",
+   "why": "The scalar subquery is uncorrelated, so it runs once (an InitPlan), not once per row; both scans use the partial index connection_dataset_open_idx over current rows of one dataset.",
+   "language": "sql",
+   "target": "read",
+   "code": "SELECT pre.source_neuron_id AS pre, post.source_neuron_id AS post, c.synapse_count\nFROM connection c\nJOIN dataset_neuron pre ON pre.dataset_neuron_id = c.pre_neuron_id\nJOIN dataset_neuron post ON post.dataset_neuron_id = c.post_neuron_id\nWHERE c.dataset_id = (SELECT dataset_id FROM dataset WHERE code = 'hemibrain')\n  AND upper_inf(c.tx) AND upper_inf(c.valid_rel)\n  AND c.synapse_count > 100 * (SELECT avg(synapse_count) FROM connection\n                               WHERE dataset_id = (SELECT dataset_id FROM dataset WHERE code = 'hemibrain')\n                                 AND upper_inf(tx) AND upper_inf(valid_rel))\nORDER BY c.synapse_count DESC\nLIMIT 10;\n",
+   "result": {
+    "columns": [
+     "pre",
+     "post",
+     "synapse_count"
+    ],
+    "rows": [
+     [
+      "5813105172",
+      "425790257",
+      4299
+     ],
+     [
+      "425790257",
+      "5813105172",
+      1740
+     ],
+     [
+      "5813105172",
+      "799586652",
+      1065
+     ],
+     [
+      "5813024698",
+      "5901218894",
+      1015
+     ],
+     [
+      "1196854070",
+      "424767514",
+      989
+     ],
+     [
+      "393766777",
+      "424767514",
+      961
+     ],
+     [
+      "1189230639",
+      "447228814",
+      958
+     ],
+     [
+      "1640909284",
+      "5901218894",
+      930
+     ],
+     [
+      "5813024698",
+      "1670287030",
+      888
+     ],
+     [
+      "5813022424",
+      "425790257",
+      833
+     ]
+    ],
+    "row_count": 10,
+    "truncated": false,
+    "elapsed_ms": 989.39,
+    "status": "SELECT 10",
+    "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
+   },
+   "plan": {
+    "planning_ms": 2.982,
+    "execution_ms": 689.912,
+    "top_node": "Limit",
+    "nodes": [
+     "Aggregate",
+     "Gather",
+     "Gather Merge",
+     "Index Scan",
+     "Limit",
+     "Memoize",
+     "Nested Loop",
+     "Sort"
+    ],
+    "scans": [
+     {
+      "node": "Index Scan",
+      "relation": "dataset",
+      "index": "dataset_code_key",
+      "rows": 1,
+      "loops": 1
+     },
+     {
+      "node": "Index Scan",
+      "relation": "dataset",
+      "index": "dataset_code_key",
+      "rows": 1,
+      "loops": 1
+     },
+     {
+      "node": "Index Scan",
+      "relation": "connection",
+      "index": "connection_dataset_open_idx",
+      "rows": 1183468,
+      "loops": 3
+     },
+     {
+      "node": "Index Scan",
+      "relation": "connection",
+      "index": "connection_dataset_open_idx",
+      "rows": 25,
+      "loops": 3
+     },
+     {
+      "node": "Index Scan",
+      "relation": "dataset_neuron",
+      "index": "dataset_neuron_pkey",
+      "rows": 1,
+      "loops": 8
+     },
+     {
+      "node": "Index Scan",
+      "relation": "dataset_neuron",
+      "index": "dataset_neuron_pkey",
+      "rows": 1,
+      "loops": 7
+     }
+    ],
+    "indexes": [
+     "connection_dataset_open_idx",
+     "dataset_code_key",
+     "dataset_neuron_pkey"
+    ],
+    "seq_scans": [],
+    "shared_hit_blocks": 136214,
+    "shared_read_blocks": 0
+   },
+   "checks": [
+    {
+     "check": "runs without error",
+     "ok": true
+    },
+    {
+     "check": "at least 1 row(s)",
+     "ok": true
+    },
+    {
+     "check": "plan uses index connection_dataset_open_idx",
+     "ok": true
+    }
+   ],
+   "ok": true,
+   "seconds": 1.95
+  },
+  {
+   "id": "q-rank-partners",
+   "category": "window",
+   "question": "For every LC28a neuron, what are its three strongest current partners?",
+   "why": "rank() OVER (PARTITION BY ...) keeps ties and needs one pass instead of a LIMIT per neuron; the type filter uses annotation_key_value_idx, then connection_pre_idx per neuron.",
+   "language": "sql",
+   "target": "read",
+   "code": "SELECT pre, partner, synapse_count, rank\nFROM (SELECT pre.source_neuron_id AS pre, post.source_neuron_id AS partner, c.synapse_count,\n             rank() OVER (PARTITION BY c.pre_neuron_id ORDER BY c.synapse_count DESC) AS rank\n      FROM annotation t\n      JOIN dataset_neuron pre ON pre.dataset_neuron_id = t.dataset_neuron_id\n      JOIN connection c ON c.pre_neuron_id = t.dataset_neuron_id AND upper_inf(c.tx) AND upper_inf(c.valid_rel)\n      JOIN dataset_neuron post ON post.dataset_neuron_id = c.post_neuron_id\n      WHERE t.annotation_key = 'cell_type' AND t.annotation_value = 'LC28a'\n        AND upper_inf(t.tx) AND upper_inf(t.valid_rel)) ranked\nWHERE rank <= 3\nORDER BY pre, rank;\n",
+   "result": {
+    "columns": [
+     "pre",
+     "partner",
+     "synapse_count",
+     "rank"
+    ],
+    "rows": [
+     [
+      "1006199303",
+      "944836835",
+      9,
+      1
+     ],
+     [
+      "1006199303",
+      "821703262",
+      9,
+      1
+     ],
+     [
+      "1006199303",
+      "449250041",
+      7,
+      3
+     ],
+     [
+      "1006199303",
+      "758990648",
+      7,
+      3
+     ],
+     [
+      "1069973758",
+      "727889637",
+      10,
+      1
+     ],
+     [
+      "1069973758",
+      "884446447",
+      8,
+      2
+     ],
+     [
+      "1069973758",
+      "670547235",
+      7,
+      3
+     ],
+     [
+      "1160288913",
+      "758938220",
+      5,
+      1
+     ],
+     [
+      "1160288913",
+      "5813054104",
+      5,
+      1
+     ],
+     [
+      "1160288913",
+      "605554875",
+      3,
+      3
+     ]
+    ],
+    "row_count": 395,
+    "truncated": false,
+    "elapsed_ms": 119.35,
+    "status": "SELECT 395",
+    "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
+   },
+   "plan": {
+    "planning_ms": 1.968,
+    "execution_ms": 18.394,
+    "top_node": "Sort",
+    "nodes": [
+     "Index Scan",
+     "Nested Loop",
+     "Sort",
+     "Subquery Scan",
+     "WindowAgg"
+    ],
+    "scans": [
+     {
+      "node": "Subquery Scan",
+      "relation": null,
+      "index": null,
+      "rows": 395,
+      "loops": 1
+     },
+     {
+      "node": "Index Scan",
+      "relation": "annotation",
+      "index": "annotation_key_value_idx",
+      "rows": 115,
+      "loops": 1
+     },
+     {
+      "node": "Index Scan",
+      "relation": "dataset_neuron",
+      "index": "dataset_neuron_dataset_neuron_id_dataset_id_key",
+      "rows": 1,
+      "loops": 115
+     },
+     {
+      "node": "Index Scan",
+      "relation": "connection",
+      "index": "connection_pre_idx",
+      "rows": 26,
+      "loops": 115
+     },
+     {
+      "node": "Index Scan",
+      "relation": "dataset_neuron",
+      "index": "dataset_neuron_pkey",
+      "rows": 1,
+      "loops": 2947
+     }
+    ],
+    "indexes": [
+     "annotation_key_value_idx",
+     "connection_pre_idx",
+     "dataset_neuron_dataset_neuron_id_dataset_id_key",
+     "dataset_neuron_pkey"
+    ],
+    "seq_scans": [],
+    "shared_hit_blocks": 13276,
+    "shared_read_blocks": 0
+   },
+   "checks": [
+    {
+     "check": "runs without error",
+     "ok": true
+    },
+    {
+     "check": "at least 1 row(s)",
+     "ok": true
+    },
+    {
+     "check": "plan uses index annotation_key_value_idx",
+     "ok": true
+    }
+   ],
+   "ok": true,
+   "seconds": 0.38
+  },
+  {
+   "id": "q-weight-trend",
+   "category": "window",
+   "question": "How did the synapse count of that neuron's strongest connection change from release to release?",
+   "why": "One stored row covers every release in which the count did not change (valid_rel is a range), so joining on valid_rel @> release_order expands it per release; lag() compares each release with the previous one.",
+   "language": "sql",
+   "target": "read",
+   "code": "WITH strongest AS (\n  SELECT post_neuron_id FROM connection\n  WHERE pre_neuron_id = cc.find_neuron('hemibrain', '1688868386') AND upper_inf(tx)\n  ORDER BY synapse_count DESC LIMIT 1)\nSELECT r.version_label, c.synapse_count,\n       c.synapse_count - lag(c.synapse_count) OVER (ORDER BY r.release_order) AS change\nFROM strongest s\nJOIN release r ON r.dataset_id = (SELECT dataset_id FROM dataset WHERE code = 'hemibrain')\nJOIN connection c ON c.pre_neuron_id = cc.find_neuron('hemibrain', '1688868386')\n                 AND c.post_neuron_id = s.post_neuron_id\n                 AND c.valid_rel @> r.release_order AND upper_inf(c.tx)\nORDER BY r.release_order;\n",
+   "result": {
+    "columns": [
+     "version_label",
+     "synapse_count",
+     "change"
+    ],
+    "rows": [
+     [
+      "v1.0",
+      5,
+      null
+     ],
+     [
+      "v1.1",
+      5,
+      0
+     ],
+     [
+      "v1.2",
+      5,
+      0
+     ]
+    ],
+    "row_count": 3,
+    "truncated": false,
+    "elapsed_ms": 26.95,
+    "status": "SELECT 3",
+    "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
+   },
+   "plan": {
+    "planning_ms": 4.043,
+    "execution_ms": 1.946,
+    "top_node": "WindowAgg",
+    "nodes": [
+     "Index Scan",
+     "Limit",
+     "Nested Loop",
+     "Sort",
+     "WindowAgg"
+    ],
+    "scans": [
+     {
+      "node": "Index Scan",
+      "relation": "dataset",
+      "index": "dataset_code_key",
+      "rows": 1,
+      "loops": 1
+     },
+     {
+      "node": "Index Scan",
+      "relation": "release",
+      "index": "release_dataset_id_release_order_key",
+      "rows": 3,
+      "loops": 1
+     },
+     {
+      "node": "Index Scan",
+      "relation": "connection",
+      "index": "connection_pre_idx",
+      "rows": 47,
+      "loops": 1
+     },
+     {
+      "node": "Index Scan",
+      "relation": "connection",
+      "index": "connection_pre_neuron_id_post_neuron_id_valid_rel_tx_excl",
+      "rows": 1,
+      "loops": 3
+     }
+    ],
+    "indexes": [
+     "connection_pre_idx",
+     "connection_pre_neuron_id_post_neuron_id_valid_rel_tx_excl",
+     "dataset_code_key",
+     "release_dataset_id_release_order_key"
+    ],
+    "seq_scans": [],
+    "shared_hit_blocks": 82,
+    "shared_read_blocks": 0
+   },
+   "checks": [
+    {
+     "check": "runs without error",
+     "ok": true
+    },
+    {
+     "check": "at least 1 row(s)",
+     "ok": true
+    }
+   ],
+   "ok": true,
+   "seconds": 0.3
+  },
+  {
+   "id": "q-downstream",
+   "category": "recursive",
+   "question": "Which neurons can be reached from hemibrain neuron 487144598 in at most two steps over strong connections (at least 50 synapses)?",
+   "why": "WITH RECURSIVE expresses graph traversal in SQL; UNION (not UNION ALL) drops repeated (neuron, depth) pairs and the depth bound guarantees termination; each step is an index lookup on connection_pre_idx.",
+   "language": "sql",
+   "target": "read",
+   "code": "WITH RECURSIVE reach(neuron, depth) AS (\n  SELECT cc.find_neuron('hemibrain', '487144598'), 0\n  UNION\n  SELECT c.post_neuron_id, r.depth + 1\n  FROM reach r\n  JOIN connection c ON c.pre_neuron_id = r.neuron\n  WHERE r.depth < 2 AND c.synapse_count >= 50 AND upper_inf(c.tx) AND upper_inf(c.valid_rel))\nSELECT depth, count(DISTINCT neuron) AS neurons\nFROM reach\nGROUP BY depth\nORDER BY depth;\n",
+   "result": {
+    "columns": [
+     "depth",
+     "neurons"
+    ],
+    "rows": [
+     [
+      0,
+      1
+     ],
+     [
+      1,
+      19
+     ],
+     [
+      2,
+      50
+     ]
+    ],
+    "row_count": 3,
+    "truncated": false,
+    "elapsed_ms": 39.15,
+    "status": "SELECT 3",
+    "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
+   },
+   "plan": {
+    "planning_ms": 1.633,
+    "execution_ms": 8.316,
+    "top_node": "Aggregate",
+    "nodes": [
+     "Aggregate",
+     "CTE Scan",
+     "Index Scan",
+     "Nested Loop",
+     "Recursive Union",
+     "Result",
+     "Sort",
+     "WorkTable Scan"
+    ],
+    "scans": [
+     {
+      "node": "WorkTable Scan",
+      "relation": null,
+      "index": null,
+      "rows": 7,
+      "loops": 3
+     },
+     {
+      "node": "Index Scan",
+      "relation": "connection",
+      "index": "connection_pre_idx",
+      "rows": 5,
+      "loops": 20
+     },
+     {
+      "node": "CTE Scan",
+      "relation": null,
+      "index": null,
+      "rows": 70,
+      "loops": 1
+     }
+    ],
+    "indexes": [
+     "connection_pre_idx"
+    ],
+    "seq_scans": [],
+    "shared_hit_blocks": 786,
+    "shared_read_blocks": 0
+   },
+   "checks": [
+    {
+     "check": "runs without error",
+     "ok": true
+    },
+    {
+     "check": "at least 2 row(s)",
+     "ok": true
+    },
+    {
+     "check": "plan uses index connection_pre_idx",
+     "ok": true
+    }
+   ],
+   "ok": true,
+   "seconds": 0.44
+  },
+  {
+   "id": "q-type-history",
+   "category": "temporal",
+   "question": "Which cell type did hemibrain neuron 1688868386 have in each release, and since when has the database known it?",
+   "why": "Valid time (which releases) and transaction time (when the database believed it) are separate columns, so a type change (LC28d to LC28a) and a later correction can both be read back.",
+   "language": "sql",
+   "target": "read",
+   "code": "SELECT cc.release_label(dn.dataset_id, lower(a.valid_rel)) AS from_release,\n       coalesce(cc.release_label(dn.dataset_id, upper(a.valid_rel)), 'still valid') AS until_release,\n       a.annotation_value AS cell_type, lower(a.tx) AS recorded_at, upper(a.tx) AS retired_at\nFROM annotation a\nJOIN dataset_neuron dn USING (dataset_neuron_id)\nWHERE a.dataset_neuron_id = cc.find_neuron('hemibrain', '1688868386')\n  AND a.annotation_key = 'cell_type'\nORDER BY lower(a.valid_rel), lower(a.tx);\n",
+   "result": {
+    "columns": [
+     "from_release",
+     "until_release",
+     "cell_type",
+     "recorded_at",
+     "retired_at"
+    ],
+    "rows": [
+     [
+      "v1.0",
+      "still valid",
+      "LC28d",
+      "2026-11-03T10:14:24.981338+00:00",
+      "2026-11-03T10:23:31.555167+00:00"
+     ],
+     [
+      "v1.0",
+      "v1.1",
+      "LC28d",
+      "2026-11-03T10:23:31.555167+00:00",
+      null
+     ],
+     [
+      "v1.1",
+      "still valid",
+      "LC28a",
+      "2026-11-03T10:23:31.555167+00:00",
+      null
+     ]
+    ],
+    "row_count": 3,
+    "truncated": false,
+    "elapsed_ms": 22.65,
+    "status": "SELECT 3",
+    "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
+   },
+   "plan": {
+    "planning_ms": 3.477,
+    "execution_ms": 2.695,
+    "top_node": "Sort",
+    "nodes": [
+     "Index Only Scan",
+     "Index Scan",
+     "Nested Loop",
+     "Sort"
+    ],
+    "scans": [
+     {
+      "node": "Index Scan",
+      "relation": "annotation",
+      "index": "annotation_dataset_neuron_id_annotation_key_valid_rel_tx_excl",
+      "rows": 3,
+      "loops": 1
+     },
+     {
+      "node": "Index Only Scan",
+      "relation": "dataset_neuron",
+      "index": "dataset_neuron_dataset_neuron_id_dataset_id_key",
+      "rows": 1,
+      "loops": 3
+     }
+    ],
+    "indexes": [
+     "annotation_dataset_neuron_id_annotation_key_valid_rel_tx_excl",
+     "dataset_neuron_dataset_neuron_id_dataset_id_key"
+    ],
+    "seq_scans": [],
+    "shared_hit_blocks": 202,
+    "shared_read_blocks": 0
+   },
+   "checks": [
+    {
+     "check": "runs without error",
+     "ok": true
+    },
+    {
+     "check": "at least 1 row(s)",
+     "ok": true
+    }
+   ],
+   "ok": true,
+   "seconds": 0.28
+  },
+  {
+   "id": "q-as-of",
+   "category": "temporal",
+   "question": "Before hemibrain v1.2 was loaded, what did the database believe that neuron's cell type was \"until further notice\", and what does it believe now?",
+   "why": "tx @> timestamp is an \"as of\" query on transaction time. A load retires a belief by closing its tx interval instead of deleting it, so the state before any load is reconstructed exactly; the GiST exclusion index on annotation serves the neuron and key.",
+   "language": "sql",
+   "target": "read",
+   "code": "SELECT 'before the v1.2 load' AS as_of, a.annotation_value AS cell_type, a.valid_rel\nFROM annotation a\nWHERE a.dataset_neuron_id = cc.find_neuron('hemibrain', '1688868386') AND a.annotation_key = 'cell_type'\n  AND upper_inf(a.valid_rel)\n  AND a.tx @> (SELECT loaded_at - interval '1 second' FROM release r JOIN dataset d USING (dataset_id)\n               WHERE d.code = 'hemibrain' AND r.version_label = 'v1.2')\nUNION ALL\nSELECT 'now', a.annotation_value, a.valid_rel\nFROM annotation a\nWHERE a.dataset_neuron_id = cc.find_neuron('hemibrain', '1688868386') AND a.annotation_key = 'cell_type'\n  AND upper_inf(a.valid_rel) AND upper_inf(a.tx);\n",
+   "result": {
+    "columns": [
+     "as_of",
+     "cell_type",
+     "valid_rel"
+    ],
+    "rows": [
+     [
+      "before the v1.2 load",
+      "LC28a",
+      "[2, None)"
+     ],
+     [
+      "now",
+      "LC28a",
+      "[2, None)"
+     ]
+    ],
+    "row_count": 2,
+    "truncated": false,
+    "elapsed_ms": 24.79,
+    "status": "SELECT 2",
+    "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
+   },
+   "plan": {
+    "planning_ms": 3.823,
+    "execution_ms": 1.876,
+    "top_node": "Append",
+    "nodes": [
+     "Append",
+     "Index Scan",
+     "Nested Loop",
+     "Seq Scan"
+    ],
+    "scans": [
+     {
+      "node": "Index Scan",
+      "relation": "annotation",
+      "index": "annotation_dataset_neuron_id_annotation_key_valid_rel_tx_excl",
+      "rows": 1,
+      "loops": 1
+     },
+     {
+      "node": "Seq Scan",
+      "relation": "release",
+      "index": null,
+      "rows": 1,
+      "loops": 1
+     },
+     {
+      "node": "Index Scan",
+      "relation": "dataset",
+      "index": "dataset_code_key",
+      "rows": 1,
+      "loops": 1
+     },
+     {
+      "node": "Index Scan",
+      "relation": "annotation",
+      "index": "annotation_dataset_neuron_id_annotation_key_valid_rel_tx_excl",
+      "rows": 1,
+      "loops": 1
+     }
+    ],
+    "indexes": [
+     "annotation_dataset_neuron_id_annotation_key_valid_rel_tx_excl",
+     "dataset_code_key"
+    ],
+    "seq_scans": [
+     "release"
+    ],
+    "shared_hit_blocks": 84,
+    "shared_read_blocks": 0
+   },
+   "checks": [
+    {
+     "check": "runs without error",
+     "ok": true
+    },
+    {
+     "check": "at least 1 row(s)",
+     "ok": true
+    }
+   ],
+   "ok": true,
+   "seconds": 0.26
+  },
+  {
+   "id": "q-at-release",
+   "category": "temporal",
+   "question": "What were that neuron's five strongest outgoing connections in hemibrain v1.1?",
+   "why": "The stored SQL function connections_at_release encapsulates the valid-time and transaction-time predicates, so every caller asks the question the same, correct way.",
+   "language": "sql",
+   "target": "read",
+   "code": "SELECT * FROM cc.connections_at_release(\n    cc.find_neuron('hemibrain', '1688868386'),\n    (SELECT release_id FROM release r JOIN dataset d USING (dataset_id)\n     WHERE d.code = 'hemibrain' AND r.version_label = 'v1.1'))\nWHERE direction = 'out'\nORDER BY synapse_count DESC\nLIMIT 5;\n",
+   "result": {
+    "columns": [
+     "direction",
+     "partner_neuron_id",
+     "partner_source_id",
+     "synapse_count",
+     "connection_id"
+    ],
+    "rows": [
+     [
+      "out",
+      27207,
+      "1200523558",
+      5,
+      3197128
+     ],
+     [
+      "out",
+      34097,
+      "1377841477",
+      3,
+      3197139
+     ],
+     [
+      "out",
+      25507,
+      "1345455479",
+      3,
+      3197123
+     ],
+     [
+      "out",
+      24033,
+      "976571317",
+      3,
+      3197120
+     ],
+     [
+      "out",
+      35843,
+      "1471600919",
+      3,
+      3830620
+     ]
+    ],
+    "row_count": 5,
+    "truncated": false,
+    "elapsed_ms": 1509.11,
+    "status": "SELECT 5",
+    "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
+   },
+   "plan": {
+    "planning_ms": 1.624,
+    "execution_ms": 169.45,
+    "top_node": "Limit",
+    "nodes": [
+     "Function Scan",
+     "Index Scan",
+     "Limit",
+     "Nested Loop",
+     "Seq Scan",
+     "Sort"
+    ],
+    "scans": [
+     {
+      "node": "Seq Scan",
+      "relation": "release",
+      "index": null,
+      "rows": 1,
+      "loops": 1
+     },
+     {
+      "node": "Index Scan",
+      "relation": "dataset",
+      "index": "dataset_code_key",
+      "rows": 1,
+      "loops": 1
+     },
+     {
+      "node": "Function Scan",
+      "relation": null,
+      "index": null,
+      "rows": 45,
+      "loops": 1
+     }
+    ],
+    "indexes": [
+     "dataset_code_key"
+    ],
+    "seq_scans": [
+     "release"
+    ],
+    "shared_hit_blocks": 2821,
+    "shared_read_blocks": 17939
+   },
+   "checks": [
+    {
+     "check": "runs without error",
+     "ok": true
+    },
+    {
+     "check": "at least 1 row(s)",
+     "ok": true
+    }
+   ],
+   "ok": true,
+   "seconds": 1.92
+  },
+  {
+   "id": "q-er-view",
+   "category": "views",
+   "question": "Show the neuron as the team's ER diagram defines it (entity DATASET_NEURON).",
+   "why": "The er views present the physical tables under the ER model's names and attributes, so the ER diagram can be queried directly without changing the storage design.",
+   "language": "sql",
+   "target": "read",
+   "code": "SELECT * FROM er.dataset_neuron WHERE raw_metadata = 'hemibrain:1688868386';\n",
+   "result": {
+    "columns": [
+     "dataset_neuron_id",
+     "release_id",
+     "external_neuron_id",
+     "original_name",
+     "original_type",
+     "original_region",
+     "raw_metadata",
+     "alternate_ids"
+    ],
+    "rows": [
+     [
+      41903,
+      1,
+      "1688868386",
+      "LC28a(lVLPT4)_R",
+      "LC28a",
+      "LO_R",
+      "hemibrain:1688868386",
+      []
+     ]
+    ],
+    "row_count": 1,
+    "truncated": false,
+    "elapsed_ms": 31.44,
+    "status": "SELECT 1",
+    "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
+   },
+   "plan": {
+    "planning_ms": 4.202,
+    "execution_ms": 5.173,
+    "top_node": "Index Scan",
+    "nodes": [
+     "Index Scan",
+     "Nested Loop"
+    ],
+    "scans": [
+     {
+      "node": "Index Scan",
+      "relation": "dataset_neuron",
+      "index": "dataset_neuron_metadata_doc_id_key",
+      "rows": 1,
+      "loops": 1
+     },
+     {
+      "node": "Index Scan",
+      "relation": "neuron_mapping",
+      "index": "neuron_mapping_no_dup",
+      "rows": 1,
+      "loops": 1
+     },
+     {
+      "node": "Index Scan",
+      "relation": "neuron_mapping",
+      "index": "neuron_mapping_canonical_idx",
+      "rows": 0,
+      "loops": 1
+     },
+     {
+      "node": "Index Scan",
+      "relation": "dataset_neuron",
+      "index": "dataset_neuron_pkey",
+      "rows": 0,
+      "loops": 0
+     },
+     {
+      "node": "Index Scan",
+      "relation": "dataset",
+      "index": "dataset_pkey",
+      "rows": 0,
+      "loops": 0
+     }
+    ],
+    "indexes": [
+     "dataset_neuron_metadata_doc_id_key",
+     "dataset_neuron_pkey",
+     "dataset_pkey",
+     "neuron_mapping_canonical_idx",
+     "neuron_mapping_no_dup"
+    ],
+    "seq_scans": [],
+    "shared_hit_blocks": 494,
+    "shared_read_blocks": 0
+   },
+   "checks": [
+    {
+     "check": "runs without error",
+     "ok": true
+    },
+    {
+     "check": "at least 1 row(s)",
+     "ok": true
+    }
+   ],
+   "ok": true,
+   "seconds": 0.29
+  },
+  {
+   "id": "q-provenance",
+   "category": "views",
+   "question": "Where exactly did that neuron's record come from (file, checksum, line, run)?",
+   "why": "trace_provenance follows provenance and provenance_parent to the source file, its SHA-256 and the line number, for any versioned row.",
+   "language": "sql",
+   "target": "read",
+   "code": "SELECT cc.trace_provenance('dataset_neuron', cc.find_neuron('hemibrain', '1688868386')) AS lineage;\n",
+   "result": {
+    "columns": [
+     "lineage"
+    ],
+    "rows": [
+     [
+      {
+       "record": {
+        "dataset_id": 1,
+        "source_line": 20241,
+        "provenance_id": 4,
+        "metadata_doc_id": "hemibrain:1688868386",
+        "first_release_id": 1,
+        "source_neuron_id": "1688868386",
+        "dataset_neuron_id": 41903
+       },
+       "dataset": {
+        "code": "hemibrain",
+        "name": "Janelia FlyEM hemibrain",
+        "license": "CC-BY-4.0 (per Janelia FlyEM hemibrain data release; verify before redistribution)",
+        "source_url": "https://www.janelia.org/project-team/flyem/hemibrain"
+       },
+       "release": {
+        "loaded_at": "2026-11-03T10:14:24.981338+00:00",
+        "dataset_id": 1,
+        "release_id": 1,
+        "description": null,
+        "release_date": null,
+        "manifest_hash": "230074775c7badb591c9180920743113ebb659288ef546b45033fc28e65d8b44",
+        "registered_at": "2026-11-03T10:13:22.605511+00:00",
+        "release_order": 1,
+        "version_label": "v1.0",
+        "ingestion_status": "loaded"
+       },
+       "provenance": {
+        "created_at": "2026-11-03T10:14:24.981338+00:00",
+        "dataset_id": 1,
+        "parameters": {
+         "id_column": "bodyId"
+        },
+        "release_id": 1,
+        "provenance_id": 4,
+        "source_file_id": 3,
+        "ingestion_run_id": 2,
+        "transformation_name": "register_neuron",
+        "transformation_version": "0.1.0"
+       },
+       "source_file": {
+        "sha256": "fd71b617b20fa6d3a1bce9d7f971b1b47ab076df4fa03f30dfc0ede6439a6dfc",
+        "row_count": 21663,
+        "release_id": 1,
+        "size_bytes": 47369620,
+        "source_url": "https://storage.googleapis.com/hemibrain/v1.0/conn_summary.tgz",
+        "member_path": "exported-traced-adjacencies/traced-neurons.csv",
+        "archive_path": "hemibrain/v1.0/conn_summary.tgz",
+        "source_file_id": 3
+       },
+       "source_lines": [
+        20241
+       ],
+       "ingestion_run": {
+        "stats": {
+         "stage_seconds": 21.1,
+         "total_seconds": 522.3,
+         "neuron_ids_rows": 21663,
+         "neuron_open_rows": 21663,
+         "neuron_close_rows": 0,
+         "neurons_in_source": 21663,
+         "neuron_ids_seconds": 0.6,
+         "neuron_open_seconds": 1.3,
+         "neuron_resolve_rows": -1,
+         "annotation_open_rows": 39868,
+         "connection_open_rows": 3413160,
+         "neuron_close_seconds": 0.0,
+         "annotation_close_rows": 0,
+         "annotations_in_source": {
+          "hemibrain/v1.0/conn_summary.tgz!exported-traced-adjacencies/traced-neurons.csv": 39868
+         },
+         "connection_close_rows": 0,
+         "missing_mapped_columns": {},
+         "neuron_resolve_seconds": 0.1,
+         "annotation_open_seconds": 3.9,
+         "annotation_resolve_rows": -1,
+         "connection_open_seconds": 477.5,
+         "connection_resolve_rows": -1,
+         "annotation_close_seconds": 0.0,
+         "connection_close_seconds": 0.0,
+         "connection_rows_in_source": 3413160,
+         "annotation_resolve_seconds": 0.2,
+         "connection_resolve_seconds": 11.1
+        },
+        "run_id": 2,
+        "status": "succeeded",
+        "release_id": 1,
+        "started_at": "2026-11-03T10:14:24.938892+00:00",
+        "finished_at": "2026-11-03T10:23:07.313822+00:00",
+        "error_message": null,
+        "pipeline_version": "0.1.0"
+       }
+      }
+     ]
+    ],
+    "row_count": 1,
+    "truncated": false,
+    "elapsed_ms": 24.25,
+    "status": "SELECT 1",
+    "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
+   },
+   "plan": {
+    "planning_ms": 0.708,
+    "execution_ms": 3.62,
+    "top_node": "Result",
+    "nodes": [
+     "Result"
+    ],
+    "scans": [],
+    "indexes": [],
+    "seq_scans": [],
+    "shared_hit_blocks": 903,
+    "shared_read_blocks": 0
+   },
+   "checks": [
+    {
+     "check": "runs without error",
+     "ok": true
+    },
+    {
+     "check": "at least 1 row(s)",
+     "ok": true
+    }
+   ],
+   "ok": true,
+   "seconds": 0.27
+  },
+  {
+   "id": "q-diff-summary",
+   "category": "analysis",
+   "question": "What did the most recent ConnectomeDiff run find, by entity and change type?",
+   "why": "The run is found by a scalar subquery, so its id is known only when the query runs: PostgreSQL plans for an average run (one fifth of the 3.9 M events) and chooses a parallel sequential scan. Given a literal run id it uses diff_event_run_idx (diff_run_id, entity_type, change_type) instead. Both plans are correct; this one takes about 0.2 s.",
+   "language": "sql",
+   "target": "read",
+   "code": "SELECT e.entity_type, e.change_type, count(*) AS events, sum(abs(e.weight_delta)) AS synapses_changed\nFROM diff_event e\nWHERE e.diff_run_id = (SELECT max(diff_run_id) FROM diff_run WHERE status = 'succeeded')\nGROUP BY e.entity_type, e.change_type\nORDER BY e.entity_type, e.change_type;\n",
+   "result": {
+    "columns": [
+     "entity_type",
+     "change_type",
+     "events",
+     "synapses_changed"
+    ],
+    "rows": [
+     [
+      "annotation",
+      "added",
+      19,
+      0
+     ],
+     [
+      "annotation",
+      "modified",
+      109,
+      0
+     ],
+     [
+      "annotation",
+      "removed",
+      3,
+      0
+     ],
+     [
+      "connection",
+      "added",
+      30722,
+      39336
+     ],
+     [
+      "connection",
+      "modified",
+      74795,
+      148033
+     ],
+     [
+      "connection",
+      "removed",
+      1482,
+      2234
+     ],
+     [
+      "neuron",
+      "added",
+      6,
+      0
+     ]
+    ],
+    "row_count": 7,
+    "truncated": false,
+    "elapsed_ms": 119.22,
+    "status": "SELECT 7",
+    "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
+   },
+   "plan": {
+    "planning_ms": 1.272,
+    "execution_ms": 104.78,
+    "top_node": "Aggregate",
+    "nodes": [
+     "Aggregate",
+     "Gather Merge",
+     "Seq Scan",
+     "Sort"
+    ],
+    "scans": [
+     {
+      "node": "Seq Scan",
+      "relation": "diff_run",
+      "index": null,
+      "rows": 5,
+      "loops": 1
+     },
+     {
+      "node": "Seq Scan",
+      "relation": "diff_event",
+      "index": null,
+      "rows": 35712,
+      "loops": 3
+     }
+    ],
+    "indexes": [],
+    "seq_scans": [
+     "diff_event",
+     "diff_run"
+    ],
+    "shared_hit_blocks": 115,
+    "shared_read_blocks": 54499
+   },
+   "checks": [
+    {
+     "check": "runs without error",
+     "ok": true
+    },
+    {
+     "check": "at least 1 row(s)",
+     "ok": true
+    }
+   ],
+   "ok": true,
+   "seconds": 0.47
+  },
+  {
+   "id": "q-shards",
+   "category": "analysis",
+   "question": "How evenly does each partitioning strategy spread neurons over the three shards?",
+   "why": "An aggregate inside a window (sum(count(*)) OVER ...) gives each shard's share in one pass.",
+   "language": "sql",
+   "target": "read",
+   "code": "SELECT s.code AS strategy, a.shard_id, count(*) AS neurons,\n       round(100.0 * count(*) / sum(count(*)) OVER (PARTITION BY s.code), 1) AS percent\nFROM partition_assignment a\nJOIN partition_strategy s USING (strategy_id)\nGROUP BY s.code, a.shard_id\nORDER BY s.code, a.shard_id;\n",
+   "result": {
+    "columns": [
+     "strategy",
+     "shard_id",
+     "neurons",
+     "percent"
+    ],
+    "rows": [
+     [
+      "anatomical",
+      1,
+      61981,
+      34.0
+     ],
+     [
+      "anatomical",
+      2,
+      85117,
+      46.7
+     ],
+     [
+      "anatomical",
+      3,
+      35176,
+      19.3
+     ],
+     [
+      "community",
+      1,
+      77717,
+      42.6
+     ],
+     [
+      "community",
+      2,
+      59976,
+      32.9
+     ],
+     [
+      "community",
+      3,
+      44581,
+      24.5
+     ],
+     [
+      "hash",
+      1,
+      60958,
+      33.4
+     ],
+     [
+      "hash",
+      2,
+      60519,
+      33.2
+     ],
+     [
+      "hash",
+      3,
+      60797,
+      33.4
+     ]
+    ],
+    "row_count": 9,
+    "truncated": false,
+    "elapsed_ms": 105.57,
+    "status": "SELECT 9",
+    "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
+   },
+   "plan": {
+    "planning_ms": 0.685,
+    "execution_ms": 85.947,
+    "top_node": "WindowAgg",
+    "nodes": [
+     "Aggregate",
+     "Gather Merge",
+     "Hash",
+     "Hash Join",
+     "Index Only Scan",
+     "Seq Scan",
+     "Sort",
+     "WindowAgg"
+    ],
+    "scans": [
+     {
+      "node": "Index Only Scan",
+      "relation": "partition_assignment",
+      "index": "partition_assignment_shard_idx",
+      "rows": 182274,
+      "loops": 3
+     },
+     {
+      "node": "Seq Scan",
+      "relation": "partition_strategy",
+      "index": null,
+      "rows": 3,
+      "loops": 3
+     }
+    ],
+    "indexes": [
+     "partition_assignment_shard_idx"
+    ],
+    "seq_scans": [
+     "partition_strategy"
+    ],
+    "shared_hit_blocks": 473,
+    "shared_read_blocks": 0
+   },
+   "checks": [
+    {
+     "check": "runs without error",
+     "ok": true
+    },
+    {
+     "check": "at least 3 row(s)",
+     "ok": true
+    }
+   ],
+   "ok": true,
+   "seconds": 0.45
+  },
+  {
+   "id": "q-trial-insert",
+   "category": "dml",
+   "question": "Insert a new annotation for a real neuron (run on the real tables, then rolled back).",
+   "why": "INSERT ... SELECT takes the keys from the database instead of typing ids; every constraint and the exclusion constraint are checked, then the trial transaction is rolled back.",
+   "language": "sql",
+   "target": "trial",
+   "code": "INSERT INTO annotation (dataset_neuron_id, annotation_key, annotation_value, valid_rel, provenance_id)\nSELECT dn.dataset_neuron_id, 'review_note', 'checked by hand', int4range(3, NULL), dn.provenance_id\nFROM dataset_neuron dn\nWHERE dn.dataset_neuron_id = cc.find_neuron('hemibrain', '1688868386')\nRETURNING annotation_id, annotation_key, annotation_value, valid_rel;\n",
+   "result": {
+    "columns": [
+     "annotation_id",
+     "annotation_key",
+     "annotation_value",
+     "valid_rel"
+    ],
+    "rows": [
+     [
+      1625420,
+      "review_note",
+      "checked by hand",
+      "[3, None)"
+     ]
+    ],
+    "row_count": 1,
+    "truncated": false,
+    "elapsed_ms": 23.93,
+    "status": "INSERT 0 1",
+    "executed_as": "cc_tryout on the real tables (transaction rolled back: nothing was saved)"
+   },
+   "plan": {
+    "planning_ms": 2.433,
+    "execution_ms": 3.238,
+    "top_node": "ModifyTable",
+    "nodes": [
+     "Index Scan",
+     "ModifyTable"
+    ],
+    "scans": [
+     {
+      "node": "Index Scan",
+      "relation": "dataset_neuron",
+      "index": "dataset_neuron_dataset_neuron_id_dataset_id_key",
+      "rows": 1,
+      "loops": 1
+     }
+    ],
+    "indexes": [
+     "dataset_neuron_dataset_neuron_id_dataset_id_key"
+    ],
+    "seq_scans": [],
+    "shared_hit_blocks": 191,
+    "shared_read_blocks": 0
+   },
+   "checks": [
+    {
+     "check": "runs without error",
+     "ok": true
+    },
+    {
+     "check": "at least 1 row(s)",
+     "ok": true
+    }
+   ],
+   "ok": true,
+   "seconds": 0.27
+  },
+  {
+   "id": "q-trial-overlap",
+   "category": "dml",
+   "question": "Insert a second cell type for the same neuron and releases; the exclusion constraint must reject it.",
+   "why": "The GiST exclusion constraint (same neuron and key, overlapping valid and transaction time) is what makes \"one value per neuron, key and moment\" a database rule.",
+   "language": "sql",
+   "target": "trial",
+   "code": "INSERT INTO annotation (dataset_neuron_id, annotation_key, annotation_value, valid_rel, provenance_id)\nSELECT a.dataset_neuron_id, 'cell_type', 'conflicting_type', a.valid_rel, a.provenance_id\nFROM annotation a\nWHERE a.dataset_neuron_id = cc.find_neuron('hemibrain', '1688868386')\n  AND a.annotation_key = 'cell_type' AND upper_inf(a.tx)\nLIMIT 1;\n",
+   "error": "23P01 conflicting key value violates exclusion constraint \"annotation_dataset_neuron_id_annotation_key_valid_rel_tx_excl\"\nDETAIL: Key (dataset_neuron_id, annotation_key, valid_rel, tx)=(41903, cell_type, [1,2), [\"2026-11-23 13:04:33.605088+00\",)) conflicts with existing key (dataset_neuron_id, annotation_key, valid_rel, tx)=(41903, cell_type, [1,2), [\"2026-11-03 10:23:31.555167+00\",)).\nCONSTRAINT: annotation_dataset_neuron_id_annotation_key_valid_rel_tx_excl",
+   "result": null,
+   "plan": null,
+   "checks": [
+    {
+     "check": "rejected with \u201cconflicting key value violates exclusion constraint\u201d",
+     "ok": true
+    }
+   ],
+   "ok": true,
+   "seconds": 0.12
+  },
+  {
+   "id": "q-trial-delete",
+   "category": "dml",
+   "question": "Delete a connection from the history; the append-only trigger must reject it.",
+   "why": "History is never deleted; guard_history() rejects DELETE and any UPDATE other than closing the tx interval, so every past state stays reconstructible.",
+   "language": "sql",
+   "target": "trial",
+   "code": "DELETE FROM connection\nWHERE connection_id = (SELECT min(connection_id) FROM connection);\n",
+   "error": "23000 history is append-only: DELETE on connection is not allowed",
+   "result": null,
+   "plan": null,
+   "checks": [
+    {
+     "check": "rejected with \u201chistory is append-only\u201d",
+     "ok": true
+    }
+   ],
+   "ok": true,
+   "seconds": 0.14
+  },
+  {
+   "id": "q-lab-update",
+   "category": "dml",
+   "question": "In the lab, rename a cell type for every neuron that has it, then list what changed.",
+   "why": "Because the lab is normalised, the type is stored once per neuron, so one UPDATE row per neuron is the whole change; the log_change trigger records it.",
+   "language": "sql",
+   "target": "lab",
+   "code": "UPDATE lab.neuron SET cell_type = cell_type || '_renamed'\nWHERE cell_type = (SELECT cell_type FROM lab.neuron WHERE cell_type IS NOT NULL\n                   GROUP BY cell_type ORDER BY count(*) DESC, cell_type LIMIT 1);\nSELECT table_name, operation, old_row->>'cell_type' AS old_type, new_row->>'cell_type' AS new_type\nFROM lab.change_log ORDER BY change_id DESC LIMIT 5;\n",
+   "result": {
+    "columns": [
+     "table_name",
+     "operation",
+     "old_type",
+     "new_type"
+    ],
+    "rows": [
+     [
+      "neuron",
+      "UPDATE",
+      "Dm17",
+      "Dm17_renamed"
+     ],
+     [
+      "neuron",
+      "UPDATE",
+      "Dm17",
+      "Dm17_renamed"
+     ],
+     [
+      "neuron",
+      "UPDATE",
+      "Dm17",
+      "Dm17_renamed"
+     ],
+     [
+      "neuron",
+      "UPDATE",
+      "Dm17",
+      "Dm17_renamed"
+     ],
+     [
+      "neuron",
+      "UPDATE",
+      "Dm17",
+      "Dm17_renamed"
+     ]
+    ],
+    "row_count": 5,
+    "elapsed_ms": 121.09,
+    "statements": [
+     {
+      "status": "UPDATE 8",
+      "rows": 8
+     },
+     {
+      "status": "SELECT 5",
+      "rows": 5
+     }
+    ],
+    "executed_as": "cc_lab in the lab schema (transaction rolled back)"
+   },
+   "plan": null,
+   "checks": [
+    {
+     "check": "runs without error",
+     "ok": true
+    }
+   ],
+   "ok": true,
+   "seconds": 0.2
+  },
+  {
+   "id": "q-lab-delete",
+   "category": "dml",
+   "question": "In the lab, delete one neuron; its connections go with it (ON DELETE CASCADE).",
+   "why": "The foreign keys of lab.connection cascade, so deleting the neuron removes its connections in the same statement; the change log keeps both.",
+   "language": "sql",
+   "target": "lab",
+   "code": "WITH gone AS (DELETE FROM lab.neuron\n              WHERE neuron_id = (SELECT min(pre_neuron_id) FROM lab.connection)\n              RETURNING neuron_id)\nSELECT neuron_id FROM gone;\nSELECT count(*) AS connections_left_for_it FROM lab.connection\nWHERE pre_neuron_id = (SELECT min(neuron_id) FROM lab.change_log c, LATERAL (SELECT (c.old_row->>'neuron_id')::bigint) x(neuron_id)\n                       WHERE c.table_name = 'neuron' AND c.operation = 'DELETE');\n",
+   "result": {
+    "columns": [
+     "connections_left_for_it"
+    ],
+    "rows": [
+     [
+      0
+     ]
+    ],
+    "row_count": 1,
+    "elapsed_ms": 122.54,
+    "statements": [
+     {
+      "status": "SELECT 1",
+      "rows": 1
+     },
+     {
+      "status": "SELECT 1",
+      "rows": 1
+     }
+    ],
+    "executed_as": "cc_lab in the lab schema (transaction rolled back)"
+   },
+   "plan": null,
+   "checks": [
+    {
+     "check": "runs without error",
+     "ok": true
+    }
+   ],
+   "ok": true,
+   "seconds": 0.2
+  },
+  {
+   "id": "m-by-id",
+   "category": "nosql",
+   "question": "Fetch one neuron's source document by its key.",
+   "why": "_id is dataset_neuron.metadata_doc_id in PostgreSQL (now UNIQUE, migration 0013), the link between the two stores; lookup by _id uses the primary index.",
+   "language": "mongo",
+   "target": "read",
+   "code": {
+    "op": "find",
+    "filter": {
+     "_id": "hemibrain:1688868386"
+    },
+    "projection": {
+     "dataset": 1,
+     "source_neuron_id": 1,
+     "dataset_neuron_id": 1
+    },
+    "limit": 1
+   },
+   "result": {
+    "documents": [
+     {
+      "_id": "hemibrain:1688868386",
+      "dataset": "hemibrain",
+      "dataset_neuron_id": 41903,
+      "source_neuron_id": "1688868386"
+     }
+    ],
+    "row_count": 1,
+    "elapsed_ms": 185.45
+   },
+   "plan": {
+    "stages": [
+     "IDHACK"
+    ],
+    "indexes": [],
+    "docs_examined": 1,
+    "keys_examined": 1
+   },
+   "checks": [
+    {
+     "check": "runs without error",
+     "ok": true
+    },
+    {
+     "check": "at least 1 row(s)",
+     "ok": true
+    },
+    {
+     "check": "winning plan uses IDHACK or EXPRESS_IXSCAN or IXSCAN",
+     "ok": true
+    },
+    {
+     "check": "no collection scan",
+     "ok": true
+    }
+   ],
+   "ok": true,
+   "seconds": 0.32
+  },
+  {
+   "id": "m-by-natural-key",
+   "category": "nosql",
+   "question": "Find a FlyWire neuron's document by dataset and published id.",
+   "why": "The compound unique index (dataset, source_neuron_id) mirrors the natural key of dataset_neuron.",
+   "language": "mongo",
+   "target": "read",
+   "code": {
+    "op": "find",
+    "filter": {
+     "dataset": "flywire",
+     "source_neuron_id": "720575940590515268"
+    },
+    "projection": {
+     "_id": 1,
+     "dataset_neuron_id": 1
+    },
+    "limit": 1
+   },
+   "result": {
+    "documents": [
+     {
+      "_id": "flywire:720575940590515268",
+      "dataset_neuron_id": 86799
+     }
+    ],
+    "row_count": 1,
+    "elapsed_ms": 12.41
+   },
+   "plan": {
+    "stages": [
+     "FETCH",
+     "IXSCAN"
+    ],
+    "indexes": [
+     "dataset_1_source_neuron_id_1"
+    ],
+    "docs_examined": 1,
+    "keys_examined": 1
+   },
+   "checks": [
+    {
+     "check": "runs without error",
+     "ok": true
+    },
+    {
+     "check": "at least 1 row(s)",
+     "ok": true
+    },
+    {
+     "check": "winning plan uses IXSCAN",
+     "ok": true
+    },
+    {
+     "check": "no collection scan",
+     "ok": true
+    }
+   ],
+   "ok": true,
+   "seconds": 0.02
+  },
+  {
+   "id": "m-from-postgres",
+   "category": "nosql",
+   "question": "Follow the link from PostgreSQL to MongoDB (dataset_neuron_id) and read the neuron's v1.0 source row.",
+   "why": "dataset_neuron_id is indexed (unique), and the projection returns one release's original columns instead of the whole document.",
+   "language": "mongo",
+   "target": "read",
+   "code": {
+    "op": "find",
+    "filter": {
+     "dataset_neuron_id": 41903
+    },
+    "projection": {
+     "releases.1.records.fields": 1,
+     "releases.1.release": 1
+    },
+    "limit": 1
+   },
+   "result": {
+    "documents": [
+     {
+      "_id": "hemibrain:1688868386",
+      "releases": {
+       "1": {
+        "release": "v1.0",
+        "records": [
+         {
+          "fields": {
+           "bodyId": "1688868386",
+           "instance": "LC28d(lVLPT4)_R",
+           "type": "LC28d"
+          }
+         }
+        ]
+       }
+      }
+     }
+    ],
+    "row_count": 1,
+    "elapsed_ms": 8.94
+   },
+   "plan": {
+    "stages": [
+     "FETCH",
+     "IXSCAN"
+    ],
+    "indexes": [
+     "dataset_neuron_id_1"
+    ],
+    "docs_examined": 1,
+    "keys_examined": 1
+   },
+   "checks": [
+    {
+     "check": "runs without error",
+     "ok": true
+    },
+    {
+     "check": "at least 1 row(s)",
+     "ok": true
+    },
+    {
+     "check": "winning plan uses IXSCAN",
+     "ok": true
+    },
+    {
+     "check": "no collection scan",
+     "ok": true
+    }
+   ],
+   "ok": true,
+   "seconds": 0.02
+  },
+  {
+   "id": "m-count-datasets",
+   "category": "nosql",
+   "question": "How many documents does each dataset have?",
+   "why": "A $group over the collection is the aggregation equivalent of GROUP BY. It has to read every document (COLLSCAN, about 1 s for 182,274 documents); the same count is available instantly from PostgreSQL, and metadata check compares the two.",
+   "language": "mongo",
+   "target": "read",
+   "code": {
+    "op": "aggregate",
+    "pipeline": [
+     {
+      "$group": {
+       "_id": "$dataset",
+       "documents": {
+        "$sum": 1
+       }
+      }
+     },
+     {
+      "$sort": {
+       "_id": 1
+      }
+     }
+    ],
+    "limit": 10
+   },
+   "result": {
+    "documents": [
+     {
+      "_id": "flywire",
+      "documents": 160448
+     },
+     {
+      "_id": "hemibrain",
+      "documents": 21826
+     }
+    ],
+    "row_count": 2,
+    "elapsed_ms": 3048.52
+   },
+   "plan": {
+    "stages": [
+     "GROUP",
+     "COLLSCAN"
+    ],
+    "indexes": [],
+    "docs_examined": null,
+    "keys_examined": null
+   },
+   "checks": [
+    {
+     "check": "runs without error",
+     "ok": true
+    },
+    {
+     "check": "at least 2 row(s)",
+     "ok": true
+    }
+   ],
+   "ok": true,
+   "seconds": 3.17
+  },
+  {
+   "id": "m-columns",
+   "category": "nosql",
+   "question": "Which original source columns does FlyWire's classification file provide?",
+   "why": "Documents keep columns the relational model does not map, and they differ by dataset and release; $objectToArray turns field names into data so they can be grouped (on the first 1000 FlyWire documents, using the dataset index).",
+   "language": "mongo",
+   "target": "read",
+   "code": {
+    "op": "aggregate",
+    "pipeline": [
+     {
+      "$match": {
+       "dataset": "flywire"
+      }
+     },
+     {
+      "$limit": 1000
+     },
+     {
+      "$project": {
+       "r": {
+        "$objectToArray": "$releases"
+       }
+      }
+     },
+     {
+      "$unwind": "$r"
+     },
+     {
+      "$unwind": "$r.v.records"
+     },
+     {
+      "$match": {
+       "r.v.records.file": {
+        "$regex": "classification"
+       }
+      }
+     },
+     {
+      "$project": {
+       "k": {
+        "$objectToArray": "$r.v.records.fields"
+       }
+      }
+     },
+     {
+      "$unwind": "$k"
+     },
+     {
+      "$group": {
+       "_id": "$k.k",
+       "documents": {
+        "$sum": 1
+       }
+      }
+     },
+     {
+      "$sort": {
+       "_id": 1
+      }
+     }
+    ],
+    "limit": 20
+   },
+   "result": {
+    "documents": [
+     {
+      "_id": "cell_type",
+      "documents": 142
+     },
+     {
+      "_id": "class",
+      "documents": 1249
+     },
+     {
+      "_id": "flow",
+      "documents": 1903
+     },
+     {
+      "_id": "hemibrain_type",
+      "documents": 310
+     },
+     {
+      "_id": "hemilineage",
+      "documents": 868
+     },
+     {
+      "_id": "nerve",
+      "documents": 228
+     },
+     {
+      "_id": "root_id",
+      "documents": 1903
+     },
+     {
+      "_id": "side",
+      "documents": 1903
+     },
+     {
+      "_id": "sub_class",
+      "documents": 604
+     },
+     {
+      "_id": "super_class",
+      "documents": 1903
+     }
+    ],
+    "row_count": 10,
+    "elapsed_ms": 55.54
+   },
+   "plan": {
+    "stages": [
+     "LIMIT",
+     "PROJECTION_SIMPLE",
+     "FETCH",
+     "IXSCAN"
+    ],
+    "indexes": [
+     "dataset_1_source_neuron_id_1"
+    ],
+    "docs_examined": null,
+    "keys_examined": null
+   },
+   "checks": [
+    {
+     "check": "runs without error",
+     "ok": true
+    },
+    {
+     "check": "at least 3 row(s)",
+     "ok": true
+    },
+    {
+     "check": "winning plan uses IXSCAN",
+     "ok": true
+    },
+    {
+     "check": "no collection scan",
+     "ok": true
+    }
+   ],
+   "ok": true,
+   "seconds": 0.09
+  },
+  {
+   "id": "m-unindexed",
+   "category": "nosql",
+   "question": "Which hemibrain documents have a v1.2 source row with instance \"LC28a(lVLPT4)_R\"?",
+   "why": "Only the dataset prefix of the compound index applies; the nested field is checked on every hemibrain document. In this design such questions are answered in PostgreSQL (annotation, indexed) and MongoDB is used for the original rows of known neurons.",
+   "language": "mongo",
+   "target": "read",
+   "code": {
+    "op": "count",
+    "filter": {
+     "dataset": "hemibrain",
+     "releases.4.records.fields.instance": "LC28a(lVLPT4)_R"
+    }
+   },
+   "result": {
+    "documents": [
+     {
+      "count": 3
+     }
+    ],
+    "row_count": 1,
+    "elapsed_ms": 101.33
+   },
+   "plan": {
+    "stages": [
+     "COUNT",
+     "FETCH",
+     "IXSCAN"
+    ],
+    "indexes": [
+     "dataset_1_source_neuron_id_1"
+    ],
+    "docs_examined": 21826,
+    "keys_examined": 21826
+   },
+   "checks": [
+    {
+     "check": "runs without error",
+     "ok": true
+    },
+    {
+     "check": "winning plan uses IXSCAN",
+     "ok": true
+    },
+    {
+     "check": "no collection scan",
+     "ok": true
+    }
+   ],
+   "ok": true,
+   "seconds": 0.18
+  }
+ ],
+ "summary": {
+  "queries": 31,
+  "passed": 31,
+  "sql": 25,
+  "mongo": 6
+ }
+}

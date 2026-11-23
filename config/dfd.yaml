@@ -1,0 +1,191 @@
+# Data flow model of ConnectomeChronicle (docs/DATA_FLOW.md).
+#
+# The single source of the DFDs: backend/design/dfd.py checks the rules on
+# this file and draws docs/diagrams/dfd-*.svg from it. Notation: Gane-Sarson.
+#   process        rounded box: number band / verb + object / implemented by
+#   data store     open box: D-number / name (the tables or collections it holds)
+#   external       shaded box outside the system
+# Flow labels name the data that moves. `part_of` marks a flow that is one
+# component of a flow on the parent diagram (used by the balancing check).
+# `at` / place: centre of the box in the diagram's canvas. `bend` curves a
+# flow (pixels, + = to the left of its direction), `label_at` moves its label
+# along it (0..1).
+notation: Gane-Sarson
+
+externals:
+  E1: {name: Connectome publisher, description: "Janelia (hemibrain) and the FlyWire consortium; publish release files"}
+  E2: {name: Researcher, description: "explores neurons, runs SQL / MongoDB queries and ConnectomeDiff"}
+  E3: {name: Reviewer, description: "reviews identity mappings and edits the lab copy (review token)"}
+  E4: {name: Database operator, description: "downloads, loads, synchronises and deploys releases (CLI)"}
+
+stores:
+  D1: {name: Raw source files, holds: "data/raw/ archives + data/metadata/dataset_manifest.json (SHA-256)"}
+  D2: {name: Release catalog, holds: "dataset, release, ingestion_run, source_file, provenance, provenance_parent, schema_mapping, metadata_sync, metadata_record_digest"}
+  D3: {name: Bitemporal connectome, holds: "dataset_neuron, neuron_version, annotation, connection, neuron_region_synapses, brain_region, neuropil, brain_region_alias, neuron_type, type_alias"}
+  D4: {name: Source documents, holds: "MongoDB neuron_source_record (one document per neuron, every original row)"}
+  D5: {name: Diff results, holds: "diff_run, diff_event, ml_model_run, ml_model_input, anomaly_result"}
+  D6: {name: Identity mappings, holds: "canonical_neuron, neuron_mapping"}
+  D7: {name: Shard placements, holds: "partition_strategy, partition_assignment, shard, deployment_batch, active_deployment, shard_deployment, query_execution + the shard servers' copies"}
+  D8: {name: Lab copy, holds: "schema lab (dataset, release, neuron, connection, change_log) + MongoDB <db>_lab"}
+
+diagrams:
+  # ------------------------------------------------------------ level 0
+  - id: level0
+    level: 0
+    title: "Context diagram (level 0)"
+    size: [1200, 640]
+    processes:
+      "0": {name: ConnectomeChronicle, by: "PostgreSQL + MongoDB + 3 shards", at: [600, 320], w: 250, h: 130}
+    place: {E1: [140, 150], E4: [140, 490], E2: [1060, 150], E3: [1060, 490]}
+    flows:
+      - {from: E1, to: "0", label: release files}
+      - {from: E4, to: "0", label: "download, ingest, sync and deploy commands", bend: -55, label_at: 0.5}
+      - {from: "0", to: E4, label: "manifest, load, consistency and verification reports", bend: -55, label_at: 0.5}
+      - {from: E2, to: "0", label: queries and diff requests, bend: 30}
+      - {from: "0", to: E2, label: "results, query plans and diff reports", bend: 30}
+      - {from: E3, to: "0", label: review decisions and lab edits, bend: 30}
+      - {from: "0", to: E3, label: "proposals with evidence, statements and change log", bend: 30}
+
+  # ------------------------------------------------------------ level 1
+  - id: level1
+    level: 1
+    parent: "0"
+    title: "Level 1: the main processes"
+    size: [1940, 1330]
+    processes:
+      "1": {name: Acquire release files, by: scripts/download_datasets.py, at: [440, 110]}
+      "2": {name: Load release, by: backend/etl/loader.py, at: [440, 430]}
+      "3": {name: Synchronise source records, by: backend/metadata.py, at: [440, 800]}
+      "6": {name: Distribute to shards, by: backend/distributed/, at: [440, 1140]}
+      "4": {name: Compare releases (ConnectomeDiff), by: 0003_connectome_diff.sql, at: [1440, 150]}
+      "5": {name: Resolve neuron identities, by: 0004_entity_resolution.sql, at: [1440, 470]}
+      "7": {name: Answer queries, by: "main.py, console.py, router.py", at: [1440, 820]}
+      "8": {name: Edit lab data, by: backend/lab.py, at: [1440, 1140]}
+    place:
+      E1: [110, 130]
+      E4: [110, 640]
+      E2: [1810, 200]
+      E3: [1810, 1020]
+      D2: [1240, 60]
+      D1: [800, 160]
+      D5: [1060, 300]
+      D3: [940, 600]
+      D6: [1760, 640]
+      D4: [900, 960]
+      D7: [900, 1180]
+      D8: [1720, 1260]
+    flows:
+      # 1 acquire
+      - {from: E1, to: "1", label: release files, part_of: release files}
+      - {from: E4, to: "1", label: download command, part_of: "download, ingest, sync and deploy commands", bend: 14}
+      - {from: "1", to: E4, label: download manifest, part_of: "manifest, load, consistency and verification reports", bend: 14}
+      - {from: "1", to: D1, label: checksummed files, label_at: 0.5}
+      # 2 load
+      - {from: D1, to: "2", label: verified source files, label_at: 0.62}
+      - {from: E4, to: "2", label: ingest command, part_of: "download, ingest, sync and deploy commands", bend: 14}
+      - {from: "2", to: E4, label: load report, part_of: "manifest, load, consistency and verification reports", bend: 14}
+      - {from: D2, to: "2", label: registered releases, bend: 14, label_at: 0.3}
+      - {from: "2", to: D2, label: "release, run and provenance records", bend: 14, label_at: 0.5}
+      - {from: D3, to: "2", label: current neuron ids and open rows, bend: 14}
+      - {from: "2", to: D3, label: "versioned neurons, annotations, connections", bend: 14}
+      # 3 sync
+      - {from: D1, to: "3", label: source rows}
+      - {from: D3, to: "3", label: neuron keys}
+      - {from: "3", to: D4, label: neuron source documents}
+      - {from: "3", to: D2, label: sync log and record digests, bend: 0, label_at: 0.56}
+      - {from: E4, to: "3", label: sync command, part_of: "download, ingest, sync and deploy commands", bend: 14, label_at: 0.25}
+      - {from: "3", to: E4, label: consistency report, part_of: "manifest, load, consistency and verification reports", bend: 14, label_at: 0.25}
+      # 6 distribute
+      - {from: E4, to: "6", label: deploy command, part_of: "download, ingest, sync and deploy commands", bend: 14}
+      - {from: "6", to: E4, label: verification result, part_of: "manifest, load, consistency and verification reports", bend: 14}
+      - {from: D3, to: "6", label: neurons and connections, label_at: 0.75}
+      - {from: "6", to: D7, label: assignments and shard copies, bend: 14}
+      - {from: D7, to: "6", label: shard row counts, bend: 14}
+      # 4 compare
+      - {from: E2, to: "4", label: diff request, part_of: queries and diff requests, bend: 14}
+      - {from: "4", to: E2, label: diff report and change scores, part_of: "results, query plans and diff reports", bend: 14}
+      - {from: D2, to: "4", label: release order}
+      - {from: D3, to: "4", label: release states}
+      - {from: "4", to: D5, label: "diff runs, events and scores", bend: 14}
+      - {from: D5, to: "4", label: diff events, bend: 14}
+      # 5 resolve
+      - {from: D3, to: "5", label: neurons and annotations}
+      - {from: "5", to: D6, label: proposed mappings, bend: 14, label_at: 0.5}
+      - {from: D6, to: "5", label: pending mappings, bend: 14, label_at: 0.75}
+      - {from: "5", to: E3, label: proposals with evidence, part_of: "proposals with evidence, statements and change log", bend: 14, label_at: 0.62}
+      - {from: E3, to: "5", label: review decision, part_of: review decisions and lab edits, bend: 14, label_at: 0.2}
+      # 7 answer
+      - {from: E2, to: "7", label: "SQL, MongoDB and neuron queries", part_of: queries and diff requests, bend: 14}
+      - {from: "7", to: E2, label: results and query plans, part_of: "results, query plans and diff reports", bend: 14, label_at: 0.3}
+      - {from: D3, to: "7", label: connectome rows}
+      - {from: D4, to: "7", label: source documents}
+      - {from: D5, to: "7", label: changes, label_at: 0.7}
+      - {from: D6, to: "7", label: mappings}
+      - {from: D7, to: "7", label: routed shard rows}
+      # 8 lab
+      - {from: E3, to: "8", label: row and document edits, part_of: review decisions and lab edits, bend: 14}
+      - {from: "8", to: E3, label: statements and change log, part_of: "proposals with evidence, statements and change log", bend: 14}
+      - {from: D3, to: "8", label: real-data subset}
+      - {from: D4, to: "8", label: subset documents}
+      - {from: "8", to: D8, label: lab rows and documents, bend: 30, label_at: 0.5}
+      - {from: D8, to: "8", label: lab rows, bend: 30, label_at: 0.5}
+
+  # ------------------------------------------------------- level 2: load
+  - id: level2-2
+    level: 2
+    parent: "2"
+    title: "Level 2: process 2, Load release (one transaction: all-or-nothing)"
+    size: [1400, 900]
+    processes:
+      "2.1": {name: Register release and run, by: "loader._register, _check_order", at: [360, 200]}
+      "2.2": {name: Stage source files, by: "loader._stage, COPY", at: [760, 200]}
+      "2.3": {name: Validate staged rows, by: loader._validate_staged, at: [1160, 200]}
+      "2.4": {name: Resolve source identifiers, by: MERGE_SQL neuron_resolve, at: [1160, 640]}
+      "2.5": {name: Merge versions, by: "MERGE_SQL *_close, *_open", at: [760, 640]}
+      "2.6": {name: Record load result, by: "loader: status, release_stats", at: [360, 640]}
+    place: {E4: [110, 420], D1: [760, 40], D2: [460, 420], D3: [960, 840]}
+    flows:
+      - {from: E4, to: "2.1", label: ingest command}
+      - {from: D2, to: "2.1", label: registered releases, bend: 16}
+      - {from: "2.1", to: D2, label: release and run rows, part_of: "release, run and provenance records", bend: 16}
+      - {from: "2.1", to: "2.2", label: release and run id}
+      - {from: D1, to: "2.2", label: verified source files}
+      - {from: "2.2", to: D2, label: source file and provenance rows, part_of: "release, run and provenance records"}
+      - {from: "2.2", to: "2.3", label: staged rows}
+      - {from: "2.3", to: "2.4", label: valid staged rows}
+      - {from: "2.3", to: "2.6", label: validation errors}
+      - {from: D3, to: "2.4", label: known source neuron ids, part_of: current neuron ids and open rows, bend: 16}
+      - {from: "2.4", to: D3, label: new dataset neurons, part_of: "versioned neurons, annotations, connections", bend: 16}
+      - {from: "2.4", to: "2.5", label: resolved facts}
+      - {from: D3, to: "2.5", label: open versions, part_of: current neuron ids and open rows, bend: 16}
+      - {from: "2.5", to: D3, label: retired and new versions, part_of: "versioned neurons, annotations, connections", bend: 16}
+      - {from: "2.5", to: "2.6", label: merge statistics}
+      - {from: "2.6", to: D2, label: load status and statistics, part_of: "release, run and provenance records"}
+      - {from: "2.6", to: E4, label: load report}
+
+  # ------------------------------------------------- level 2: ConnectomeDiff
+  - id: level2-4
+    level: 2
+    parent: "4"
+    title: "Level 2: process 4, Compare releases (ConnectomeDiff)"
+    size: [1400, 800]
+    processes:
+      "4.1": {name: Validate comparison request, by: run_temporal_diff checks, at: [360, 170]}
+      "4.2": {name: Reconstruct release states, by: valid_rel and tx predicates, at: [760, 170]}
+      "4.3": {name: Compute changes, by: FULL OUTER JOIN per entity class, at: [1160, 170]}
+      "4.4": {name: Score changes, by: analysis.score_diff, at: [1160, 680]}
+      "4.5": {name: Report changes, by: "GET /api/v1/diffs/{id}/events", at: [640, 680]}
+    place: {E2: [110, 430], D2: [360, 430], D3: [760, 430], D5: [1160, 430]}
+    flows:
+      - {from: E2, to: "4.1", label: diff request}
+      - {from: D2, to: "4.1", label: release order}
+      - {from: "4.1", to: E2, label: rejection (cross-dataset as temporal), part_of: diff report and change scores}
+      - {from: "4.1", to: "4.2", label: "release pair and as-of time"}
+      - {from: D3, to: "4.2", label: release states}
+      - {from: "4.2", to: "4.3", label: state A and state B}
+      - {from: "4.3", to: D5, label: diff run and events, part_of: "diff runs, events and scores"}
+      - {from: D5, to: "4.4", label: diff events, bend: 16}
+      - {from: "4.4", to: D5, label: model run and scores, part_of: "diff runs, events and scores", bend: 16}
+      - {from: "4.3", to: "4.4", label: run id, bend: -120, label_at: 0.5}
+      - {from: D5, to: "4.5", label: events and scores, part_of: diff events}
+      - {from: "4.5", to: E2, label: diff report and change scores}

@@ -1,6 +1,11 @@
 # Architecture
 
 The current interactive/API workflow is documented in [PROJECT_GUIDE.md](PROJECT_GUIDE.md).
+The full detailed design, data flow diagrams, normalisation, query catalogue and
+data dictionary are in [docs/](docs/DESIGN.md). Migration `0013` decomposes
+`brain_region` (new `neuropil`) and `ml_model_run.diff_run_ids` (new
+`ml_model_input`) and enforces the remaining functional dependencies; `0014`
+stores table and column descriptions in the catalog.
 Migration `0011` adds durable jobs, independent MongoDB record digests, model
 features/explanations, correspondence score evidence, and versioned shard
 deployments. `backend/workspace.py` provides release-aware graph/event reads;

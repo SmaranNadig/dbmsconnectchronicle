@@ -35,25 +35,46 @@ Results on the real data (2 datasets, 5 releases, 182,274 neurons): 9.0 M
 connection rows stored instead of 15.8 M as full copies per release (43% fewer);
 182,274 MongoDB documents; edge cut 66.7% (hash), 28.0% (anatomical), 27.1%
 (community); 492 routed answers checked against the single server with 0
-mismatches; 114 automated tests passing.
+mismatches; 151 automated tests passing.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the design and ER model,
 [DATASETS.md](DATASETS.md) for sources, [IMPLEMENTATION.md](IMPLEMENTATION.md)
 for what is done and what is next, and [TESTING.md](TESTING.md) for the tests.
 
+### Design documents
+
+Generated from the running system by `python scripts/design_docs.py`, so they
+cannot drift from the code; the same content is on the dashboard under
+**Database lab → Design**.
+
+| Document | Content |
+|---|---|
+| [docs/DESIGN.md](docs/DESIGN.md) | Detailed design: requirements, architecture, conceptual / logical / physical design, temporal model, integrity, NoSQL, distribution, security, transactions, API, testing |
+| [docs/DATA_FLOW.md](docs/DATA_FLOW.md) | Data flow diagrams: context (level 0), level 1, level 2 for *Load release* and *Compare releases*, in Gane–Sarson notation, checked against nine notation rules |
+| [docs/NORMALISATION.md](docs/NORMALISATION.md) | Keys, functional dependencies and normal form (1NF to BCNF) of all 39 relations, verified on the loaded data; UNF → BCNF walkthrough; update / insertion / deletion anomalies; storage files and VACUUM / ANALYZE / REINDEX |
+| [docs/QUERIES.md](docs/QUERIES.md) | 31 SQL and MongoDB queries, each with its question, the reason for its form, its result on the loaded data and its execution plan |
+| [docs/DATA_DICTIONARY.md](docs/DATA_DICTIONARY.md) | Every table, column, constraint, index, trigger, view, function and MongoDB collection, read from the catalogs |
+
+```bash
+python scripts/design_docs.py                 # all documents (about 2 minutes on the full data)
+python scripts/design_docs.py queries dfd     # only some of them
+```
+
 ### Repository layout
 
 ```
 backend/            Python: ETL, API (FastAPI), MongoDB sync, sharding, query consoles
-  db/sql/           the schema: SQL migrations 0001-0012 (run by Alembic)
+  db/sql/           the schema: SQL migrations 0001-0014 (run by Alembic)
+  design/           design analysis: data flow diagrams, normal forms, query catalogue, data dictionary
   etl/              source adapters, release loader (one transaction per release)
   distributed/      partitioning, shard deployment, query router, benchmark
 alembic/            migration runner
-config/             dataset catalog and per-dataset schema mappings
+config/             dataset catalog, schema mappings, data flow model (dfd.yaml), query catalogue
+docs/               design documents (generated parts refreshed by scripts/design_docs.py)
 frontend/           dashboard (npm start; public/ holds the page and examples.json)
-scripts/            dataset download, demo SQL
+scripts/            dataset download, demo SQL, design document generator
 tests/              pytest suite + small synthetic fixtures (tests/fixtures/toy)
-results/            latest benchmark JSON and test report
+results/            latest benchmark JSON, test report, design results (results/design)
 data/metadata/      download manifest with SHA-256 checksums (raw data is not in git)
 ```
 

@@ -1,7 +1,7 @@
 # Testing
 
 ```bash
-python -m pytest          # 114 tests; report in results/tests/junit.xml
+python -m pytest          # 151 tests; report in results/tests/junit.xml
 ```
 
 The workspace adds 13 regression/workflow checks in `test_workspace.py`: historical
@@ -49,6 +49,9 @@ to drop a MongoDB database with another name).
 | REST API | `test_api.py` | health/schema revision, releases, neuron states, connections, diff round-trip, 404/422 handling |
 | query consoles | `test_console.py` | SQL console runs as `cc_reader` read-only; refuses DELETE, multi-statement `COMMIT` escape, writable CTE, `set_config`, `pg_read_file`; timeout enforced; EXPLAIN; every published example passes its target's gate; MongoDB count/aggregate and refusal of `$where`/`$out`/`$merge`; all 9 integrity-demo writes rejected with nothing written; catalog and source whitelist (no `.env`, no `../`) |
 | Data editor (lab) | `test_lab.py` | lab built from the real store (every lab connection equal to the real one; MongoDB lab holds exactly the lab neurons' documents); multi-statement scripts committed and visible to a new connection; preview and a left-open `BEGIN` rolled back; a failing statement undoes the script; DDL, savepoints, `ON DELETE CASCADE`; `cc_lab` refused on `DELETE` / `UPDATE` / `DROP` / `CREATE` in `cc`, `RESET ROLE`, `SET ROLE`, `SET SESSION AUTHORIZATION`, `COPY TO PROGRAM`, with the real row counts unchanged; timeout enforced even after `SET statement_timeout = 0`; table editor insert / update / delete with the SQL shown, CHECK and UNIQUE errors, change log entries by `cc_lab`; bad keys, unknown columns, identity columns refused; real tables browsable but not editable; trial writes run with constraints and triggers and are rolled back; MongoDB lab insert / update / replace / delete, `$jsonSchema` validator, unique index, indexes and collections; real document store refuses writes; every published lab example runs or fails exactly where intended; reset restores; reviewer token guards writes |
+| design: FD algebra | `unit/test_fd.py` | closure; candidate keys of textbook relations (cyclic, multi-key, no FDs) and their minimality; minimal cover removes extraneous attributes and redundant FDs, is equivalent and deterministic; highest normal form 1NF / 2NF / 3NF / BCNF; BCNF decomposition lossless (chase), lossy split detected; lost dependency in the street-city-zip decomposition; projection |
+| design: data flow diagrams | `unit/test_dfd.py` | the project's model passes all nine rules with levels 0, 1, 2 and every diagram renders; a model broken in one way (empty label, store → store, black hole, wrong numbering, name without a verb, unbalanced child, store on the context diagram, unread store, duplicate flow) is reported under that rule |
+| design: schema | `integration/test_design.py` | relation catalogue matches every live table and column; every declared key and FD holds on the loaded fixtures; no undocumented normal-form violation, lab relations in BCNF, decompositions lossless; table descriptions in the catalog equal the catalogue's; data dictionary complete; every catalogue query runs (rejections only for the expected reason); design endpoints; anomalies shown and rolled back; VACUUM leaves 0 dead tuples; unknown maintenance operation refused |
 
 ## Real-data checks
 
