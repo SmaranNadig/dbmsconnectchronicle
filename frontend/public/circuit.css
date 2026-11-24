@@ -1,0 +1,13 @@
+.circuit { max-width: 1060px; padding: 28px 20px 60px; }
+.circuit h1 { font-size: clamp(36px,6vw,66px); letter-spacing: -.055em; margin: 16px 0 0; }
+.lead { font-size: 18px; max-width: 760px; color: var(--ink-2); }
+.circuit form,.controls { display:flex; flex-wrap:wrap; align-items:end; gap:14px; }
+.circuit label { display:grid; gap:4px; font-size:13px; }
+.pair { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr)); gap:18px; }
+.pair canvas { width:100%; height:auto; border-radius:6px; background:#182332; }
+.circuit .scroll { overflow-x:auto; margin-block:12px; }
+#identity { overflow-wrap:anywhere; }
+.circuit section { margin:18px 0; }
+.circuit th,.circuit td { text-align:left; }
+.circuit details { margin-top:15px; }
+

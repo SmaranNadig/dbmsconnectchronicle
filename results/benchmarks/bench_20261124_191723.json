@@ -1,0 +1,247 @@
+{
+  "data_revision": "05f19b8b90ee95ac7355c3b76cbbe0447db28db92ad86d43ca19ec275474b4b1",
+  "measured_at": "2026-11-24T13:47:23+00:00",
+  "parameters": {
+    "neurons_per_dataset": 5,
+    "repeat": 1,
+    "seed": 7,
+    "regions": [
+      "SLP_R",
+      "ME_R",
+      "AL_R",
+      "LO_R",
+      "EB",
+      "FB"
+    ],
+    "warm_up": "one full pass (also the correctness check)"
+  },
+  "correctness": {
+    "queries_compared": 132,
+    "mismatches": 0
+  },
+  "environment": {
+    "host_os": "Windows-11-10.0.26300-SP0",
+    "python": "3.12.10",
+    "cpu_logical": 16,
+    "postgres": "PostgreSQL 16.6 (Debian 16.6-1.pgdg120+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 12.2.0-14) 12.2.0, 64-bit",
+    "coordinator_db_size": "4487 MB",
+    "topology": "Local Docker Desktop: coordinator and three PostgreSQL shards",
+    "deployments": [
+      {
+        "strategy": "anatomical",
+        "shard": 1,
+        "owned_rows": 2542090,
+        "mirrors": 635727,
+        "bytes": 389627904
+      },
+      {
+        "strategy": "anatomical",
+        "shard": 2,
+        "owned_rows": 2518990,
+        "mirrors": 711450,
+        "bytes": 398147584
+      },
+      {
+        "strategy": "anatomical",
+        "shard": 3,
+        "owned_rows": 2568876,
+        "mirrors": 787872,
+        "bytes": 408125440
+      },
+      {
+        "strategy": "community",
+        "shard": 1,
+        "owned_rows": 2520102,
+        "mirrors": 620165,
+        "bytes": 387899392
+      },
+      {
+        "strategy": "community",
+        "shard": 2,
+        "owned_rows": 2542266,
+        "mirrors": 570814,
+        "bytes": 384589824
+      },
+      {
+        "strategy": "community",
+        "shard": 3,
+        "owned_rows": 2567588,
+        "mirrors": 604133,
+        "bytes": 390930432
+      },
+      {
+        "strategy": "hash",
+        "shard": 1,
+        "owned_rows": 2531933,
+        "mirrors": 1708685,
+        "bytes": 512385024
+      },
+      {
+        "strategy": "hash",
+        "shard": 2,
+        "owned_rows": 2543634,
+        "mirrors": 1692633,
+        "bytes": 511787008
+      },
+      {
+        "strategy": "hash",
+        "shard": 3,
+        "owned_rows": 2554389,
+        "mirrors": 1688624,
+        "bytes": 512524288
+      }
+    ]
+  },
+  "results": {
+    "neighbours_in": {
+      "anatomical": {
+        "executions": 10,
+        "p50_ms": 4.076,
+        "p95_ms": 6.152,
+        "mean_shards_touched": 1,
+        "mean_rows": 109.1
+      },
+      "community": {
+        "executions": 10,
+        "p50_ms": 3.424,
+        "p95_ms": 6.492,
+        "mean_shards_touched": 1,
+        "mean_rows": 109.1
+      },
+      "coordinator": {
+        "executions": 10,
+        "p50_ms": 6.332,
+        "p95_ms": 16.27,
+        "mean_shards_touched": 1,
+        "mean_rows": 109.1
+      },
+      "hash": {
+        "executions": 10,
+        "p50_ms": 2.577,
+        "p95_ms": 3.341,
+        "mean_shards_touched": 1,
+        "mean_rows": 109.1
+      }
+    },
+    "neighbours_out": {
+      "anatomical": {
+        "executions": 10,
+        "p50_ms": 2.289,
+        "p95_ms": 10.468,
+        "mean_shards_touched": 1,
+        "mean_rows": 91.5
+      },
+      "community": {
+        "executions": 10,
+        "p50_ms": 1.702,
+        "p95_ms": 19.092,
+        "mean_shards_touched": 1,
+        "mean_rows": 91.5
+      },
+      "coordinator": {
+        "executions": 10,
+        "p50_ms": 4.262,
+        "p95_ms": 24.389,
+        "mean_shards_touched": 1,
+        "mean_rows": 91.5
+      },
+      "hash": {
+        "executions": 10,
+        "p50_ms": 2.06,
+        "p95_ms": 3.512,
+        "mean_shards_touched": 1,
+        "mean_rows": 91.5
+      }
+    },
+    "region": {
+      "anatomical": {
+        "executions": 12,
+        "p50_ms": 531.368,
+        "p95_ms": 825.988,
+        "mean_shards_touched": 1,
+        "mean_rows": 151457.5
+      },
+      "community": {
+        "executions": 12,
+        "p50_ms": 763.913,
+        "p95_ms": 1264.681,
+        "mean_shards_touched": 3,
+        "mean_rows": 151457.5
+      },
+      "coordinator": {
+        "executions": 12,
+        "p50_ms": 255.596,
+        "p95_ms": 819.305,
+        "mean_shards_touched": 1,
+        "mean_rows": 151457.5
+      },
+      "hash": {
+        "executions": 12,
+        "p50_ms": 687.737,
+        "p95_ms": 845.017,
+        "mean_shards_touched": 3,
+        "mean_rows": 151457.5
+      }
+    },
+    "summary": {
+      "anatomical": {
+        "executions": 2,
+        "p50_ms": 452.874,
+        "p95_ms": 527.597,
+        "mean_shards_touched": 3,
+        "mean_rows": 1
+      },
+      "community": {
+        "executions": 2,
+        "p50_ms": 1164.37,
+        "p95_ms": 1989.285,
+        "mean_shards_touched": 3,
+        "mean_rows": 1
+      },
+      "coordinator": {
+        "executions": 2,
+        "p50_ms": 4282.284,
+        "p95_ms": 5960.255,
+        "mean_shards_touched": 1,
+        "mean_rows": 1
+      },
+      "hash": {
+        "executions": 2,
+        "p50_ms": 322.461,
+        "p95_ms": 336.89,
+        "mean_shards_touched": 3,
+        "mean_rows": 1
+      }
+    },
+    "two_hop": {
+      "anatomical": {
+        "executions": 10,
+        "p50_ms": 24.57,
+        "p95_ms": 102.39,
+        "mean_shards_touched": 2.4,
+        "mean_rows": 23603.7
+      },
+      "community": {
+        "executions": 10,
+        "p50_ms": 23.916,
+        "p95_ms": 83.944,
+        "mean_shards_touched": 2.4,
+        "mean_rows": 23603.7
+      },
+      "coordinator": {
+        "executions": 10,
+        "p50_ms": 8.143,
+        "p95_ms": 63.626,
+        "mean_shards_touched": 1,
+        "mean_rows": 23603.7
+      },
+      "hash": {
+        "executions": 10,
+        "p50_ms": 11.862,
+        "p95_ms": 56.12,
+        "mean_shards_touched": 3,
+        "mean_rows": 23603.7
+      }
+    }
+  }
+}

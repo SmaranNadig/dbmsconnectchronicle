@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Circuit Lab · ConnectomeChronicle</title><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="circuit.css"></head>
+<body><main class="wrap circuit">
+<a href="/">← ConnectomeChronicle</a> · <a href="memory.html">Odor memory and navigation →</a>
+<h1>Circuit Lab</h1><p class="lead">Can a fly’s visual wiring detect motion and steer against drift? Send a moving pattern through a reconstructed right-eye circuit and compare the same trial after silencing or rewiring it.</p>
+<section><h2>Visual motion experiment</h2>
+<form id="setup"><label>FlyWire 783 circuit<select id="patch" required></select></label>
+<label>Scene seed<input id="seed" type="number" min="0" max="999999" value="42" required></label>
+<button id="run" disabled>Run experiment</button>
+<label>Saved experiments<select id="history"><option value="">Select a run</option></select></label></form>
+<p id="status" role="status">Loading circuit snapshots…</p></section>
+<div id="report" hidden><section><h2>Trial replay</h2><p>Both panels start with the same moving grating. Each controller’s steering changes what its eye sees next.</p>
+<div class="controls"><label>Compare with<select id="condition"></select></label>
+<label>Held-out trial<select id="trial"></select></label><button type="button" id="play">Play</button>
+<label>Frame <input id="frame" type="range" min="0" max="31" value="0"></label></div>
+<div class="pair" id="panels"></div><p class="note">The strip shows brightness across the eye. The bars show mean modeled activity for T4a–d and T5a–d, on a shared scale.</p>
+</section><section><h2>Direction and steering</h2><p>Accuracy counts correct open-loop predictions across 24 balanced trials. Heading improvement measures the reduction in mean absolute drift against steering switched off. A negative value means steering increased drift.</p><div class="scroll"><table><thead><tr><th>Condition</th><th>Correct direction</th><th>Mean drift</th><th>Heading improvement</th></tr></thead><tbody id="metrics"></tbody></table></div><a id="export">Export run summary (JSON)</a> · <a id="trace">Export comparison trial (JSON)</a></section>
+<section><h2>What changed in the same trials?</h2><p id="paired"></p><h3>Bright and dark edge probe</h3><p id="probe"></p><p class="note">Mean simulated activity across both travel directions, in model units. Input polarity is assumed by the model.</p></section>
+<section><h2>Wiring evidence</h2><p id="identity"></p><p>The strongest edges below identify the original source rows. A connection retained across releases can cite an earlier archive.</p><div class="scroll"><table><thead><tr><th>Pathway</th><th>FlyWire root IDs</th><th>Synapses</th><th>Archive and source rows</th></tr></thead><tbody id="edges"></tbody></table></div>
+<details><summary>Inspect the experiment in SQL</summary><pre>SELECT condition, trials, accuracy, heading_improvement
+FROM cc.circuit_results
+WHERE run_id = <span id="sqlid"></span>
+ORDER BY accuracy DESC;</pre><a href="/#console">Open query console →</a></details></section></div>
+<section><h2>How to interpret a run</h2><p>Real FlyWire synapse counts weight the L1/L2 → intermediate neurons → T4/T5 pathways. A simplified rate model supplies input polarity, delays and coincidence responses. A linear decoder learns from 48 separate calibration scenes and stays fixed across interventions. A conventional pixel correlator reads the same images as an engineering reference.</p>
+<p>Compare seeds, patch sizes and shuffled controls before attributing performance to particular wiring. The replay shows simulated activity and steering commands in grid units.</p>
+<a href="https://doi.org/10.1038/s41586-024-07939-3">Connectome-constrained visual modeling</a> · <a href="https://pubmed.ncbi.nlm.nih.gov/42627449/">Fixed-decoder intervention study</a> · <a href="https://github.com/hsseung/OpticLobe.jl">Optic-column coordinates</a></section>
+</main><script src="circuit.js"></script></body></html>

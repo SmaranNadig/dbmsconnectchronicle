@@ -6,6 +6,14 @@ durable jobs, and snapshot-aware shard generations. Read
 **[PROJECT_GUIDE.md](PROJECT_GUIDE.md)** for the concise explanation, tab guide,
 methodology, interpretation and setup.
 
+[Circuit Lab](docs/CIRCUIT_LAB.md) uses real FlyWire 783 visual wiring to estimate
+motion and steer a simulated eye. Run paired interventions, replay trials, inspect
+source edges, and compare results in the PostgreSQL console.
+
+[Odor Memory Lab](docs/MEMORY_LAB.md) trains a real FlyWire mushroom-body
+pathway on generated odors. Fork a saved trial to reverse the association,
+run paired navigation controls, and compare two PostgreSQL replay layouts.
+
 **Synthetic demo on Windows:** with Python 3.12, uv, Node.js and Docker Desktop
 available, run `powershell -File scripts/start-demo.ps1`. It creates separate demo
 databases and explicitly synthetic releases. The original public-data results

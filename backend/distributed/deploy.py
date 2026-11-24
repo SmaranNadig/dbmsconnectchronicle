@@ -157,6 +157,8 @@ def deploy(strategy: str) -> dict:
         control.execute('SELECT pg_advisory_lock(8841,%s)',(sid,))
         batch = None
         try:
+            # A deployment can start before autoanalyze sees a fresh import or placement.
+            control.execute('ANALYZE cc.connection, cc.partition_assignment')
             with connect() as snapshot_conn:
                 snapshot_conn.execute('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ')
                 revision = source_revision(snapshot_conn)

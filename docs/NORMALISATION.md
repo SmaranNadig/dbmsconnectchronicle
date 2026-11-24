@@ -56,10 +56,24 @@ proper subset of every candidate key.
 ## Result for every relation
 
 <!-- generated:summary -->
-39 relations (39 base tables in the database, all catalogued with matching columns: yes). Highest normal form: 1NF 1, 2NF 6, 3NF 1, BCNF 31. Every dependency checked on the loaded data: all hold (24.6 s, 2026-11-23 13:14 UTC).
+53 relations (53 base tables in the database, all catalogued with matching columns: yes). Highest normal form: 1NF 2, 2NF 6, 3NF 1, BCNF 44. Every dependency checked on the loaded data: all hold (23.5 s, 2026-11-24 16:27 UTC).
 
 | Relation | Candidate keys | Highest NF | FDs hold | Notes |
 |---|---|---|---|---|
+| `cc.memory_snapshot` | (digest); (snapshot_id) | BCNF | ✓ |  |
+| `cc.memory_edge` | (connection_id, snapshot_id) | BCNF | ✓ |  |
+| `cc.memory_run` | (run_id); (seed, snapshot_id, version) | BCNF | ✓ | non-scalar: channels |
+| `cc.memory_stimulus` | (odor, run_id) | BCNF | ✓ | non-scalar: activity |
+| `cc.memory_schedule` | (run_id, step) | BCNF | ✓ |  |
+| `cc.memory_branch` | (branch_id); (fork_step, intervention, parent_id, run_id) | BCNF | ✓ |  |
+| `cc.memory_trial` | (branch_id, step) | BCNF | ✓ |  |
+| `cc.memory_change` | (branch_id, connection_id, step) | BCNF | ✓ |  |
+| `cc.memory_checkpoint` | (branch_id, step) | BCNF | ✓ |  |
+| `cc.circuit_snapshot` | (digest); (snapshot_id) | BCNF | ✓ |  |
+| `cc.circuit_node` | (neuron_id, snapshot_id) | BCNF | ✓ |  |
+| `cc.circuit_edge` | (connection_id, snapshot_id); (post_id, pre_id, snapshot_id) | 1NF | ✓ | controlled redundancy: connection_id → weight |
+| `cc.circuit_run` | (run_id); (model_version, seed, snapshot_id) | BCNF | ✓ |  |
+| `cc.circuit_trial` | (condition, run_id, trial) | BCNF | ✓ | non-scalar: replay |
 | `cc.dataset` | (code); (dataset_id) | BCNF | ✓ | non-scalar: data_formats |
 | `cc.release` | (release_id); (dataset_id, release_order); (dataset_id, version_label) | BCNF | ✓ |  |
 | `cc.ingestion_run` | (run_id) | BCNF | ✓ | non-scalar: stats |
@@ -178,13 +192,21 @@ editable lab schema shows that alternative: `lab.connection` is in BCNF, and
 the same rule is the constraint trigger `connection_same_dataset`.
 
 <!-- generated:redundancy -->
+#### `cc.circuit_edge` — 1NF
+
+Keys: (connection_id, snapshot_id); (post_id, pre_id, snapshot_id). Minimal cover: `connection_id → post_id, pre_id, weight`; `post_id, pre_id, snapshot_id → connection_id`.
+
+- `connection_id → post_id, pre_id, weight`: Freezing endpoints and weights supports replay of the exact model input.. Enforced by `circuit_edge_source`. Live check: 0 violating groups (8.5 ms).
+
+BCNF decomposition: (pre_id, post_id, weight, connection_id) ⋈ (snapshot_id, connection_id) — lossless: yes; dependencies not preserved: `post_id, pre_id, snapshot_id → connection_id`.
+
 #### `cc.provenance` — 2NF
 
 Keys: (provenance_id). Minimal cover: `ingestion_run_id → release_id`; `provenance_id → created_at, ingestion_run_id, parameters, source_file_id, transformation_name, transformation_version`; `release_id → dataset_id`; `source_file_id → release_id`.
 
-- `release_id → dataset_id`: The composite foreign key (release_id, dataset_id) → release makes the copy match its release; provenance is filtered by dataset without a join. Enforced by `provenance_release_id_dataset_id_fkey`. Live check: 0 violating groups (9.6 ms).
-- `source_file_id → release_id`: Release_id is needed for derived facts that have no source file (source_file_id NULL); where a file is given, the composite key forces the same release. Enforced by `provenance_source_file_release_fkey`. Live check: 0 violating groups (7.7 ms).
-- `ingestion_run_id → release_id`: Release_id is needed for facts that were not produced by an ingestion run; where a run is given, the composite key forces the same release. Enforced by `provenance_run_release_fkey`. Live check: 0 violating groups (10.6 ms).
+- `release_id → dataset_id`: The composite foreign key (release_id, dataset_id) → release makes the copy match its release; provenance is filtered by dataset without a join. Enforced by `provenance_release_id_dataset_id_fkey`. Live check: 0 violating groups (0.9 ms).
+- `source_file_id → release_id`: Release_id is needed for derived facts that have no source file (source_file_id NULL); where a file is given, the composite key forces the same release. Enforced by `provenance_source_file_release_fkey`. Live check: 0 violating groups (0.5 ms).
+- `ingestion_run_id → release_id`: Release_id is needed for facts that were not produced by an ingestion run; where a run is given, the composite key forces the same release. Enforced by `provenance_run_release_fkey`. Live check: 0 violating groups (0.6 ms).
 
 BCNF decomposition: (provenance_id, source_file_id, ingestion_run_id, transformation_name, transformation_version, parameters, created_at) ⋈ (dataset_id, release_id) ⋈ (release_id, ingestion_run_id) — lossless: yes; dependencies not preserved: `source_file_id → release_id`.
 
@@ -192,7 +214,7 @@ BCNF decomposition: (provenance_id, source_file_id, ingestion_run_id, transforma
 
 Keys: (dataset_neuron_id); (metadata_doc_id); (dataset_id, source_neuron_id); (first_release_id, source_neuron_id). Minimal cover: `dataset_neuron_id → metadata_doc_id`; `first_release_id → dataset_id`; `metadata_doc_id → dataset_neuron_id, first_release_id, provenance_id, source_line, source_neuron_id`; `dataset_id, source_neuron_id → metadata_doc_id`.
 
-- `first_release_id → dataset_id`: Dataset_id is part of the natural key (dataset_id, source_neuron_id), so the relation is in 3NF; the composite key to release keeps the first release inside the same dataset. Enforced by `dataset_neuron_first_release_id_dataset_id_fkey`. Live check: 0 violating groups (169.6 ms).
+- `first_release_id → dataset_id`: Dataset_id is part of the natural key (dataset_id, source_neuron_id), so the relation is in 3NF; the composite key to release keeps the first release inside the same dataset. Enforced by `dataset_neuron_first_release_id_dataset_id_fkey`. Live check: 0 violating groups (36.5 ms).
 
 BCNF decomposition: (dataset_id, first_release_id) ⋈ (dataset_neuron_id, source_neuron_id, first_release_id, provenance_id, source_line, metadata_doc_id) — lossless: yes; dependencies not preserved: `dataset_id, source_neuron_id → metadata_doc_id`.
 
@@ -200,8 +222,8 @@ BCNF decomposition: (dataset_id, first_release_id) ⋈ (dataset_neuron_id, sourc
 
 Keys: (connection_id). Minimal cover: `connection_id → post_neuron_id, pre_neuron_id, provenance_id, source_lines, synapse_count, tx, valid_rel`; `post_neuron_id → dataset_id`; `pre_neuron_id → dataset_id`.
 
-- `pre_neuron_id → dataset_id`: The composite foreign keys (pre, dataset) and (post, dataset) → dataset_neuron are what makes an edge between two different connectomes impossible; the copy also serves the partial index connection_dataset_open_idx that every per-dataset scan of 9 M rows uses. Enforced by `connection_pre_neuron_id_dataset_id_fkey`. Live check: 0 violating groups (3016.4 ms).
-- `post_neuron_id → dataset_id`: The composite foreign key (post_neuron_id, dataset_id) → dataset_neuron keeps the post-synaptic neuron in the edge's dataset. Enforced by `connection_post_neuron_id_dataset_id_fkey`. Live check: 0 violating groups (18233.3 ms).
+- `pre_neuron_id → dataset_id`: The composite foreign keys (pre, dataset) and (post, dataset) → dataset_neuron are what makes an edge between two different connectomes impossible; the copy also serves the partial index connection_dataset_open_idx that every per-dataset scan of 9 M rows uses. Enforced by `connection_pre_neuron_id_dataset_id_fkey`. Live check: 0 violating groups (9210.6 ms).
+- `post_neuron_id → dataset_id`: The composite foreign key (post_neuron_id, dataset_id) → dataset_neuron keeps the post-synaptic neuron in the edge's dataset. Enforced by `connection_post_neuron_id_dataset_id_fkey`. Live check: 0 violating groups (11151.6 ms).
 
 BCNF decomposition: (connection_id, pre_neuron_id, post_neuron_id, synapse_count, valid_rel, tx, provenance_id, source_lines) ⋈ (dataset_id, post_neuron_id) — lossless: yes; dependencies not preserved: `pre_neuron_id → dataset_id`.
 
@@ -209,8 +231,8 @@ BCNF decomposition: (connection_id, pre_neuron_id, post_neuron_id, synapse_count
 
 Keys: (brain_region_id, dataset_neuron_id, release_id). Minimal cover: `dataset_neuron_id → dataset_id`; `release_id → dataset_id`; `brain_region_id, dataset_neuron_id, release_id → post_synapses, pre_synapses, provenance_id`.
 
-- `release_id → dataset_id`: The two composite foreign keys force the release and the neuron into the same dataset. Enforced by `neuron_region_synapses_release_id_dataset_id_fkey`. Live check: 0 violating groups (322.8 ms).
-- `dataset_neuron_id → dataset_id`: The composite foreign key (dataset_neuron_id, dataset_id) → dataset_neuron keeps the neuron in the release's dataset. Enforced by `neuron_region_synapses_dataset_neuron_id_dataset_id_fkey`. Live check: 0 violating groups (888.2 ms).
+- `release_id → dataset_id`: The two composite foreign keys force the release and the neuron into the same dataset. Enforced by `neuron_region_synapses_release_id_dataset_id_fkey`. Live check: 0 violating groups (251.0 ms).
+- `dataset_neuron_id → dataset_id`: The composite foreign key (dataset_neuron_id, dataset_id) → dataset_neuron keeps the neuron in the release's dataset. Enforced by `neuron_region_synapses_dataset_neuron_id_dataset_id_fkey`. Live check: 0 violating groups (891.4 ms).
 
 BCNF decomposition: (release_id, dataset_neuron_id, brain_region_id, pre_synapses, post_synapses, provenance_id) ⋈ (dataset_id, dataset_neuron_id) — lossless: yes; dependencies not preserved: `release_id → dataset_id`.
 
@@ -218,8 +240,8 @@ BCNF decomposition: (release_id, dataset_neuron_id, brain_region_id, pre_synapse
 
 Keys: (diff_run_id). Minimal cover: `diff_run_id → as_of, finished_at, mode, parameters, release_a, release_b, started_at, stats, status`; `release_a → dataset_a`; `release_b → dataset_b`.
 
-- `release_a → dataset_a`: The CHECK constraints that keep temporal evolution (same dataset) apart from cross-dataset comparison need both dataset ids in the row; the composite key keeps them correct. Enforced by `diff_run_release_a_dataset_a_fkey`, `diff_run_check1`. Live check: 0 violating groups (10.4 ms).
-- `release_b → dataset_b`: The composite foreign key (release_b, dataset_b) → release keeps the copy correct for the second release. Enforced by `diff_run_release_b_dataset_b_fkey`. Live check: 0 violating groups (9.7 ms).
+- `release_a → dataset_a`: The CHECK constraints that keep temporal evolution (same dataset) apart from cross-dataset comparison need both dataset ids in the row; the composite key keeps them correct. Enforced by `diff_run_release_a_dataset_a_fkey`, `diff_run_check1`. Live check: 0 violating groups (1.2 ms).
+- `release_b → dataset_b`: The composite foreign key (release_b, dataset_b) → release keeps the copy correct for the second release. Enforced by `diff_run_release_b_dataset_b_fkey`. Live check: 0 violating groups (0.7 ms).
 
 BCNF decomposition: (diff_run_id, mode, release_a, release_b, as_of, parameters, status, started_at, finished_at, stats) ⋈ (dataset_a, release_a) ⋈ (dataset_b, release_b) — lossless: yes; dependencies not preserved: none.
 
@@ -227,7 +249,7 @@ BCNF decomposition: (diff_run_id, mode, release_a, release_b, as_of, parameters,
 
 Keys: (diff_event_id). Minimal cover: `diff_event_id → annotation_key, change_type, dataset_neuron_id, diff_run_id, entity_type, new_value, new_weight, old_value, old_weight, post_neuron_id, record_a_id, record_b_id`; `new_weight, old_weight → weight_delta`.
 
-- `new_weight, old_weight → weight_delta`: A generated column: PostgreSQL computes it and rejects any write, so it cannot disagree; stored so that events can be ranked by change size with an index. Enforced by `GENERATED ALWAYS AS (stored)`. Live check: 0 violating groups (631.2 ms).
+- `new_weight, old_weight → weight_delta`: A generated column: PostgreSQL computes it and rejects any write, so it cannot disagree; stored so that events can be ranked by change size with an index. Enforced by `GENERATED ALWAYS AS (stored)`. Live check: 0 violating groups (1581.1 ms).
 
 BCNF decomposition: (diff_event_id, diff_run_id, entity_type, change_type, dataset_neuron_id, post_neuron_id, annotation_key, old_value, new_value, old_weight, new_weight, record_a_id, record_b_id) ⋈ (old_weight, new_weight, weight_delta) — lossless: yes; dependencies not preserved: none.
 
@@ -235,7 +257,7 @@ BCNF decomposition: (diff_event_id, diff_run_id, entity_type, change_type, datas
 
 Keys: (dataset_neuron_id, strategy_id). Minimal cover: `dataset_neuron_id, strategy_id → assigned_at, group_key`; `group_key, strategy_id → shard_id`.
 
-- `group_key, strategy_id → shard_id`: The router looks up one neuron's shard by key; hash placement has no group, so shard_id cannot move to a group table. The exclusion constraint (strategy =, group =, shard <>) states the dependency itself. Enforced by `partition_assignment_group_one_shard`. Live check: 0 violating groups (290.8 ms).
+- `group_key, strategy_id → shard_id`: The router looks up one neuron's shard by key; hash placement has no group, so shard_id cannot move to a group table. The exclusion constraint (strategy =, group =, shard <>) states the dependency itself. Enforced by `partition_assignment_group_one_shard`. Live check: 0 violating groups (215.0 ms).
 
 BCNF decomposition: (strategy_id, dataset_neuron_id, assigned_at, group_key) ⋈ (strategy_id, shard_id, group_key) — lossless: yes; dependencies not preserved: none.
 
@@ -243,7 +265,7 @@ BCNF decomposition: (strategy_id, dataset_neuron_id, assigned_at, group_key) ⋈
 
 Keys: (deployment_id). Minimal cover: `batch_id → strategy_id`; `deployment_id → batch_id, bytes_on_shard, connections, deployed_at, mirrors, neurons, schema_name, seconds, shard_id, verified`.
 
-- `batch_id → strategy_id`: Rows from before deployment batches existed have no batch (batch_id NULL) and still need their strategy; the composite key keeps newer rows consistent with their batch. Enforced by `shard_deployment_batch_strategy_fkey`. Live check: 0 violating groups (11.7 ms).
+- `batch_id → strategy_id`: Rows from before deployment batches existed have no batch (batch_id NULL) and still need their strategy; the composite key keeps newer rows consistent with their batch. Enforced by `shard_deployment_batch_strategy_fkey`. Live check: 0 violating groups (1.8 ms).
 
 BCNF decomposition: (deployment_id, shard_id, schema_name, neurons, connections, mirrors, bytes_on_shard, seconds, deployed_at, verified, batch_id) ⋈ (strategy_id, batch_id) — lossless: yes; dependencies not preserved: none.
 <!-- /generated:redundancy -->
@@ -375,11 +397,11 @@ Unnormalised copy: 9023 rows. Neuron 487144598 (`LHCENT3`) has its cell type sto
 
 | Anomaly | Unnormalised `connection_flat` | Normalised lab tables |
 |---|---|---|
-| Update | `UPDATE connection_flat SET pre_cell_type = 'renamed_type' WHERE pre_neuron_id = 29354 AND release_id = 1` → UPDATE 43; the neuron now has 2 different cell types: LHCENT3, renamed_type | `UPDATE lab.neuron SET cell_type = 'renamed_type' WHERE neuron_id = 29354` → UPDATE 1; one row changed; every connection sees the new type through the join |
-| Insertion | `INSERT INTO connection_flat (release_id, version_label, dataset_code, pre_neuron_id, pre_source_id, pre_cell_type) VALUES (4, 'v1.2', 'hemibrain', 900000000001, 'new-neuron', 'new_type')` → null value in column "post_neuron_id" of relation "connection_flat" violates not-null constraint | `INSERT INTO lab.neuron (dataset_id, source_neuron_id, cell_type) VALUES (1, 'new-neuron', 'new_type')` → INSERT 0 1; recorded in lab.neuron; connections can be added later |
-| Deletion | `DELETE FROM connection_flat WHERE 165844 IN (pre_neuron_id, post_neuron_id)` → DELETE 1; no row mentions neuron 720575940627692565 any more (0 rows): its cell type 'LHAV6g1' is lost | `DELETE FROM lab.connection WHERE 165844 IN (pre_neuron_id, post_neuron_id)` → DELETE 1; the neuron stays in lab.neuron with cell type 'LHAV6g1' |
+| Update | `UPDATE connection_flat SET pre_cell_type = 'renamed_type' WHERE pre_neuron_id = 135669 AND release_id = 2` → UPDATE 43; the neuron now has 2 different cell types: LHCENT3, renamed_type | `UPDATE lab.neuron SET cell_type = 'renamed_type' WHERE neuron_id = 135669` → UPDATE 1; one row changed; every connection sees the new type through the join |
+| Insertion | `INSERT INTO connection_flat (release_id, version_label, dataset_code, pre_neuron_id, pre_source_id, pre_cell_type) VALUES (5, '783', 'flywire', 900000000001, 'new-neuron', 'new_type')` → null value in column "post_neuron_id" of relation "connection_flat" violates not-null constraint | `INSERT INTO lab.neuron (dataset_id, source_neuron_id, cell_type) VALUES (1, 'new-neuron', 'new_type')` → INSERT 0 1; recorded in lab.neuron; connections can be added later |
+| Deletion | `DELETE FROM connection_flat WHERE 79046 IN (pre_neuron_id, post_neuron_id)` → DELETE 1; no row mentions neuron 720575940627692565 any more (0 rows): its cell type 'LHAV6g1' is lost | `DELETE FROM lab.connection WHERE 79046 IN (pre_neuron_id, post_neuron_id)` → DELETE 1; the neuron stays in lab.neuron with cell type 'LHAV6g1' |
 
-All of it ran in one transaction that was rolled back (0.63 s, 2026-11-23 13:14 UTC).
+All of it ran in one transaction that was rolled back (0.3 s, 2026-11-24 16:27 UTC).
 <!-- /generated:anomalies -->
 
 ### How the normalised schema is kept up to date
@@ -422,20 +444,20 @@ tuples went from 2,576 to 0.
 <!-- generated:files -->
 | Table | File (under the data directory) | Heap MB | Index MB | TOAST MB | Live tuples | Dead tuples | Last vacuum |
 |---|---|---|---|---|---|---|---|
-| `cc.connection` | `base/16384/17333` | 1,309.6 | 1,571.0 | 0.4 | 0 | 0 | - |
-| `cc.diff_event` | `base/16384/17446` | 426.5 | 109.4 | 0.1 | 0 | 0 | - |
-| `cc.annotation` | `base/16384/17307` | 188.5 | 250.1 | 0.1 | 0 | 9 | - |
-| `cc.neuron_region_synapses` | `base/16384/36115` | 70.6 | 76.3 | 0.0 | 0 | 0 | - |
-| `cc.partition_assignment` | `base/16384/17503` | 35.6 | 62.1 | 0.0 | 0 | 0 | - |
-| `cc.neuron_mapping` | `base/16384/17383` | 39.7 | 27.1 | 0.0 | 0 | 0 | - |
-| `cc.dataset_neuron` | `base/16384/17254` | 18.7 | 27.9 | 0.0 | 0 | 0 | - |
-| `cc.neuron_version` | `base/16384/17283` | 18.5 | 24.0 | 0.0 | 0 | 0 | - |
-| `cc.canonical_neuron` | `base/16384/17367` | 14.5 | 16.1 | 0.0 | 0 | 0 | - |
-| `cc.type_alias` | `base/16384/17230` | 0.8 | 0.6 | 0.0 | 0 | 0 | - |
-| `cc.neuron_type` | `base/16384/17220` | 0.4 | 0.5 | 0.0 | 0 | 0 | - |
-| `cc.query_execution` | `base/16384/17525` | 0.5 | 0.1 | 0.0 | 0 | 0 | - |
+| `cc.connection` | `base/16384/21783` | 1,337.2 | 1,613.0 | 0.4 | 9,035,853 | 2 | 2026-11-24 13:32 |
+| `cc.diff_event` | `base/16384/21896` | 372.2 | 96.3 | 0.1 | 3,468,243 | 0 | 2026-11-24 13:33 |
+| `cc.annotation` | `base/16384/21757` | 191.6 | 251.3 | 0.1 | 1,625,410 | 5 | 2026-11-24 13:30 |
+| `cc.neuron_region_synapses` | `base/16384/22079` | 70.6 | 83.5 | 0.0 | 1,083,797 | 0 | 2026-11-24 13:31 |
+| `cc.anomaly_result` | `base/16384/22008` | 110.4 | 6.5 | 0.1 | 106,999 | 0 | 2026-11-24 13:38 |
+| `cc.partition_assignment` | `base/16384/21953` | 35.4 | 62.4 | 0.0 | 527,529 | 0 | 2026-11-24 13:44 |
+| `cc.neuron_mapping` | `base/16384/21833` | 41.6 | 29.4 | 0.0 | 219,781 | 200 | 2026-11-24 13:31 |
+| `cc.dataset_neuron` | `base/16384/21704` | 18.7 | 31.5 | 0.0 | 182,274 | 0 | 2026-11-24 13:30 |
+| `cc.metadata_record_digest` | `base/16384/22202` | 37.1 | 10.5 | 0.0 | 332,368 | 0 | 2026-11-24 13:37 |
+| `cc.neuron_version` | `base/16384/21733` | 18.5 | 23.2 | 0.0 | 203,554 | 0 | 2026-11-24 13:30 |
+| `cc.canonical_neuron` | `base/16384/21817` | 14.5 | 16.1 | 0.0 | 182,274 | 0 | 2026-11-24 13:31 |
+| `cc.circuit_trial` | `base/16384/25232` | 0.4 | 0.1 | 6.8 | 1,920 | 0 | 2026-11-24 15:08 |
 
-The 12 largest tables of schema `cc`, 2026-11-23 13:14 UTC.
+The 12 largest tables of schema `cc`, 2026-11-24 16:27 UTC.
 <!-- /generated:files -->
 
 The bitemporal design keeps `cc` almost free of dead tuples. A load closes

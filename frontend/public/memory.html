@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Odor Memory Lab · ConnectomeChronicle</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="circuit.css">
+  <link rel="stylesheet" href="memory.css">
+</head>
+<body>
+<main class="wrap circuit">
+  <nav><a href="/">← ConnectomeChronicle</a> · <a href="circuit.html">Visual Circuit Lab</a></nav>
+  <h1>Odor Memory Lab</h1>
+  <p class="lead">Teach a reconstructed fly circuit to prefer an odor. Rewind to a saved encounter, reverse the reward, and compare the two histories.</p>
+
+  <section>
+    <h2>Experiment</h2>
+    <form id="create">
+      <label>Odor-pair seed<input id="seed" required type="number" min="0" max="999999" value="42"></label>
+      <button>Run conditioning and controls</button>
+      <label>Saved experiment<select id="saved" disabled></select></label>
+    </form>
+    <p id="status" role="status">Loading saved experiments…</p>
+  </section>
+
+  <div id="report" hidden>
+    <section>
+      <h2>Preference across 80 encounters</h2>
+      <p>Blue shows the selected branch and gold shows its parent. The vertical axis shows the probability of choosing odor A before feedback. Shaded intervals mark training.</p>
+      <label>Learning history<select id="branch"></select></label>
+      <canvas id="history" width="860" height="200" role="img" aria-label="Odor A preference by encounter"></canvas>
+      <div class="controls">
+        <label>Inspect encounter<input id="step" type="range" min="0" max="80" value="36"></label>
+        <output id="event" for="step"></output>
+      </div>
+      <p id="digest" class="note"></p>
+      <p id="compare"></p>
+      <form id="fork">
+        <label>Intervention at this encounter<select id="mode"></select></label>
+        <button>Fork from here</button>
+        <button id="resume" class="secondary" type="button" hidden>Resume selected branch</button>
+      </form>
+      <p class="note">The fork starts with the parent’s exact gains and uses the chosen preset for subsequent encounters. Freezing gains keeps the readout active. Silencing the readout leaves the reward schedule active.</p>
+    </section>
+
+    <section>
+      <h2>Unrewarded memory tests</h2>
+      <p>Retention follows the first training block. The final test follows retraining. These are mean probabilities of choosing A on noisy, unrewarded presentations.</p>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>History</th><th>Baseline</th><th>Retention</th><th>Final</th></tr></thead>
+          <tbody id="metrics"></tbody>
+        </table>
+      </div>
+      <h3>Odor mixtures at the selected encounter</h3>
+      <div class="scroll">
+        <table><thead><tr><th>Fraction of odor A in mixture</th><th>Probability of choosing mixture over pure B</th></tr></thead>
+          <tbody id="mixtures"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <h2>Two-arm arena</h2>
+      <p>Odor memory selects an arm. As the fly travels, drifting wall patterns drive the visual circuit and its steering controller. Success requires choosing the target odor and arriving within three units of its lane.</p>
+      <p id="arenaEmpty" class="note" hidden>The arena needs a saved radius-four visual run from this release and a completed final encounter in the selected branch.</p>
+      <div id="arenaReport" hidden>
+        <div class="controls">
+          <label>Navigation condition<select id="arenaMode"></select></label>
+          <label>Final encounter<select id="arenaTrial"></select></label>
+          <button type="button" id="play">Play route</button>
+        </div>
+        <canvas id="maze" width="720" height="260" role="img" aria-label="Trajectory through a two-arm arena"></canvas>
+        <p id="arenaText" class="note"></p>
+        <div class="scroll">
+          <table>
+            <thead><tr><th>Condition</th><th>Target arm chosen</th><th>Reached target</th><th>Mean arrival error</th></tr></thead>
+            <tbody id="arenaStats"></tbody>
+          </table>
+        </div>
+        <p><a id="arenaExport">Export paired trajectories (JSON)</a></p>
+      </div>
+    </section>
+
+    <section>
+      <h2>What changed in the wiring?</h2>
+      <p id="coverage"></p>
+      <p>Each effective gain below links to a regional source row. The anatomical synapse count provides the starting weight.</p>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>FlyWire source → target</th><th>Anatomical synapses</th><th>Modeled gain</th><th>Source row</th></tr></thead>
+          <tbody id="edges"></tbody>
+        </table>
+      </div>
+      <p id="source" class="note"></p>
+      <button type="button" id="benchmark">Benchmark PostgreSQL replay</button>
+      <p id="cost" role="status"></p>
+      <div id="storageReport" class="scroll" hidden>
+        <table>
+          <thead><tr><th>Measure</th><th>Full snapshots</th><th>Changes plus checkpoints</th></tr></thead>
+          <tbody id="storage"></tbody>
+        </table>
+      </div>
+      <details>
+        <summary>Inspect this branch in SQL</summary>
+        <h3>First divergent trial</h3>
+        <pre id="divergenceSql"></pre>
+        <h3>Effective gains and their source rows</h3>
+        <pre id="stateSql"></pre>
+        <a href="/#console">Open query console →</a>
+      </details>
+      <p><a id="export">Export protocol and outcomes (JSON)</a> · <a id="states">Export selected state evidence (JSON)</a></p>
+    </section>
+  </div>
+
+  <section>
+    <h2>Model assumptions</h2>
+    <p>Odors A and B are generated channel patterns. FlyWire inputs in the right calyx activate Kenyon cells. Modeled reinforcement changes selected outputs to MBON01 in the right medial lobe. The compartment assignment is inferred from cell types and neuropil.</p>
+    <a href="https://doi.org/10.7554/eLife.62576">Mushroom-body circuit anatomy</a> ·
+    <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC12124391/">Olfactory input wiring</a> ·
+    <a href="https://doi.org/10.1038/s41586-024-07819-w">Learning and dopamine</a>
+  </section>
+</main>
+<script src="memory.js"></script>
+</body>
+</html>
+

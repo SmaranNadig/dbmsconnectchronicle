@@ -1,0 +1,27 @@
+const { test, expect } = require("@playwright/test");
+
+test("run and replay a real FlyWire circuit through the dashboard", async ({page, request}) => {
+  const response = await request.get("/api/v1/circuit/snapshots");
+  test.skip(!response.ok() || !(await response.json()).length, "Requires a loaded FlyWire circuit");
+  const errors = [];
+  page.on("pageerror", e => errors.push(e.message));
+  await page.goto("/");
+  await page.getByRole("link", {name:"Circuit Lab", exact:true}).click();
+  await expect(page.locator("#metrics tr")).toHaveCount(8);
+  await page.locator("#seed").fill("117");
+  await page.getByRole("button", {name:"Run experiment"}).click();
+  await expect(page.locator("#status")).toContainText("Seed 117");
+  await page.locator("#condition").selectOption("disconnected");
+  await page.locator("#trial").selectOption("1");
+  await expect(page.locator("#panels h3").last()).toHaveText("Disconnected output");
+  await page.getByRole("button", {name:"Play",exact:true}).click();
+  await expect.poll(() => page.locator("#frame").inputValue()).not.toBe("0");
+  await page.getByRole("button", {name:"Pause"}).click();
+  await expect(page.locator("#edges tr")).toHaveCount(12);
+  await expect(page.locator("#probe")).toContainText("dark edge");
+  const trace = await request.get(await page.locator("#trace").getAttribute("href"));
+  expect((await trace.json()).replay).toHaveLength(32);
+  await page.setViewportSize({width:390,height:844});
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
+  expect(errors).toEqual([]);
+});

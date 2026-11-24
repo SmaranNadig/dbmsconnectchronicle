@@ -1,0 +1,18 @@
+.circuit form { margin-block: 12px; }
+
+#history, #maze {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 14px 0;
+  border-radius: 8px;
+  background: #162232;
+}
+
+#maze { max-width: 720px; }
+#digest, #source { overflow-wrap: anywhere; }
+#digest { font-family: monospace; }
+#step { min-width: 200px; }
+#saved, #branch { max-width: 100%; }
+#storageReport[hidden] { display: none; }
+

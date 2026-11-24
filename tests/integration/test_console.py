@@ -107,7 +107,9 @@ def test_integrity_demo_every_statement_rejected_and_nothing_written(client, db)
 def test_catalog_and_sources(client):
     cat = client.get("/api/v1/catalog").json()
     assert {c["type"] for c in cat["constraints"]} == {"PRIMARY KEY", "FOREIGN KEY", "UNIQUE", "CHECK", "EXCLUDE"}
-    assert {t["function"] for t in cat["triggers"]} == {"guard_history"}
+    assert {t["function"] for t in cat["triggers"]} == {
+        "guard_history", "circuit_edge_source_check", "memory_validate_insert", "memory_append_only",
+    }
     assert any(r["schema"] == "er" for r in cat["relations"])
     files = {f["path"] for f in client.get("/api/v1/source").json()}
     assert "backend/db/sql/0010_query_console_role.sql" in files and "backend/metadata.py" in files

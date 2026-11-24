@@ -1,7 +1,814 @@
 {
- "generated_at": "2026-11-23 13:14 UTC",
+ "generated_at": "2026-11-24 16:27 UTC",
  "analysis": {
   "relations": [
+   {
+    "relation": "cc.memory_snapshot",
+    "schema": "cc",
+    "name": "memory_snapshot",
+    "group": "Memory Lab",
+    "purpose": "A checksummed olfactory pathway in one release.",
+    "attributes": [
+     "snapshot_id",
+     "release_id",
+     "digest",
+     "sources"
+    ],
+    "fds": [
+     "snapshot_id \u2192 digest, release_id, sources",
+     "digest \u2192 release_id, snapshot_id, sources"
+    ],
+    "minimal_cover": [
+     "digest \u2192 release_id, snapshot_id, sources",
+     "snapshot_id \u2192 digest"
+    ],
+    "candidate_keys": [
+     [
+      "digest"
+     ],
+     [
+      "snapshot_id"
+     ]
+    ],
+    "prime": [
+     "digest",
+     "snapshot_id"
+    ],
+    "non_prime": [
+     "release_id",
+     "sources"
+    ],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {}
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "cc.memory_edge",
+    "schema": "cc",
+    "name": "memory_edge",
+    "group": "Memory Lab",
+    "purpose": "One regional source row linked to its versioned connection.",
+    "attributes": [
+     "snapshot_id",
+     "connection_id",
+     "pathway",
+     "channel",
+     "regional_weight",
+     "source_line"
+    ],
+    "fds": [
+     "connection_id, snapshot_id \u2192 channel, pathway, regional_weight, source_line"
+    ],
+    "minimal_cover": [
+     "connection_id, snapshot_id \u2192 channel, pathway, regional_weight, source_line"
+    ],
+    "candidate_keys": [
+     [
+      "connection_id",
+      "snapshot_id"
+     ]
+    ],
+    "prime": [
+     "connection_id",
+     "snapshot_id"
+    ],
+    "non_prime": [
+     "pathway",
+     "channel",
+     "regional_weight",
+     "source_line"
+    ],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {}
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "cc.memory_run",
+    "schema": "cc",
+    "name": "memory_run",
+    "group": "Memory Lab",
+    "purpose": "One versioned odor experiment, its channel order and visual replay reference.",
+    "attributes": [
+     "run_id",
+     "snapshot_id",
+     "seed",
+     "version",
+     "visual_run_id",
+     "channels"
+    ],
+    "fds": [
+     "run_id \u2192 channels, seed, snapshot_id, version, visual_run_id",
+     "seed, snapshot_id, version \u2192 channels, run_id, visual_run_id"
+    ],
+    "minimal_cover": [
+     "run_id \u2192 seed, snapshot_id, version",
+     "seed, snapshot_id, version \u2192 channels, run_id, visual_run_id"
+    ],
+    "candidate_keys": [
+     [
+      "run_id"
+     ],
+     [
+      "seed",
+      "snapshot_id",
+      "version"
+     ]
+    ],
+    "prime": [
+     "run_id",
+     "seed",
+     "snapshot_id",
+     "version"
+    ],
+    "non_prime": [
+     "visual_run_id",
+     "channels"
+    ],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {
+      "channels": "ordered channel names for the stimulus vectors"
+     }
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "cc.memory_stimulus",
+    "schema": "cc",
+    "name": "memory_stimulus",
+    "group": "Memory Lab",
+    "purpose": "The input vector for one odor in a versioned experiment.",
+    "attributes": [
+     "run_id",
+     "odor",
+     "activity"
+    ],
+    "fds": [
+     "odor, run_id \u2192 activity"
+    ],
+    "minimal_cover": [
+     "odor, run_id \u2192 activity"
+    ],
+    "candidate_keys": [
+     [
+      "odor",
+      "run_id"
+     ]
+    ],
+    "prime": [
+     "odor",
+     "run_id"
+    ],
+    "non_prime": [
+     "activity"
+    ],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {
+      "activity": "one ordered vector of olfactory channel activities"
+     }
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "cc.memory_schedule",
+    "schema": "cc",
+    "name": "memory_schedule",
+    "group": "Memory Lab",
+    "purpose": "The shared sensory and randomization schedule for all branches of an experiment.",
+    "attributes": [
+     "run_id",
+     "step",
+     "phase",
+     "presented",
+     "left_position",
+     "unpaired",
+     "draw",
+     "noise"
+    ],
+    "fds": [
+     "run_id, step \u2192 draw, left_position, noise, phase, presented, unpaired"
+    ],
+    "minimal_cover": [
+     "run_id, step \u2192 draw, left_position, noise, phase, presented, unpaired"
+    ],
+    "candidate_keys": [
+     [
+      "run_id",
+      "step"
+     ]
+    ],
+    "prime": [
+     "run_id",
+     "step"
+    ],
+    "non_prime": [
+     "phase",
+     "presented",
+     "left_position",
+     "unpaired",
+     "draw",
+     "noise"
+    ],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {}
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "cc.memory_branch",
+    "schema": "cc",
+    "name": "memory_branch",
+    "group": "Memory Lab",
+    "purpose": "A learning intervention starting from a saved parent trial.",
+    "attributes": [
+     "branch_id",
+     "run_id",
+     "parent_id",
+     "fork_step",
+     "intervention"
+    ],
+    "fds": [
+     "branch_id \u2192 fork_step, intervention, parent_id, run_id",
+     "fork_step, intervention, parent_id, run_id \u2192 branch_id"
+    ],
+    "minimal_cover": [
+     "branch_id \u2192 fork_step, intervention, parent_id, run_id",
+     "fork_step, intervention, parent_id, run_id \u2192 branch_id"
+    ],
+    "candidate_keys": [
+     [
+      "branch_id"
+     ],
+     [
+      "fork_step",
+      "intervention",
+      "parent_id",
+      "run_id"
+     ]
+    ],
+    "prime": [
+     "branch_id",
+     "fork_step",
+     "intervention",
+     "parent_id",
+     "run_id"
+    ],
+    "non_prime": [],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {}
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "cc.memory_trial",
+    "schema": "cc",
+    "name": "memory_trial",
+    "group": "Memory Lab",
+    "purpose": "An ordered encounter and its post-encounter state digest.",
+    "attributes": [
+     "branch_id",
+     "step",
+     "phase",
+     "presented",
+     "reward",
+     "left_odor",
+     "choice",
+     "p_a",
+     "state_hash"
+    ],
+    "fds": [
+     "branch_id, step \u2192 choice, left_odor, p_a, phase, presented, reward, state_hash"
+    ],
+    "minimal_cover": [
+     "branch_id, step \u2192 choice, left_odor, p_a, phase, presented, reward, state_hash"
+    ],
+    "candidate_keys": [
+     [
+      "branch_id",
+      "step"
+     ]
+    ],
+    "prime": [
+     "branch_id",
+     "step"
+    ],
+    "non_prime": [
+     "phase",
+     "presented",
+     "reward",
+     "left_odor",
+     "choice",
+     "p_a",
+     "state_hash"
+    ],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {}
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "cc.memory_change",
+    "schema": "cc",
+    "name": "memory_change",
+    "group": "Memory Lab",
+    "purpose": "The new effective gain for one changed anatomical edge.",
+    "attributes": [
+     "branch_id",
+     "step",
+     "connection_id",
+     "gain"
+    ],
+    "fds": [
+     "branch_id, connection_id, step \u2192 gain"
+    ],
+    "minimal_cover": [
+     "branch_id, connection_id, step \u2192 gain"
+    ],
+    "candidate_keys": [
+     [
+      "branch_id",
+      "connection_id",
+      "step"
+     ]
+    ],
+    "prime": [
+     "branch_id",
+     "connection_id",
+     "step"
+    ],
+    "non_prime": [
+     "gain"
+    ],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {}
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "cc.memory_checkpoint",
+    "schema": "cc",
+    "name": "memory_checkpoint",
+    "group": "Memory Lab",
+    "purpose": "A complete model state at a committed encounter.",
+    "attributes": [
+     "branch_id",
+     "step",
+     "payload"
+    ],
+    "fds": [
+     "branch_id, step \u2192 payload"
+    ],
+    "minimal_cover": [
+     "branch_id, step \u2192 payload"
+    ],
+    "candidate_keys": [
+     [
+      "branch_id",
+      "step"
+     ]
+    ],
+    "prime": [
+     "branch_id",
+     "step"
+    ],
+    "non_prime": [
+     "payload"
+    ],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {}
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "cc.circuit_snapshot",
+    "schema": "cc",
+    "name": "circuit_snapshot",
+    "group": "Circuit Lab",
+    "purpose": "A content-addressed optic-column patch in one connectome release.",
+    "attributes": [
+     "snapshot_id",
+     "release_id",
+     "digest",
+     "column_sha256",
+     "radius",
+     "created_at"
+    ],
+    "fds": [
+     "snapshot_id \u2192 column_sha256, created_at, digest, radius, release_id",
+     "digest \u2192 column_sha256, created_at, radius, release_id, snapshot_id"
+    ],
+    "minimal_cover": [
+     "digest \u2192 column_sha256, created_at, radius, release_id, snapshot_id",
+     "snapshot_id \u2192 digest"
+    ],
+    "candidate_keys": [
+     [
+      "digest"
+     ],
+     [
+      "snapshot_id"
+     ]
+    ],
+    "prime": [
+     "digest",
+     "snapshot_id"
+    ],
+    "non_prime": [
+     "release_id",
+     "column_sha256",
+     "radius",
+     "created_at"
+    ],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {}
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "cc.circuit_node",
+    "schema": "cc",
+    "name": "circuit_node",
+    "group": "Circuit Lab",
+    "purpose": "A typed neuron and its eye coordinates in one frozen patch.",
+    "attributes": [
+     "snapshot_id",
+     "neuron_id",
+     "cell_type",
+     "p",
+     "q"
+    ],
+    "fds": [
+     "neuron_id, snapshot_id \u2192 cell_type, p, q"
+    ],
+    "minimal_cover": [
+     "neuron_id, snapshot_id \u2192 cell_type, p, q"
+    ],
+    "candidate_keys": [
+     [
+      "neuron_id",
+      "snapshot_id"
+     ]
+    ],
+    "prime": [
+     "neuron_id",
+     "snapshot_id"
+    ],
+    "non_prime": [
+     "cell_type",
+     "p",
+     "q"
+    ],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {}
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "cc.circuit_edge",
+    "schema": "cc",
+    "name": "circuit_edge",
+    "group": "Circuit Lab",
+    "purpose": "Frozen model weights linked to bitemporal FlyWire connection records and source lines.",
+    "attributes": [
+     "snapshot_id",
+     "pre_id",
+     "post_id",
+     "weight",
+     "connection_id"
+    ],
+    "fds": [
+     "post_id, pre_id, snapshot_id \u2192 connection_id, weight",
+     "connection_id \u2192 post_id, pre_id, weight"
+    ],
+    "minimal_cover": [
+     "connection_id \u2192 post_id, pre_id, weight",
+     "post_id, pre_id, snapshot_id \u2192 connection_id"
+    ],
+    "candidate_keys": [
+     [
+      "connection_id",
+      "snapshot_id"
+     ],
+     [
+      "post_id",
+      "pre_id",
+      "snapshot_id"
+     ]
+    ],
+    "prime": [
+     "connection_id",
+     "post_id",
+     "pre_id",
+     "snapshot_id"
+    ],
+    "non_prime": [
+     "weight"
+    ],
+    "highest_form": "1NF",
+    "violations": [
+     {
+      "form": "2NF",
+      "fd": "connection_id \u2192 weight",
+      "reason": "partial dependency: weight depend(s) on connection_id, a proper part of the key (connection_id, snapshot_id)",
+      "documented": true
+     }
+    ],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {}
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [
+     {
+      "fd": "connection_id -> pre_id, post_id, weight",
+      "enforced_by": [
+       "circuit_edge_source"
+      ],
+      "why": "Freezing endpoints and weights supports replay of the exact model input."
+     }
+    ],
+    "satisfies": {
+     "1NF": true,
+     "2NF": false,
+     "3NF": false,
+     "BCNF": false
+    },
+    "bcnf_decomposition": {
+     "parts": [
+      {
+       "attributes": [
+        "pre_id",
+        "post_id",
+        "weight",
+        "connection_id"
+       ],
+       "fds": [
+        "connection_id \u2192 post_id, pre_id, weight"
+       ],
+       "keys": [
+        [
+         "connection_id"
+        ]
+       ]
+      },
+      {
+       "attributes": [
+        "snapshot_id",
+        "connection_id"
+       ],
+       "fds": [],
+       "keys": [
+        [
+         "connection_id",
+         "snapshot_id"
+        ]
+       ]
+      }
+     ],
+     "lossless": true,
+     "not_preserved": [
+      "post_id, pre_id, snapshot_id \u2192 connection_id"
+     ]
+    }
+   },
+   {
+    "relation": "cc.circuit_run",
+    "schema": "cc",
+    "name": "circuit_run",
+    "group": "Circuit Lab",
+    "purpose": "A reproducible model and scene seed evaluated on one snapshot.",
+    "attributes": [
+     "run_id",
+     "snapshot_id",
+     "model_version",
+     "seed",
+     "created_at"
+    ],
+    "fds": [
+     "run_id \u2192 created_at, model_version, seed, snapshot_id",
+     "model_version, seed, snapshot_id \u2192 created_at, run_id"
+    ],
+    "minimal_cover": [
+     "run_id \u2192 model_version, seed, snapshot_id",
+     "model_version, seed, snapshot_id \u2192 created_at, run_id"
+    ],
+    "candidate_keys": [
+     [
+      "run_id"
+     ],
+     [
+      "model_version",
+      "seed",
+      "snapshot_id"
+     ]
+    ],
+    "prime": [
+     "model_version",
+     "run_id",
+     "seed",
+     "snapshot_id"
+    ],
+    "non_prime": [
+     "created_at"
+    ],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {}
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
+   {
+    "relation": "cc.circuit_trial",
+    "schema": "cc",
+    "name": "circuit_trial",
+    "group": "Circuit Lab",
+    "purpose": "Paired held-out visual trials with fixed decoder, residual heading error and replay.",
+    "attributes": [
+     "run_id",
+     "condition",
+     "trial",
+     "direction",
+     "score",
+     "heading_error",
+     "open_loop_error",
+     "replay"
+    ],
+    "fds": [
+     "condition, run_id, trial \u2192 direction, heading_error, open_loop_error, replay, score"
+    ],
+    "minimal_cover": [
+     "condition, run_id, trial \u2192 direction, heading_error, open_loop_error, replay, score"
+    ],
+    "candidate_keys": [
+     [
+      "condition",
+      "run_id",
+      "trial"
+     ]
+    ],
+    "prime": [
+     "condition",
+     "run_id",
+     "trial"
+    ],
+    "non_prime": [
+     "direction",
+     "score",
+     "heading_error",
+     "open_loop_error",
+     "replay"
+    ],
+    "highest_form": "BCNF",
+    "violations": [],
+    "first_nf": {
+     "holds": true,
+     "non_scalar": {
+      "replay": "one ordered playback record"
+     }
+    },
+    "temporal": null,
+    "rules": [],
+    "redundancy": [],
+    "satisfies": {
+     "1NF": true,
+     "2NF": true,
+     "3NF": true,
+     "BCNF": true
+    }
+   },
    {
     "relation": "cc.dataset",
     "schema": "cc",
@@ -2804,15 +3611,16 @@
    }
   ],
   "summary": {
-   "relations": 39,
+   "relations": 53,
    "by_highest_form": {
-    "1NF": 1,
+    "1NF": 2,
     "2NF": 6,
     "3NF": 1,
-    "BCNF": 31
+    "BCNF": 44
    },
-   "bcnf": 31,
+   "bcnf": 44,
    "controlled_redundancy": [
+    "cc.circuit_edge",
     "cc.provenance",
     "cc.dataset_neuron",
     "cc.connection",
@@ -2831,9 +3639,388 @@
    "missing": [],
    "extra": [],
    "column_mismatch": {},
-   "live_tables": 39
+   "live_tables": 53
   },
   "relations": [
+   {
+    "relation": "cc.memory_snapshot",
+    "keys": [
+     {
+      "key": [
+       "digest"
+      ],
+      "enforced_by": "memory_snapshot_digest_key"
+     },
+     {
+      "key": [
+       "snapshot_id"
+      ],
+      "enforced_by": "memory_snapshot_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "snapshot_id \u2192 digest, release_id, sources",
+      "status": "enforced",
+      "by": "memory_snapshot_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     },
+     {
+      "fd": "digest \u2192 release_id, snapshot_id, sources",
+      "status": "enforced",
+      "by": "memory_snapshot_digest_key",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": []
+   },
+   {
+    "relation": "cc.memory_edge",
+    "keys": [
+     {
+      "key": [
+       "connection_id",
+       "snapshot_id"
+      ],
+      "enforced_by": "memory_edge_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "connection_id, snapshot_id \u2192 channel, pathway, regional_weight, source_line",
+      "status": "enforced",
+      "by": "memory_edge_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": []
+   },
+   {
+    "relation": "cc.memory_run",
+    "keys": [
+     {
+      "key": [
+       "run_id"
+      ],
+      "enforced_by": "memory_run_pkey"
+     },
+     {
+      "key": [
+       "seed",
+       "snapshot_id",
+       "version"
+      ],
+      "enforced_by": "memory_run_snapshot_id_seed_version_key"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "run_id \u2192 channels, seed, snapshot_id, version, visual_run_id",
+      "status": "enforced",
+      "by": "memory_run_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     },
+     {
+      "fd": "seed, snapshot_id, version \u2192 channels, run_id, visual_run_id",
+      "status": "enforced",
+      "by": "memory_run_snapshot_id_seed_version_key",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": []
+   },
+   {
+    "relation": "cc.memory_stimulus",
+    "keys": [
+     {
+      "key": [
+       "odor",
+       "run_id"
+      ],
+      "enforced_by": "memory_stimulus_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "odor, run_id \u2192 activity",
+      "status": "enforced",
+      "by": "memory_stimulus_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": []
+   },
+   {
+    "relation": "cc.memory_schedule",
+    "keys": [
+     {
+      "key": [
+       "run_id",
+       "step"
+      ],
+      "enforced_by": "memory_schedule_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "run_id, step \u2192 draw, left_position, noise, phase, presented, unpaired",
+      "status": "enforced",
+      "by": "memory_schedule_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": []
+   },
+   {
+    "relation": "cc.memory_branch",
+    "keys": [
+     {
+      "key": [
+       "branch_id"
+      ],
+      "enforced_by": "memory_branch_pkey"
+     },
+     {
+      "key": [
+       "fork_step",
+       "intervention",
+       "parent_id",
+       "run_id"
+      ],
+      "enforced_by": "memory_branch_run_id_parent_id_fork_step_intervention_key"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "branch_id \u2192 fork_step, intervention, parent_id, run_id",
+      "status": "enforced",
+      "by": "memory_branch_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     },
+     {
+      "fd": "fork_step, intervention, parent_id, run_id \u2192 branch_id",
+      "status": "enforced",
+      "by": "memory_branch_run_id_parent_id_fork_step_intervention_key",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": []
+   },
+   {
+    "relation": "cc.memory_trial",
+    "keys": [
+     {
+      "key": [
+       "branch_id",
+       "step"
+      ],
+      "enforced_by": "memory_trial_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "branch_id, step \u2192 choice, left_odor, p_a, phase, presented, reward, state_hash",
+      "status": "enforced",
+      "by": "memory_trial_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": []
+   },
+   {
+    "relation": "cc.memory_change",
+    "keys": [
+     {
+      "key": [
+       "branch_id",
+       "connection_id",
+       "step"
+      ],
+      "enforced_by": "memory_change_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "branch_id, connection_id, step \u2192 gain",
+      "status": "enforced",
+      "by": "memory_change_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": []
+   },
+   {
+    "relation": "cc.memory_checkpoint",
+    "keys": [
+     {
+      "key": [
+       "branch_id",
+       "step"
+      ],
+      "enforced_by": "memory_checkpoint_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "branch_id, step \u2192 payload",
+      "status": "enforced",
+      "by": "memory_checkpoint_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": []
+   },
+   {
+    "relation": "cc.circuit_snapshot",
+    "keys": [
+     {
+      "key": [
+       "digest"
+      ],
+      "enforced_by": "circuit_snapshot_digest_key"
+     },
+     {
+      "key": [
+       "snapshot_id"
+      ],
+      "enforced_by": "circuit_snapshot_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "snapshot_id \u2192 column_sha256, created_at, digest, radius, release_id",
+      "status": "enforced",
+      "by": "circuit_snapshot_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     },
+     {
+      "fd": "digest \u2192 column_sha256, created_at, radius, release_id, snapshot_id",
+      "status": "enforced",
+      "by": "circuit_snapshot_digest_key",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": []
+   },
+   {
+    "relation": "cc.circuit_node",
+    "keys": [
+     {
+      "key": [
+       "neuron_id",
+       "snapshot_id"
+      ],
+      "enforced_by": "circuit_node_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "neuron_id, snapshot_id \u2192 cell_type, p, q",
+      "status": "enforced",
+      "by": "circuit_node_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": []
+   },
+   {
+    "relation": "cc.circuit_edge",
+    "keys": [
+     {
+      "key": [
+       "connection_id",
+       "snapshot_id"
+      ],
+      "enforced_by": "circuit_edge_snapshot_id_connection_id_key"
+     },
+     {
+      "key": [
+       "post_id",
+       "pre_id",
+       "snapshot_id"
+      ],
+      "enforced_by": "circuit_edge_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "post_id, pre_id, snapshot_id \u2192 connection_id, weight",
+      "status": "enforced",
+      "by": "circuit_edge_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     },
+     {
+      "fd": "connection_id \u2192 post_id, pre_id, weight",
+      "status": "holds",
+      "violating_groups": 0,
+      "ms": 8.5,
+      "sql": "SELECT count(*) FROM (SELECT 1 FROM \"cc\".\"circuit_edge\" WHERE \"connection_id\" IS NOT NULL GROUP BY \"connection_id\" HAVING count(DISTINCT ROW(\"post_id\", \"pre_id\", \"weight\")) > 1 OR count(*) FILTER (WHERE ROW(\"post_id\", \"pre_id\", \"weight\") IS NULL) BETWEEN 1 AND count(*) - 1) bad"
+     }
+    ],
+    "protections": [
+     {
+      "fd": "connection_id -> pre_id, post_id, weight",
+      "constraint": "circuit_edge_source",
+      "exists": true
+     }
+    ]
+   },
+   {
+    "relation": "cc.circuit_run",
+    "keys": [
+     {
+      "key": [
+       "run_id"
+      ],
+      "enforced_by": "circuit_run_pkey"
+     },
+     {
+      "key": [
+       "model_version",
+       "seed",
+       "snapshot_id"
+      ],
+      "enforced_by": "circuit_run_snapshot_id_model_version_seed_key"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "run_id \u2192 created_at, model_version, seed, snapshot_id",
+      "status": "enforced",
+      "by": "circuit_run_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     },
+     {
+      "fd": "model_version, seed, snapshot_id \u2192 created_at, run_id",
+      "status": "enforced",
+      "by": "circuit_run_snapshot_id_model_version_seed_key",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": []
+   },
+   {
+    "relation": "cc.circuit_trial",
+    "keys": [
+     {
+      "key": [
+       "condition",
+       "run_id",
+       "trial"
+      ],
+      "enforced_by": "circuit_trial_pkey"
+     }
+    ],
+    "dependencies": [
+     {
+      "fd": "condition, run_id, trial \u2192 direction, heading_error, open_loop_error, replay, score",
+      "status": "enforced",
+      "by": "circuit_trial_pkey",
+      "note": "left side contains a unique key, so the dependency cannot be broken"
+     }
+    ],
+    "protections": []
+   },
    {
     "relation": "cc.dataset",
     "keys": [
@@ -2987,21 +4174,21 @@
       "fd": "release_id \u2192 dataset_id",
       "status": "holds",
       "violating_groups": 0,
-      "ms": 9.6,
+      "ms": 0.9,
       "sql": "SELECT count(*) FROM (SELECT 1 FROM \"cc\".\"provenance\" WHERE \"release_id\" IS NOT NULL GROUP BY \"release_id\" HAVING count(DISTINCT \"dataset_id\") > 1 OR count(*) FILTER (WHERE \"dataset_id\" IS NULL) BETWEEN 1 AND count(*) - 1) bad"
      },
      {
       "fd": "source_file_id \u2192 release_id",
       "status": "holds",
       "violating_groups": 0,
-      "ms": 7.7,
+      "ms": 0.5,
       "sql": "SELECT count(*) FROM (SELECT 1 FROM \"cc\".\"provenance\" WHERE \"source_file_id\" IS NOT NULL GROUP BY \"source_file_id\" HAVING count(DISTINCT \"release_id\") > 1 OR count(*) FILTER (WHERE \"release_id\" IS NULL) BETWEEN 1 AND count(*) - 1) bad"
      },
      {
       "fd": "ingestion_run_id \u2192 release_id",
       "status": "holds",
       "violating_groups": 0,
-      "ms": 10.6,
+      "ms": 0.6,
       "sql": "SELECT count(*) FROM (SELECT 1 FROM \"cc\".\"provenance\" WHERE \"ingestion_run_id\" IS NOT NULL GROUP BY \"ingestion_run_id\" HAVING count(DISTINCT \"release_id\") > 1 OR count(*) FILTER (WHERE \"release_id\" IS NULL) BETWEEN 1 AND count(*) - 1) bad"
      }
     ],
@@ -3254,7 +4441,7 @@
       "fd": "first_release_id \u2192 dataset_id",
       "status": "holds",
       "violating_groups": 0,
-      "ms": 169.6,
+      "ms": 36.5,
       "sql": "SELECT count(*) FROM (SELECT 1 FROM \"cc\".\"dataset_neuron\" WHERE \"first_release_id\" IS NOT NULL GROUP BY \"first_release_id\" HAVING count(DISTINCT \"dataset_id\") > 1 OR count(*) FILTER (WHERE \"dataset_id\" IS NULL) BETWEEN 1 AND count(*) - 1) bad"
      }
     ],
@@ -3339,14 +4526,14 @@
       "fd": "pre_neuron_id \u2192 dataset_id",
       "status": "holds",
       "violating_groups": 0,
-      "ms": 3016.4,
+      "ms": 9210.6,
       "sql": "SELECT count(*) FROM (SELECT 1 FROM \"cc\".\"connection\" WHERE \"pre_neuron_id\" IS NOT NULL GROUP BY \"pre_neuron_id\" HAVING count(DISTINCT \"dataset_id\") > 1 OR count(*) FILTER (WHERE \"dataset_id\" IS NULL) BETWEEN 1 AND count(*) - 1) bad"
      },
      {
       "fd": "post_neuron_id \u2192 dataset_id",
       "status": "holds",
       "violating_groups": 0,
-      "ms": 18233.3,
+      "ms": 11151.6,
       "sql": "SELECT count(*) FROM (SELECT 1 FROM \"cc\".\"connection\" WHERE \"post_neuron_id\" IS NOT NULL GROUP BY \"post_neuron_id\" HAVING count(DISTINCT \"dataset_id\") > 1 OR count(*) FILTER (WHERE \"dataset_id\" IS NULL) BETWEEN 1 AND count(*) - 1) bad"
      }
     ],
@@ -3391,14 +4578,14 @@
       "fd": "release_id \u2192 dataset_id",
       "status": "holds",
       "violating_groups": 0,
-      "ms": 322.8,
+      "ms": 251.0,
       "sql": "SELECT count(*) FROM (SELECT 1 FROM \"cc\".\"neuron_region_synapses\" WHERE \"release_id\" IS NOT NULL GROUP BY \"release_id\" HAVING count(DISTINCT \"dataset_id\") > 1 OR count(*) FILTER (WHERE \"dataset_id\" IS NULL) BETWEEN 1 AND count(*) - 1) bad"
      },
      {
       "fd": "dataset_neuron_id \u2192 dataset_id",
       "status": "holds",
       "violating_groups": 0,
-      "ms": 888.2,
+      "ms": 891.4,
       "sql": "SELECT count(*) FROM (SELECT 1 FROM \"cc\".\"neuron_region_synapses\" WHERE \"dataset_neuron_id\" IS NOT NULL GROUP BY \"dataset_neuron_id\" HAVING count(DISTINCT \"dataset_id\") > 1 OR count(*) FILTER (WHERE \"dataset_id\" IS NULL) BETWEEN 1 AND count(*) - 1) bad"
      }
     ],
@@ -3476,14 +4663,14 @@
       "fd": "release_a \u2192 dataset_a",
       "status": "holds",
       "violating_groups": 0,
-      "ms": 10.4,
+      "ms": 1.2,
       "sql": "SELECT count(*) FROM (SELECT 1 FROM \"cc\".\"diff_run\" WHERE \"release_a\" IS NOT NULL GROUP BY \"release_a\" HAVING count(DISTINCT \"dataset_a\") > 1 OR count(*) FILTER (WHERE \"dataset_a\" IS NULL) BETWEEN 1 AND count(*) - 1) bad"
      },
      {
       "fd": "release_b \u2192 dataset_b",
       "status": "holds",
       "violating_groups": 0,
-      "ms": 9.7,
+      "ms": 0.7,
       "sql": "SELECT count(*) FROM (SELECT 1 FROM \"cc\".\"diff_run\" WHERE \"release_b\" IS NOT NULL GROUP BY \"release_b\" HAVING count(DISTINCT \"dataset_b\") > 1 OR count(*) FILTER (WHERE \"dataset_b\" IS NULL) BETWEEN 1 AND count(*) - 1) bad"
      }
     ],
@@ -3526,7 +4713,7 @@
       "fd": "new_weight, old_weight \u2192 weight_delta",
       "status": "holds",
       "violating_groups": 0,
-      "ms": 631.2,
+      "ms": 1581.1,
       "sql": "SELECT count(*) FROM (SELECT 1 FROM \"cc\".\"diff_event\" WHERE \"new_weight\" IS NOT NULL AND \"old_weight\" IS NOT NULL GROUP BY \"new_weight\", \"old_weight\" HAVING count(DISTINCT \"weight_delta\") > 1 OR count(*) FILTER (WHERE \"weight_delta\" IS NULL) BETWEEN 1 AND count(*) - 1) bad"
      }
     ],
@@ -3624,7 +4811,7 @@
       "fd": "group_key, strategy_id \u2192 shard_id",
       "status": "holds",
       "violating_groups": 0,
-      "ms": 290.8,
+      "ms": 215.0,
       "sql": "SELECT count(*) FROM (SELECT 1 FROM \"cc\".\"partition_assignment\" WHERE \"group_key\" IS NOT NULL AND \"strategy_id\" IS NOT NULL GROUP BY \"group_key\", \"strategy_id\" HAVING count(DISTINCT \"shard_id\") > 1 OR count(*) FILTER (WHERE \"shard_id\" IS NULL) BETWEEN 1 AND count(*) - 1) bad"
      }
     ],
@@ -3677,7 +4864,7 @@
       "fd": "batch_id \u2192 strategy_id",
       "status": "holds",
       "violating_groups": 0,
-      "ms": 11.7,
+      "ms": 1.8,
       "sql": "SELECT count(*) FROM (SELECT 1 FROM \"cc\".\"shard_deployment\" WHERE \"batch_id\" IS NOT NULL GROUP BY \"batch_id\" HAVING count(DISTINCT \"strategy_id\") > 1 OR count(*) FILTER (WHERE \"strategy_id\" IS NULL) BETWEEN 1 AND count(*) - 1) bad"
      }
     ],
@@ -4031,7 +5218,7 @@
    }
   ]
  },
- "verification_seconds": 24.6,
+ "verification_seconds": 23.5,
  "walkthrough": [
   {
    "form": "UNF",
@@ -4516,7 +5703,7 @@
   "redundancy": {
    "unnormalised_rows": 9023,
    "neuron": {
-    "neuron_id": 29354,
+    "neuron_id": 135669,
     "source_neuron_id": "487144598",
     "cell_type": "LHCENT3",
     "copies": 129
@@ -4527,7 +5714,7 @@
   },
   "update": {
    "unnormalised": {
-    "sql": "UPDATE connection_flat SET pre_cell_type = 'renamed_type' WHERE pre_neuron_id = 29354 AND release_id = 1",
+    "sql": "UPDATE connection_flat SET pre_cell_type = 'renamed_type' WHERE pre_neuron_id = 135669 AND release_id = 2",
     "ok": true,
     "rows": 43,
     "status": "UPDATE 43",
@@ -4535,7 +5722,7 @@
     "distinct_values": 2
    },
    "normalised": {
-    "sql": "UPDATE lab.neuron SET cell_type = 'renamed_type' WHERE neuron_id = 29354",
+    "sql": "UPDATE lab.neuron SET cell_type = 'renamed_type' WHERE neuron_id = 135669",
     "ok": true,
     "rows": 1,
     "status": "UPDATE 1",
@@ -4545,7 +5732,7 @@
   },
   "insert": {
    "unnormalised": {
-    "sql": "INSERT INTO connection_flat (release_id, version_label, dataset_code, pre_neuron_id, pre_source_id, pre_cell_type) VALUES (4, 'v1.2', 'hemibrain', 900000000001, 'new-neuron', 'new_type')",
+    "sql": "INSERT INTO connection_flat (release_id, version_label, dataset_code, pre_neuron_id, pre_source_id, pre_cell_type) VALUES (5, '783', 'flywire', 900000000001, 'new-neuron', 'new_type')",
     "ok": false,
     "error": "null value in column \"post_neuron_id\" of relation \"connection_flat\" violates not-null constraint",
     "sqlstate": "23502",
@@ -4561,20 +5748,20 @@
   },
   "delete": {
    "neuron": {
-    "neuron_id": 165844,
+    "neuron_id": 79046,
     "source_neuron_id": "720575940627692565",
     "cell_type": "LHAV6g1",
     "connections": 1
    },
    "unnormalised": {
-    "sql": "DELETE FROM connection_flat WHERE 165844 IN (pre_neuron_id, post_neuron_id)",
+    "sql": "DELETE FROM connection_flat WHERE 79046 IN (pre_neuron_id, post_neuron_id)",
     "ok": true,
     "rows": 1,
     "status": "DELETE 1",
     "result": "no row mentions neuron 720575940627692565 any more (0 rows): its cell type 'LHAV6g1' is lost"
    },
    "normalised": {
-    "sql": "DELETE FROM lab.connection WHERE 165844 IN (pre_neuron_id, post_neuron_id)",
+    "sql": "DELETE FROM lab.connection WHERE 79046 IN (pre_neuron_id, post_neuron_id)",
     "ok": true,
     "rows": 1,
     "status": "DELETE 1",
@@ -4583,6 +5770,6 @@
   },
   "unnormalised_definition": "CREATE TEMP TABLE connection_flat ON COMMIT DROP AS\nSELECT r.release_id, r.version_label, d.code AS dataset_code,\n       c.pre_neuron_id,  a.source_neuron_id AS pre_source_id,  a.cell_type AS pre_cell_type,\n       c.post_neuron_id, b.source_neuron_id AS post_source_id, b.cell_type AS post_cell_type,\n       c.synapse_count\nFROM lab.connection c\nJOIN lab.release r USING (release_id) JOIN lab.dataset d USING (dataset_id)\nJOIN lab.neuron a ON a.neuron_id = c.pre_neuron_id\nJOIN lab.neuron b ON b.neuron_id = c.post_neuron_id",
   "rolled_back": true,
-  "seconds": 0.63
+  "seconds": 0.3
  }
 }

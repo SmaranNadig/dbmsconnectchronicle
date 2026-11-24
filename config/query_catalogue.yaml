@@ -28,6 +28,24 @@ categories:
   - {id: nosql, title: MongoDB (NoSQL)}
 
 queries:
+  - id: q-memory-divergence
+    category: analysis
+    question: When did a fork first produce a different learned state and a different choice?
+    sql: |
+      SELECT b.run_id,b.intervention,b.fork_step,d.first_changed_state,d.first_changed_choice
+      FROM cc.memory_divergence d JOIN cc.memory_branch b USING(branch_id)
+      ORDER BY run_id DESC,branch_id LIMIT 50
+    why: Parent and child trials are paired by encounter after the fork, preserving identical cue and noise schedules.
+    expect: {}
+  - id: q-circuit-diff
+    category: analysis
+    question: Which interventions increase drift or lose correct motion predictions in the latest circuit run?
+    sql: |
+      SELECT condition, paired_trials, lost_correct, gained_correct, added_drift
+      FROM cc.circuit_paired_diff WHERE run_id=(SELECT max(run_id) FROM cc.circuit_run)
+      ORDER BY added_drift DESC
+    why: The view pairs each intervention with its intact trial by run and scene before aggregating outcomes.
+    expect: {}
   # ----------------------------------------------------------- selection
   - id: q-releases
     category: select

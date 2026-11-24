@@ -60,7 +60,7 @@ On the dashboard, **Design → Queries** runs any of them on demand, and
 ## Catalogue, results and plans
 
 <!-- generated:catalogue -->
-31 queries (25 SQL, 6 MongoDB); 31 passed every check; run on the loaded data in 22 s (2026-11-23 13:04 UTC).
+33 queries (27 SQL, 6 MongoDB); 33 passed every check; run on the loaded data in 11 s (2026-11-24 16:27 UTC).
 
 | Category | Queries | Passed |
 |---|---|---|
@@ -72,7 +72,7 @@ On the dashboard, **Design → Queries** runs any of them on demand, and
 | Recursive queries | 1 | 1 |
 | Bitemporal queries | 3 | 3 |
 | Views and stored functions | 2 | 2 |
-| ConnectomeDiff and distribution | 2 | 2 |
+| ConnectomeDiff and distribution | 4 | 4 |
 | Inserting, updating and deleting | 5 | 5 |
 | MongoDB (NoSQL) | 6 | 6 |
 
@@ -90,17 +90,17 @@ ORDER BY d.code, r.release_order;
 
 *Why this form:* The two catalogue tables are tiny, so a plain join is optimal; release_order (not the label) gives the true order, because labels such as "630" and "783" do not sort like versions.
 
-Result (read-only): 5 row(s), 26.9 ms.
+Result (read-only): 5 row(s), 3.17 ms.
 
 | dataset | version_label | release_order | release_date | loaded_at |
 |---|---|---|---|---|
-| flywire | 630 | 1 | NULL | 2026-11-03T10:43:34.645028+00:00 |
-| flywire | 783 | 2 | NULL | 2026-11-03T10:47:07.302475+00:00 |
-| hemibrain | v1.0 | 1 | NULL | 2026-11-03T10:14:24.981338+00:00 |
-| hemibrain | v1.1 | 2 | NULL | 2026-11-03T10:23:31.555167+00:00 |
-| hemibrain | v1.2 | 3 | NULL | 2026-11-03T10:31:48.709173+00:00 |
+| flywire | 630 | 1 | NULL | 2026-11-24T13:19:56.816087+00:00 |
+| flywire | 783 | 2 | NULL | 2026-11-24T13:26:13.891516+00:00 |
+| hemibrain | v1.0 | 1 | NULL | 2026-11-24T13:20:01.456048+00:00 |
+| hemibrain | v1.1 | 2 | NULL | 2026-11-24T13:23:33.911264+00:00 |
+| hemibrain | v1.2 | 3 | NULL | 2026-11-24T13:25:39.355169+00:00 |
 
-Plan: top node Sort; indexes used: `dataset_pkey`; sequential scans: `release`; execution 0.1 ms.
+Plan: top node Sort; indexes used: `dataset_pkey`; sequential scans: `release`; execution 0.132 ms.
 
 Checks: ✓ runs without error; ✓ at least 5 row(s)
 
@@ -116,13 +116,13 @@ WHERE dn.dataset_id = (SELECT dataset_id FROM dataset WHERE code = 'hemibrain')
 
 *Why this form:* The predicate matches the natural key (dataset_id, source_neuron_id) exactly, so the UNIQUE constraint's index finds the row without reading the 182,274-row table; the id is compared as text because published ids are kept losslessly as text.
 
-Result (read-only): 1 row(s), 22.11 ms.
+Result (read-only): 1 row(s), 2.58 ms.
 
 | dataset_neuron_id | source_neuron_id | first_release |
 |---|---|---|
-| 41903 | 1688868386 | v1.0 |
+| 148218 | 1688868386 | v1.0 |
 
-Plan: top node Nested Loop; indexes used: `dataset_code_key`, `dataset_neuron_dataset_id_source_neuron_id_key`, `release_release_id_dataset_id_key`; sequential scans: none; execution 0.159 ms.
+Plan: top node Nested Loop; indexes used: `dataset_code_key`, `dataset_neuron_dataset_id_source_neuron_id_key`, `release_release_id_dataset_id_key`; sequential scans: none; execution 0.108 ms.
 
 Checks: ✓ runs without error; ✓ at least 1 row(s); ✓ plan uses index dataset_neuron_dataset_id_source_neuron_id_key
 
@@ -146,7 +146,7 @@ LIMIT 10;
 
 *Why this form:* Starts from the one neuron (index connection_pre_idx), so only its edges are read, not 9 M rows; upper_inf(tx) AND upper_inf(valid_rel) is the bitemporal "current" filter; LEFT JOIN keeps partners that have no cell type.
 
-Result (read-only): 10 row(s), 366.37 ms.
+Result (read-only): 10 row(s), 77.59 ms.
 
 | partner | partner_type | synapse_count |
 |---|---|---|
@@ -157,7 +157,7 @@ Result (read-only): 10 row(s), 366.37 ms.
 | 576502536 | LHPD2c7 | 133 |
 | 517506265 | LHCENT4 | 97 |
 
-Plan: top node Limit; indexes used: `annotation_dataset_neuron_id_annotation_key_valid_rel_tx_excl`, `connection_pre_idx`, `dataset_neuron_dataset_neuron_id_dataset_id_key`; sequential scans: none; execution 31.159 ms.
+Plan: top node Limit; indexes used: `annotation_dataset_neuron_id_annotation_key_valid_rel_tx_excl`, `connection_pre_idx`, `dataset_neuron_dataset_neuron_id_dataset_id_key`; sequential scans: none; execution 20.411 ms.
 
 Checks: ✓ runs without error; ✓ at least 1 row(s); ✓ plan uses index connection_pre_idx; ✓ no sequential scan of connection; ✓ no sequential scan of annotation
 
@@ -177,13 +177,13 @@ WHERE dn.dataset_id = (SELECT dataset_id FROM dataset WHERE code = 'flywire')
 
 *Why this form:* NOT EXISTS is an anti-join (it stops at the first match and, unlike NOT IN, is correct when NULLs are present); the existence filter on neuron_version keeps only neurons present in the latest release.
 
-Result (read-only): 1 row(s), 1843.82 ms.
+Result (read-only): 1 row(s), 1012.33 ms.
 
 | neurons_without_type |
 |---|
 | 928 |
 
-Plan: top node Aggregate; indexes used: `annotation_dataset_neuron_id_annotation_key_valid_rel_tx_excl`, `dataset_code_key`; sequential scans: `dataset_neuron`, `neuron_version`; execution 915.371 ms.
+Plan: top node Aggregate; indexes used: `annotation_dataset_neuron_id_annotation_key_valid_rel_tx_excl`, `dataset_code_key`; sequential scans: `dataset_neuron`, `neuron_version`; execution 612.715 ms.
 
 Checks: ✓ runs without error
 
@@ -202,17 +202,17 @@ ORDER BY d.code, r.release_order;
 
 *Why this form:* Counting the 9 M connection rows per release on every request would take seconds; the materialized view release_stats is refreshed in the same transaction that loads a release, so it is never stale and the query reads 5 rows.
 
-Result (read-only): 5 row(s), 16.54 ms.
+Result (read-only): 5 row(s), 3.8 ms.
 
 | dataset | version_label | neurons | connections | computed_at |
 |---|---|---|---|---|
-| flywire | 630 | 127978 | 2613129 | 2026-11-03T11:50:40.379358+00:00 |
-| flywire | 783 | 139255 | 2700513 | 2026-11-03T11:50:40.379358+00:00 |
-| hemibrain | v1.0 | 21663 | 3413160 | 2026-11-03T11:50:40.379358+00:00 |
-| hemibrain | v1.1 | 21733 | 3521163 | 2026-11-03T11:50:40.379358+00:00 |
-| hemibrain | v1.2 | 21739 | 3550403 | 2026-11-03T11:50:40.379358+00:00 |
+| flywire | 630 | 127978 | 2613129 | 2026-11-24T13:39:14.697349+00:00 |
+| flywire | 783 | 139255 | 2700513 | 2026-11-24T13:39:14.697349+00:00 |
+| hemibrain | v1.0 | 21663 | 3413160 | 2026-11-24T13:39:14.697349+00:00 |
+| hemibrain | v1.1 | 21733 | 3521163 | 2026-11-24T13:39:14.697349+00:00 |
+| hemibrain | v1.2 | 21739 | 3550403 | 2026-11-24T13:39:14.697349+00:00 |
 
-Plan: top node Sort; indexes used: `dataset_pkey`; sequential scans: `release`, `release_stats`; execution 0.339 ms.
+Plan: top node Sort; indexes used: `dataset_pkey`; sequential scans: `release`, `release_stats`; execution 0.173 ms.
 
 Checks: ✓ runs without error; ✓ at least 5 row(s)
 
@@ -234,7 +234,7 @@ LIMIT 10;
 
 *Why this form:* valid_rel @> order selects the facts valid in that release, whichever release they were first loaded in; the partial index annotation_key_value_idx (current rows only) serves the key filter.
 
-Result (read-only): 10 row(s), 1196.57 ms.
+Result (read-only): 10 row(s), 421.91 ms.
 
 | cell_type | neurons |
 |---|---|
@@ -245,7 +245,7 @@ Result (read-only): 10 row(s), 1196.57 ms.
 | KCab-c | 252 |
 | LC12 | 226 |
 
-Plan: top node Limit; indexes used: `annotation_dataset_neuron_id_annotation_key_valid_rel_tx_excl`, `dataset_code_key`, `dataset_neuron_dataset_neuron_id_dataset_id_key`; sequential scans: `release`; execution 534.629 ms.
+Plan: top node Limit; indexes used: `annotation_dataset_neuron_id_annotation_key_valid_rel_tx_excl`, `dataset_code_key`, `dataset_neuron_dataset_neuron_id_dataset_id_key`; sequential scans: `release`; execution 317.887 ms.
 
 Checks: ✓ runs without error; ✓ at least 10 row(s)
 
@@ -264,7 +264,7 @@ ORDER BY synapses DESC;
 
 *Why this form:* WHERE filters rows before grouping, HAVING filters groups after it; super_region now comes from neuropil through the view (normalised in migration 0013).
 
-Result (read-only): 15 row(s) (first 10 shown), 152.77 ms.
+Result (read-only): 15 row(s) (first 10 shown), 84.41 ms.
 
 | code | name | super_region | synapses |
 |---|---|---|---|
@@ -275,7 +275,7 @@ Result (read-only): 15 row(s) (first 10 shown), 152.77 ms.
 | LO_L | lobula | optic | 3799530 |
 | AVLP_R | anterior ventrolateral protocerebrum | central | 2992638 |
 
-Plan: top node Sort; indexes used: `dataset_code_key`, `release_dataset_id_release_order_key`; sequential scans: `brain_region`, `neuron_region_synapses`, `neuropil`; execution 169.991 ms.
+Plan: top node Sort; indexes used: `dataset_code_key`, `release_dataset_id_release_order_key`; sequential scans: `brain_region`, `neuron_region_synapses`, `neuropil`; execution 88.669 ms.
 
 Checks: ✓ runs without error; ✓ at least 1 row(s)
 
@@ -299,7 +299,7 @@ LIMIT 20;
 
 *Why this form:* EXCEPT states the question directly as a set difference and removes duplicates; valid_rel holds release orders, so @> 1 and @> 3 mean "valid in v1.0" and "valid in v1.2".
 
-Result (read-only): 20 row(s) (first 10 shown), 318.54 ms.
+Result (read-only): 20 row(s) (first 10 shown), 282.16 ms.
 
 | cell_type |
 |---|
@@ -310,7 +310,7 @@ Result (read-only): 20 row(s) (first 10 shown), 318.54 ms.
 | ADL01d_pct |
 | ADL01e_pct |
 
-Plan: top node Limit; indexes used: `annotation_key_value_idx`, `dataset_code_key`; sequential scans: `dataset_neuron`; execution 318.944 ms.
+Plan: top node Limit; indexes used: `annotation_key_value_idx`, `dataset_code_key`; sequential scans: `dataset_neuron`; execution 229.735 ms.
 
 Checks: ✓ runs without error; ✓ at least 1 row(s)
 
@@ -330,13 +330,13 @@ SELECT count(*) AS shared_type_names FROM (
 
 *Why this form:* INTERSECT on the names is the cross-dataset comparison (kept separate from temporal change); identical names are only a starting point for entity resolution, which uses the published crosswalk and review.
 
-Result (read-only): 1 row(s), 924.77 ms.
+Result (read-only): 1 row(s), 669.96 ms.
 
 | shared_type_names |
 |---|
 | 2954 |
 
-Plan: top node Aggregate; indexes used: `annotation_dataset_neuron_id_annotation_key_valid_rel_tx_excl`, `dataset_code_key`; sequential scans: `dataset_neuron`; execution 1018.407 ms.
+Plan: top node Aggregate; indexes used: `annotation_dataset_neuron_id_annotation_key_valid_rel_tx_excl`, `dataset_code_key`; sequential scans: `dataset_neuron`; execution 714.021 ms.
 
 Checks: ✓ runs without error
 
@@ -358,7 +358,7 @@ LIMIT 10;
 
 *Why this form:* The scalar subquery is uncorrelated, so it runs once (an InitPlan), not once per row; both scans use the partial index connection_dataset_open_idx over current rows of one dataset.
 
-Result (read-only): 10 row(s), 989.39 ms.
+Result (read-only): 10 row(s), 1071.87 ms.
 
 | pre | post | synapse_count |
 |---|---|---|
@@ -369,7 +369,7 @@ Result (read-only): 10 row(s), 989.39 ms.
 | 1196854070 | 424767514 | 989 |
 | 393766777 | 424767514 | 961 |
 
-Plan: top node Limit; indexes used: `connection_dataset_open_idx`, `dataset_code_key`, `dataset_neuron_pkey`; sequential scans: none; execution 689.912 ms.
+Plan: top node Limit; indexes used: `connection_dataset_open_idx`, `dataset_code_key`, `dataset_neuron_pkey`; sequential scans: none; execution 540.494 ms.
 
 Checks: ✓ runs without error; ✓ at least 1 row(s); ✓ plan uses index connection_dataset_open_idx
 
@@ -394,7 +394,7 @@ ORDER BY pre, rank;
 
 *Why this form:* rank() OVER (PARTITION BY ...) keeps ties and needs one pass instead of a LIMIT per neuron; the type filter uses annotation_key_value_idx, then connection_pre_idx per neuron.
 
-Result (read-only): 395 row(s) (first 10 shown), 119.35 ms.
+Result (read-only): 395 row(s) (first 10 shown), 33.78 ms.
 
 | pre | partner | synapse_count | rank |
 |---|---|---|---|
@@ -405,7 +405,7 @@ Result (read-only): 395 row(s) (first 10 shown), 119.35 ms.
 | 1069973758 | 727889637 | 10 | 1 |
 | 1069973758 | 884446447 | 8 | 2 |
 
-Plan: top node Sort; indexes used: `annotation_key_value_idx`, `connection_pre_idx`, `dataset_neuron_dataset_neuron_id_dataset_id_key`, `dataset_neuron_pkey`; sequential scans: none; execution 18.394 ms.
+Plan: top node Sort; indexes used: `annotation_key_value_idx`, `connection_pre_idx`, `dataset_neuron_dataset_neuron_id_dataset_id_key`, `dataset_neuron_pkey`; sequential scans: none; execution 10.883 ms.
 
 Checks: ✓ runs without error; ✓ at least 1 row(s); ✓ plan uses index annotation_key_value_idx
 
@@ -428,7 +428,7 @@ ORDER BY r.release_order;
 
 *Why this form:* One stored row covers every release in which the count did not change (valid_rel is a range), so joining on valid_rel @> release_order expands it per release; lag() compares each release with the previous one.
 
-Result (read-only): 3 row(s), 26.95 ms.
+Result (read-only): 3 row(s), 4.76 ms.
 
 | version_label | synapse_count | change |
 |---|---|---|
@@ -436,7 +436,7 @@ Result (read-only): 3 row(s), 26.95 ms.
 | v1.1 | 5 | 0 |
 | v1.2 | 5 | 0 |
 
-Plan: top node WindowAgg; indexes used: `connection_pre_idx`, `connection_pre_neuron_id_post_neuron_id_valid_rel_tx_excl`, `dataset_code_key`, `release_dataset_id_release_order_key`; sequential scans: none; execution 1.946 ms.
+Plan: top node WindowAgg; indexes used: `connection_pre_idx`, `connection_pre_neuron_id_post_neuron_id_valid_rel_tx_excl`, `dataset_code_key`, `release_dataset_id_release_order_key`; sequential scans: none; execution 0.918 ms.
 
 Checks: ✓ runs without error; ✓ at least 1 row(s)
 
@@ -461,7 +461,7 @@ ORDER BY depth;
 
 *Why this form:* WITH RECURSIVE expresses graph traversal in SQL; UNION (not UNION ALL) drops repeated (neuron, depth) pairs and the depth bound guarantees termination; each step is an index lookup on connection_pre_idx.
 
-Result (read-only): 3 row(s), 39.15 ms.
+Result (read-only): 3 row(s), 7.99 ms.
 
 | depth | neurons |
 |---|---|
@@ -469,7 +469,7 @@ Result (read-only): 3 row(s), 39.15 ms.
 | 1 | 19 |
 | 2 | 50 |
 
-Plan: top node Aggregate; indexes used: `connection_pre_idx`; sequential scans: none; execution 8.316 ms.
+Plan: top node Aggregate; indexes used: `connection_pre_idx`; sequential scans: none; execution 3.031 ms.
 
 Checks: ✓ runs without error; ✓ at least 2 row(s); ✓ plan uses index connection_pre_idx
 
@@ -491,15 +491,15 @@ ORDER BY lower(a.valid_rel), lower(a.tx);
 
 *Why this form:* Valid time (which releases) and transaction time (when the database believed it) are separate columns, so a type change (LC28d to LC28a) and a later correction can both be read back.
 
-Result (read-only): 3 row(s), 22.65 ms.
+Result (read-only): 3 row(s), 4.53 ms.
 
 | from_release | until_release | cell_type | recorded_at | retired_at |
 |---|---|---|---|---|
-| v1.0 | still valid | LC28d | 2026-11-03T10:14:24.981338+00:00 | 2026-11-03T10:23:31.555167+00:00 |
-| v1.0 | v1.1 | LC28d | 2026-11-03T10:23:31.555167+00:00 | NULL |
-| v1.1 | still valid | LC28a | 2026-11-03T10:23:31.555167+00:00 | NULL |
+| v1.0 | still valid | LC28d | 2026-11-24T13:20:01.456048+00:00 | 2026-11-24T13:23:33.911264+00:00 |
+| v1.0 | v1.1 | LC28d | 2026-11-24T13:23:33.911264+00:00 | NULL |
+| v1.1 | still valid | LC28a | 2026-11-24T13:23:33.911264+00:00 | NULL |
 
-Plan: top node Sort; indexes used: `annotation_dataset_neuron_id_annotation_key_valid_rel_tx_excl`, `dataset_neuron_dataset_neuron_id_dataset_id_key`; sequential scans: none; execution 2.695 ms.
+Plan: top node Sort; indexes used: `annotation_dataset_neuron_id_annotation_key_valid_rel_tx_excl`, `dataset_neuron_dataset_neuron_id_dataset_id_key`; sequential scans: none; execution 1.148 ms.
 
 Checks: ✓ runs without error; ✓ at least 1 row(s)
 
@@ -521,14 +521,14 @@ WHERE a.dataset_neuron_id = cc.find_neuron('hemibrain', '1688868386') AND a.anno
 
 *Why this form:* tx @> timestamp is an "as of" query on transaction time. A load retires a belief by closing its tx interval instead of deleting it, so the state before any load is reconstructed exactly; the GiST exclusion index on annotation serves the neuron and key.
 
-Result (read-only): 2 row(s), 24.79 ms.
+Result (read-only): 2 row(s), 4.11 ms.
 
 | as_of | cell_type | valid_rel |
 |---|---|---|
 | before the v1.2 load | LC28a | [2, None) |
 | now | LC28a | [2, None) |
 
-Plan: top node Append; indexes used: `annotation_dataset_neuron_id_annotation_key_valid_rel_tx_excl`, `dataset_code_key`; sequential scans: `release`; execution 1.876 ms.
+Plan: top node Append; indexes used: `annotation_dataset_neuron_id_annotation_key_valid_rel_tx_excl`, `dataset_code_key`; sequential scans: `release`; execution 0.755 ms.
 
 Checks: ✓ runs without error; ✓ at least 1 row(s)
 
@@ -546,17 +546,17 @@ LIMIT 5;
 
 *Why this form:* The stored SQL function connections_at_release encapsulates the valid-time and transaction-time predicates, so every caller asks the question the same, correct way.
 
-Result (read-only): 5 row(s), 1509.11 ms.
+Result (read-only): 5 row(s), 1746.09 ms.
 
 | direction | partner_neuron_id | partner_source_id | synapse_count | connection_id |
 |---|---|---|---|---|
-| out | 27207 | 1200523558 | 5 | 3197128 |
-| out | 34097 | 1377841477 | 3 | 3197139 |
-| out | 25507 | 1345455479 | 3 | 3197123 |
-| out | 24033 | 976571317 | 3 | 3197120 |
-| out | 35843 | 1471600919 | 3 | 3830620 |
+| out | 133522 | 1200523558 | 5 | 5295205 |
+| out | 140412 | 1377841477 | 3 | 5295229 |
+| out | 131822 | 1345455479 | 3 | 5295194 |
+| out | 130348 | 976571317 | 3 | 5295189 |
+| out | 142158 | 1471600919 | 3 | 6443749 |
 
-Plan: top node Limit; indexes used: `dataset_code_key`; sequential scans: `release`; execution 169.45 ms.
+Plan: top node Limit; indexes used: `dataset_code_key`; sequential scans: `release`; execution 203.86 ms.
 
 Checks: ✓ runs without error; ✓ at least 1 row(s)
 
@@ -571,13 +571,13 @@ SELECT * FROM er.dataset_neuron WHERE raw_metadata = 'hemibrain:1688868386';
 
 *Why this form:* The er views present the physical tables under the ER model's names and attributes, so the ER diagram can be queried directly without changing the storage design.
 
-Result (read-only): 1 row(s), 31.44 ms.
+Result (read-only): 1 row(s), 8.44 ms.
 
 | dataset_neuron_id | release_id | external_neuron_id | original_name | original_type | original_region | raw_metadata | alternate_ids |
 |---|---|---|---|---|---|---|---|
-| 41903 | 1 | 1688868386 | LC28a(lVLPT4)_R | LC28a | LO_R | hemibrain:1688868386 | [] |
+| 148218 | 2 | 1688868386 | LC28a(lVLPT4)_R | LC28a | LO_R | hemibrain:1688868386 | [] |
 
-Plan: top node Index Scan; indexes used: `dataset_neuron_metadata_doc_id_key`, `dataset_neuron_pkey`, `dataset_pkey`, `neuron_mapping_canonical_idx`, `neuron_mapping_no_dup`; sequential scans: none; execution 5.173 ms.
+Plan: top node Index Scan; indexes used: `dataset_neuron_metadata_doc_id_key`, `dataset_neuron_pkey`, `dataset_pkey`, `neuron_mapping_canonical_idx`, `neuron_mapping_no_dup`; sequential scans: none; execution 1.68 ms.
 
 Checks: ✓ runs without error; ✓ at least 1 row(s)
 
@@ -589,18 +589,68 @@ SELECT cc.trace_provenance('dataset_neuron', cc.find_neuron('hemibrain', '168886
 
 *Why this form:* trace_provenance follows provenance and provenance_parent to the source file, its SHA-256 and the line number, for any versioned row.
 
-Result (read-only): 1 row(s), 24.25 ms.
+Result (read-only): 1 row(s), 4.38 ms.
 
 | lineage |
 |---|
-| {"record": {"dataset_id": 1, "source_line": 20241, "provena… |
+| {"record": {"dataset_id": 2, "source_line": 20241, "provena… |
 
-Plan: top node Result; indexes used: none; sequential scans: none; execution 3.62 ms.
+Plan: top node Result; indexes used: none; sequential scans: none; execution 2.303 ms.
 
 Checks: ✓ runs without error; ✓ at least 1 row(s)
 
 
 ### ConnectomeDiff and distribution
+
+#### `q-memory-divergence`: When did a fork first produce a different learned state and a different choice?
+
+```sql
+SELECT b.run_id,b.intervention,b.fork_step,d.first_changed_state,d.first_changed_choice
+FROM cc.memory_divergence d JOIN cc.memory_branch b USING(branch_id)
+ORDER BY run_id DESC,branch_id LIMIT 50
+```
+
+*Why this form:* Parent and child trials are paired by encounter after the fork, preserving identical cue and noise schedules.
+
+Result (read-only): 50 row(s) (first 10 shown), 7.85 ms.
+
+| run_id | intervention | fork_step | first_changed_state | first_changed_choice |
+|---|---|---|---|---|
+| 8 | paired_B | 36 | 37 | 42 |
+| 8 | frozen | 0 | 10 | 17 |
+| 8 | unpaired | 0 | 10 | 17 |
+| 8 | rewired | 0 | 10 | 17 |
+| 8 | frozen | 36 | 37 | NULL |
+| 8 | silent_output | 68 | NULL | 69 |
+
+Plan: top node Limit; indexes used: none; sequential scans: `memory_branch`, `memory_trial`; execution 2.324 ms.
+
+Checks: ✓ runs without error
+
+#### `q-circuit-diff`: Which interventions increase drift or lose correct motion predictions in the latest circuit run?
+
+```sql
+SELECT condition, paired_trials, lost_correct, gained_correct, added_drift
+FROM cc.circuit_paired_diff WHERE run_id=(SELECT max(run_id) FROM cc.circuit_run)
+ORDER BY added_drift DESC
+```
+
+*Why this form:* The view pairs each intervention with its intact trial by run and scene before aggregating outcomes.
+
+Result (read-only): 7 row(s), 4.24 ms.
+
+| condition | paired_trials | lost_correct | gained_correct | added_drift |
+|---|---|---|---|---|
+| silence_T4 | 24 | 12 | 0 | 2.8656925306301173 |
+| silence_T5 | 24 | 12 | 0 | 2.2881268508897645 |
+| disconnected | 24 | 24 | 0 | 1.5406953354400443 |
+| random_silence | 24 | 3 | 0 | 0.6794846639590869 |
+| shuffled_weights | 24 | 6 | 0 | 0.3699767044663056 |
+| rewired | 24 | 1 | 0 | 0.2242325669985051 |
+
+Plan: top node Sort; indexes used: `circuit_run_pkey`, `circuit_trial_pkey`; sequential scans: none; execution 0.901 ms.
+
+Checks: ✓ runs without error
 
 #### `q-diff-summary`: What did the most recent ConnectomeDiff run find, by entity and change type?
 
@@ -614,18 +664,18 @@ ORDER BY e.entity_type, e.change_type;
 
 *Why this form:* The run is found by a scalar subquery, so its id is known only when the query runs: PostgreSQL plans for an average run (one fifth of the 3.9 M events) and chooses a parallel sequential scan. Given a literal run id it uses diff_event_run_idx (diff_run_id, entity_type, change_type) instead. Both plans are correct; this one takes about 0.2 s.
 
-Result (read-only): 7 row(s), 119.22 ms.
+Result (read-only): 8 row(s), 269.14 ms.
 
 | entity_type | change_type | events | synapses_changed |
 |---|---|---|---|
-| annotation | added | 19 | 0 |
-| annotation | modified | 109 | 0 |
-| annotation | removed | 3 | 0 |
-| connection | added | 30722 | 39336 |
-| connection | modified | 74795 | 148033 |
-| connection | removed | 1482 | 2234 |
+| annotation | added | 426422 | 0 |
+| annotation | modified | 71768 | 0 |
+| annotation | removed | 133238 | 0 |
+| connection | added | 1213830 | 15796921 |
+| connection | modified | 3525 | 5775 |
+| connection | removed | 1126446 | 14608186 |
 
-Plan: top node Aggregate; indexes used: none; sequential scans: `diff_event`, `diff_run`; execution 104.78 ms.
+Plan: top node Aggregate; indexes used: none; sequential scans: `diff_event`, `diff_run`; execution 267.459 ms.
 
 Checks: ✓ runs without error; ✓ at least 1 row(s)
 
@@ -642,18 +692,18 @@ ORDER BY s.code, a.shard_id;
 
 *Why this form:* An aggregate inside a window (sum(count(*)) OVER ...) gives each shard's share in one pass.
 
-Result (read-only): 9 row(s), 105.57 ms.
+Result (read-only): 9 row(s), 67.83 ms.
 
 | strategy | shard_id | neurons | percent |
 |---|---|---|---|
-| anatomical | 1 | 61981 | 34.0 |
-| anatomical | 2 | 85117 | 46.7 |
-| anatomical | 3 | 35176 | 19.3 |
-| community | 1 | 77717 | 42.6 |
-| community | 2 | 59976 | 32.9 |
-| community | 3 | 44581 | 24.5 |
+| anatomical | 1 | 61996 | 34.0 |
+| anatomical | 2 | 85088 | 46.7 |
+| anatomical | 3 | 35190 | 19.3 |
+| community | 1 | 67783 | 37.2 |
+| community | 2 | 49132 | 27.0 |
+| community | 3 | 65359 | 35.9 |
 
-Plan: top node WindowAgg; indexes used: `partition_assignment_shard_idx`; sequential scans: `partition_strategy`; execution 85.947 ms.
+Plan: top node WindowAgg; indexes used: `partition_assignment_shard_idx`; sequential scans: `partition_strategy`; execution 53.141 ms.
 
 Checks: ✓ runs without error; ✓ at least 3 row(s)
 
@@ -672,13 +722,13 @@ RETURNING annotation_id, annotation_key, annotation_value, valid_rel;
 
 *Why this form:* INSERT ... SELECT takes the keys from the database instead of typing ids; every constraint and the exclusion constraint are checked, then the trial transaction is rolled back.
 
-Result (trial on the real tables, rolled back): 1 row(s), 23.93 ms.
+Result (trial on the real tables, rolled back): 1 row(s), 5.43 ms.
 
 | annotation_id | annotation_key | annotation_value | valid_rel |
 |---|---|---|---|
-| 1625420 | review_note | checked by hand | [3, None) |
+| 1625416 | review_note | checked by hand | [3, None) |
 
-Plan: top node ModifyTable; indexes used: `dataset_neuron_dataset_neuron_id_dataset_id_key`; sequential scans: none; execution 3.238 ms.
+Plan: top node ModifyTable; indexes used: `dataset_neuron_dataset_neuron_id_dataset_id_key`; sequential scans: none; execution 1.186 ms.
 
 Checks: ✓ runs without error; ✓ at least 1 row(s)
 
@@ -724,7 +774,7 @@ FROM lab.change_log ORDER BY change_id DESC LIMIT 5;
 
 *Why this form:* Because the lab is normalised, the type is stored once per neuron, so one UPDATE row per neuron is the whole change; the log_change trigger records it.
 
-Result (lab, rolled back): 5 row(s), 121.09 ms.
+Result (lab, rolled back): 5 row(s), 32.49 ms.
 
 | table_name | operation | old_type | new_type |
 |---|---|---|---|
@@ -750,7 +800,7 @@ WHERE pre_neuron_id = (SELECT min(neuron_id) FROM lab.change_log c, LATERAL (SEL
 
 *Why this form:* The foreign keys of lab.connection cascade, so deleting the neuron removes its connections in the same statement; the change log keeps both.
 
-Result (lab, rolled back): 1 row(s), 122.54 ms.
+Result (lab, rolled back): 1 row(s), 36.47 ms.
 
 | connections_left_for_it |
 |---|
@@ -769,10 +819,10 @@ db.neuron_source_record.find({"filter": {"_id": "hemibrain:1688868386"}, "projec
 
 *Why this form:* _id is dataset_neuron.metadata_doc_id in PostgreSQL (now UNIQUE, migration 0013), the link between the two stores; lookup by _id uses the primary index.
 
-Result: 1 document(s), 185.45 ms.
+Result: 1 document(s), 23.26 ms.
 
 ```json
-[{"_id": "hemibrain:1688868386", "dataset": "hemibrain", "dataset_neuron_id": 41903, "source_neuron_id": "1688868386"}]
+[{"_id": "hemibrain:1688868386", "dataset": "hemibrain", "dataset_neuron_id": 148218, "source_neuron_id": "1688868386"}]
 ```
 
 Plan: IDHACK; indexes: none; documents examined: 1; keys examined: 1.
@@ -787,10 +837,10 @@ db.neuron_source_record.find({"filter": {"dataset": "flywire", "source_neuron_id
 
 *Why this form:* The compound unique index (dataset, source_neuron_id) mirrors the natural key of dataset_neuron.
 
-Result: 1 document(s), 12.41 ms.
+Result: 1 document(s), 2.26 ms.
 
 ```json
-[{"_id": "flywire:720575940590515268", "dataset_neuron_id": 86799}]
+[{"_id": "flywire:720575940590515268", "dataset_neuron_id": 1}]
 ```
 
 Plan: IXSCAN → FETCH; indexes: dataset_1_source_neuron_id_1; documents examined: 1; keys examined: 1.
@@ -805,10 +855,10 @@ db.neuron_source_record.find({"filter": {"dataset_neuron_id": 41903}, "projectio
 
 *Why this form:* dataset_neuron_id is indexed (unique), and the projection returns one release's original columns instead of the whole document.
 
-Result: 1 document(s), 8.94 ms.
+Result: 1 document(s), 1.27 ms.
 
 ```json
-[{"_id": "hemibrain:1688868386", "releases": {"1": {"release": "v1.0", "records": [{"fields": {"bodyId": "1688868386", "instance": "LC28d(lVLPT4)_R", "type": "LC28d"}}]}}}]
+[{"_id": "flywire:720575940620458461", "releases": {"1": {"release": "630", "records": [{"fields": {"root_id": "720575940620458461", "group": "SPS", "nt_type": "ACH", "nt_type_score": 0.5, "da_avg": 0.07, "ser_avg": 0.04, "gaba_avg": 0.01, "glut_avg": 0.37, "ach_avg": 0.5, "oct_avg": 0.0}}, {"fields": {"root_id": "720575940620458461", "flow": "intrinsic", "super_class": "central", "hemilineage": "DM6_central1", "side": "right"}}]}}}]
 ```
 
 Plan: IXSCAN → FETCH; indexes: dataset_neuron_id_1; documents examined: 1; keys examined: 1.
@@ -823,7 +873,7 @@ db.neuron_source_record.aggregate({"pipeline": [{"$group": {"_id": "$dataset", "
 
 *Why this form:* A $group over the collection is the aggregation equivalent of GROUP BY. It has to read every document (COLLSCAN, about 1 s for 182,274 documents); the same count is available instantly from PostgreSQL, and metadata check compares the two.
 
-Result: 2 document(s), 3048.52 ms.
+Result: 2 document(s), 116.19 ms.
 
 ```json
 [{"_id": "flywire", "documents": 160448}, {"_id": "hemibrain", "documents": 21826}]
@@ -841,7 +891,7 @@ db.neuron_source_record.aggregate({"pipeline": [{"$match": {"dataset": "flywire"
 
 *Why this form:* Documents keep columns the relational model does not map, and they differ by dataset and release; $objectToArray turns field names into data so they can be grouped (on the first 1000 FlyWire documents, using the dataset index).
 
-Result: 10 document(s), 55.54 ms.
+Result: 10 document(s), 37.16 ms.
 
 ```json
 [{"_id": "cell_type", "documents": 142}, {"_id": "class", "documents": 1249}, {"_id": "flow", "documents": 1903}]
@@ -859,7 +909,7 @@ db.neuron_source_record.count({"filter": {"dataset": "hemibrain", "releases.4.re
 
 *Why this form:* Only the dataset prefix of the compound index applies; the nested field is checked on every hemibrain document. In this design such questions are answered in PostgreSQL (annotation, indexed) and MongoDB is used for the original rows of known neurons.
 
-Result: 1 document(s), 101.33 ms.
+Result: 1 document(s), 38.92 ms.
 
 ```json
 [{"count": 3}]

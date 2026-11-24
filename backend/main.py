@@ -49,6 +49,10 @@ from backend.jobs import router as jobs_router
 app.include_router(jobs_router)
 from backend.design.api import router as design_router
 app.include_router(design_router)
+from backend.circuit_api import router as circuit_router
+app.include_router(circuit_router)
+from backend.memory_api import router as memory_router
+app.include_router(memory_router)
 
 
 def db():

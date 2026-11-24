@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-23 13:04 UTC",
+ "generated_at": "2026-11-24 16:27 UTC",
  "categories": [
   {
    "id": "select",
@@ -48,6 +48,303 @@
  ],
  "results": [
   {
+   "id": "q-memory-divergence",
+   "category": "analysis",
+   "question": "When did a fork first produce a different learned state and a different choice?",
+   "why": "Parent and child trials are paired by encounter after the fork, preserving identical cue and noise schedules.",
+   "language": "sql",
+   "target": "read",
+   "code": "SELECT b.run_id,b.intervention,b.fork_step,d.first_changed_state,d.first_changed_choice\nFROM cc.memory_divergence d JOIN cc.memory_branch b USING(branch_id)\nORDER BY run_id DESC,branch_id LIMIT 50\n",
+   "result": {
+    "columns": [
+     "run_id",
+     "intervention",
+     "fork_step",
+     "first_changed_state",
+     "first_changed_choice"
+    ],
+    "rows": [
+     [
+      8,
+      "paired_B",
+      36,
+      37,
+      42
+     ],
+     [
+      8,
+      "frozen",
+      0,
+      10,
+      17
+     ],
+     [
+      8,
+      "unpaired",
+      0,
+      10,
+      17
+     ],
+     [
+      8,
+      "rewired",
+      0,
+      10,
+      17
+     ],
+     [
+      8,
+      "frozen",
+      36,
+      37,
+      null
+     ],
+     [
+      8,
+      "silent_output",
+      68,
+      null,
+      69
+     ],
+     [
+      8,
+      "frozen",
+      68,
+      null,
+      69
+     ],
+     [
+      8,
+      "paired_B",
+      34,
+      37,
+      42
+     ],
+     [
+      7,
+      "paired_B",
+      36,
+      37,
+      42
+     ],
+     [
+      7,
+      "frozen",
+      0,
+      12,
+      13
+     ]
+    ],
+    "row_count": 50,
+    "truncated": false,
+    "elapsed_ms": 7.85,
+    "status": "SELECT 50",
+    "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
+   },
+   "plan": {
+    "planning_ms": 1.289,
+    "execution_ms": 2.324,
+    "top_node": "Limit",
+    "nodes": [
+     "Aggregate",
+     "Hash",
+     "Hash Join",
+     "Limit",
+     "Seq Scan",
+     "Sort"
+    ],
+    "scans": [
+     {
+      "node": "Seq Scan",
+      "relation": "memory_trial",
+      "index": null,
+      "rows": 3624,
+      "loops": 1
+     },
+     {
+      "node": "Seq Scan",
+      "relation": "memory_branch",
+      "index": null,
+      "rows": 62,
+      "loops": 1
+     },
+     {
+      "node": "Seq Scan",
+      "relation": "memory_trial",
+      "index": null,
+      "rows": 3624,
+      "loops": 1
+     },
+     {
+      "node": "Seq Scan",
+      "relation": "memory_branch",
+      "index": null,
+      "rows": 62,
+      "loops": 1
+     }
+    ],
+    "indexes": [],
+    "seq_scans": [
+     "memory_branch",
+     "memory_trial"
+    ],
+    "shared_hit_blocks": 133,
+    "shared_read_blocks": 0
+   },
+   "checks": [
+    {
+     "check": "runs without error",
+     "ok": true
+    }
+   ],
+   "ok": true,
+   "seconds": 0.07
+  },
+  {
+   "id": "q-circuit-diff",
+   "category": "analysis",
+   "question": "Which interventions increase drift or lose correct motion predictions in the latest circuit run?",
+   "why": "The view pairs each intervention with its intact trial by run and scene before aggregating outcomes.",
+   "language": "sql",
+   "target": "read",
+   "code": "SELECT condition, paired_trials, lost_correct, gained_correct, added_drift\nFROM cc.circuit_paired_diff WHERE run_id=(SELECT max(run_id) FROM cc.circuit_run)\nORDER BY added_drift DESC\n",
+   "result": {
+    "columns": [
+     "condition",
+     "paired_trials",
+     "lost_correct",
+     "gained_correct",
+     "added_drift"
+    ],
+    "rows": [
+     [
+      "silence_T4",
+      24,
+      12,
+      0,
+      2.8656925306301173
+     ],
+     [
+      "silence_T5",
+      24,
+      12,
+      0,
+      2.2881268508897645
+     ],
+     [
+      "disconnected",
+      24,
+      24,
+      0,
+      1.5406953354400443
+     ],
+     [
+      "random_silence",
+      24,
+      3,
+      0,
+      0.6794846639590869
+     ],
+     [
+      "shuffled_weights",
+      24,
+      6,
+      0,
+      0.3699767044663056
+     ],
+     [
+      "rewired",
+      24,
+      1,
+      0,
+      0.2242325669985051
+     ],
+     [
+      "pixel_correlator",
+      24,
+      0,
+      0,
+      -0.21178493353797476
+     ]
+    ],
+    "row_count": 7,
+    "truncated": false,
+    "elapsed_ms": 4.24,
+    "status": "SELECT 7",
+    "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
+   },
+   "plan": {
+    "planning_ms": 1.499,
+    "execution_ms": 0.901,
+    "top_node": "Sort",
+    "nodes": [
+     "Aggregate",
+     "Bitmap Heap Scan",
+     "Bitmap Index Scan",
+     "Index Only Scan",
+     "Index Scan",
+     "Limit",
+     "Memoize",
+     "Nested Loop",
+     "Result",
+     "Sort",
+     "Subquery Scan"
+    ],
+    "scans": [
+     {
+      "node": "Index Only Scan",
+      "relation": "circuit_run",
+      "index": "circuit_run_pkey",
+      "rows": 1,
+      "loops": 1
+     },
+     {
+      "node": "Subquery Scan",
+      "relation": null,
+      "index": null,
+      "rows": 7,
+      "loops": 1
+     },
+     {
+      "node": "Bitmap Heap Scan",
+      "relation": "circuit_trial",
+      "index": null,
+      "rows": 168,
+      "loops": 1
+     },
+     {
+      "node": "Bitmap Index Scan",
+      "relation": null,
+      "index": "circuit_trial_pkey",
+      "rows": 192,
+      "loops": 1
+     },
+     {
+      "node": "Index Scan",
+      "relation": "circuit_trial",
+      "index": "circuit_trial_pkey",
+      "rows": 1,
+      "loops": 24
+     }
+    ],
+    "indexes": [
+     "circuit_run_pkey",
+     "circuit_trial_pkey"
+    ],
+    "seq_scans": [],
+    "shared_hit_blocks": 85,
+    "shared_read_blocks": 0
+   },
+   "checks": [
+    {
+     "check": "runs without error",
+     "ok": true
+    }
+   ],
+   "ok": true,
+   "seconds": 0.07
+  },
+  {
    "id": "q-releases",
    "category": "select",
    "question": "Which releases are loaded, in order, for each dataset?",
@@ -69,46 +366,46 @@
       "630",
       1,
       null,
-      "2026-11-03T10:43:34.645028+00:00"
+      "2026-11-24T13:19:56.816087+00:00"
      ],
      [
       "flywire",
       "783",
       2,
       null,
-      "2026-11-03T10:47:07.302475+00:00"
+      "2026-11-24T13:26:13.891516+00:00"
      ],
      [
       "hemibrain",
       "v1.0",
       1,
       null,
-      "2026-11-03T10:14:24.981338+00:00"
+      "2026-11-24T13:20:01.456048+00:00"
      ],
      [
       "hemibrain",
       "v1.1",
       2,
       null,
-      "2026-11-03T10:23:31.555167+00:00"
+      "2026-11-24T13:23:33.911264+00:00"
      ],
      [
       "hemibrain",
       "v1.2",
       3,
       null,
-      "2026-11-03T10:31:48.709173+00:00"
+      "2026-11-24T13:25:39.355169+00:00"
      ]
     ],
     "row_count": 5,
     "truncated": false,
-    "elapsed_ms": 26.9,
+    "elapsed_ms": 3.17,
     "status": "SELECT 5",
     "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
    },
    "plan": {
-    "planning_ms": 0.945,
-    "execution_ms": 0.1,
+    "planning_ms": 0.65,
+    "execution_ms": 0.132,
     "top_node": "Sort",
     "nodes": [
      "Index Scan",
@@ -152,7 +449,7 @@
     }
    ],
    "ok": true,
-   "seconds": 0.3
+   "seconds": 0.04
   },
   {
    "id": "q-find-neuron",
@@ -170,20 +467,20 @@
     ],
     "rows": [
      [
-      41903,
+      148218,
       "1688868386",
       "v1.0"
      ]
     ],
     "row_count": 1,
     "truncated": false,
-    "elapsed_ms": 22.11,
+    "elapsed_ms": 2.58,
     "status": "SELECT 1",
     "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
    },
    "plan": {
-    "planning_ms": 1.67,
-    "execution_ms": 0.159,
+    "planning_ms": 0.62,
+    "execution_ms": 0.108,
     "top_node": "Nested Loop",
     "nodes": [
      "Index Scan",
@@ -236,7 +533,7 @@
     }
    ],
    "ok": true,
-   "seconds": 0.28
+   "seconds": 0.07
   },
   {
    "id": "q-strongest-partners",
@@ -306,13 +603,13 @@
     ],
     "row_count": 10,
     "truncated": false,
-    "elapsed_ms": 366.37,
+    "elapsed_ms": 77.59,
     "status": "SELECT 10",
     "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
    },
    "plan": {
-    "planning_ms": 2.827,
-    "execution_ms": 31.159,
+    "planning_ms": 1.713,
+    "execution_ms": 20.411,
     "top_node": "Limit",
     "nodes": [
      "Index Scan",
@@ -349,7 +646,7 @@
      "dataset_neuron_dataset_neuron_id_dataset_id_key"
     ],
     "seq_scans": [],
-    "shared_hit_blocks": 20407,
+    "shared_hit_blocks": 20517,
     "shared_read_blocks": 0
    },
    "checks": [
@@ -375,7 +672,7 @@
     }
    ],
    "ok": true,
-   "seconds": 0.64
+   "seconds": 0.15
   },
   {
    "id": "q-untyped",
@@ -396,13 +693,13 @@
     ],
     "row_count": 1,
     "truncated": false,
-    "elapsed_ms": 1843.82,
+    "elapsed_ms": 1012.33,
     "status": "SELECT 1",
     "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
    },
    "plan": {
-    "planning_ms": 1.743,
-    "execution_ms": 915.371,
+    "planning_ms": 0.943,
+    "execution_ms": 612.715,
     "top_node": "Aggregate",
     "nodes": [
      "Aggregate",
@@ -452,7 +749,7 @@
      "dataset_neuron",
      "neuron_version"
     ],
-    "shared_hit_blocks": 571776,
+    "shared_hit_blocks": 568310,
     "shared_read_blocks": 0
    },
    "checks": [
@@ -462,7 +759,7 @@
     }
    ],
    "ok": true,
-   "seconds": 3.03
+   "seconds": 1.7
   },
   {
    "id": "q-release-sizes",
@@ -486,46 +783,46 @@
       "630",
       127978,
       2613129,
-      "2026-11-03T11:50:40.379358+00:00"
+      "2026-11-24T13:39:14.697349+00:00"
      ],
      [
       "flywire",
       "783",
       139255,
       2700513,
-      "2026-11-03T11:50:40.379358+00:00"
+      "2026-11-24T13:39:14.697349+00:00"
      ],
      [
       "hemibrain",
       "v1.0",
       21663,
       3413160,
-      "2026-11-03T11:50:40.379358+00:00"
+      "2026-11-24T13:39:14.697349+00:00"
      ],
      [
       "hemibrain",
       "v1.1",
       21733,
       3521163,
-      "2026-11-03T11:50:40.379358+00:00"
+      "2026-11-24T13:39:14.697349+00:00"
      ],
      [
       "hemibrain",
       "v1.2",
       21739,
       3550403,
-      "2026-11-03T11:50:40.379358+00:00"
+      "2026-11-24T13:39:14.697349+00:00"
      ]
     ],
     "row_count": 5,
     "truncated": false,
-    "elapsed_ms": 16.54,
+    "elapsed_ms": 3.8,
     "status": "SELECT 5",
     "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
    },
    "plan": {
-    "planning_ms": 1.624,
-    "execution_ms": 0.339,
+    "planning_ms": 0.734,
+    "execution_ms": 0.173,
     "top_node": "Sort",
     "nodes": [
      "Hash",
@@ -579,7 +876,7 @@
     }
    ],
    "ok": true,
-   "seconds": 0.29
+   "seconds": 0.07
   },
   {
    "id": "q-top-types",
@@ -638,13 +935,13 @@
     ],
     "row_count": 10,
     "truncated": false,
-    "elapsed_ms": 1196.57,
+    "elapsed_ms": 421.91,
     "status": "SELECT 10",
     "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
    },
    "plan": {
-    "planning_ms": 2.208,
-    "execution_ms": 534.629,
+    "planning_ms": 1.286,
+    "execution_ms": 317.887,
     "top_node": "Limit",
     "nodes": [
      "Aggregate",
@@ -690,7 +987,7 @@
       "node": "Bitmap Index Scan",
       "relation": null,
       "index": "annotation_dataset_neuron_id_annotation_key_valid_rel_tx_excl",
-      "rows": 176856,
+      "rows": 176857,
       "loops": 1
      },
      {
@@ -709,7 +1006,7 @@
     "seq_scans": [
      "release"
     ],
-    "shared_hit_blocks": 505765,
+    "shared_hit_blocks": 515479,
     "shared_read_blocks": 0
    },
    "checks": [
@@ -723,7 +1020,7 @@
     }
    ],
    "ok": true,
-   "seconds": 1.98
+   "seconds": 0.81
   },
   {
    "id": "q-regions",
@@ -804,13 +1101,13 @@
     ],
     "row_count": 15,
     "truncated": false,
-    "elapsed_ms": 152.77,
+    "elapsed_ms": 84.41,
     "status": "SELECT 15",
     "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
    },
    "plan": {
-    "planning_ms": 1.777,
-    "execution_ms": 169.991,
+    "planning_ms": 0.872,
+    "execution_ms": 88.669,
     "top_node": "Sort",
     "nodes": [
      "Aggregate",
@@ -869,7 +1166,7 @@
      "neuron_region_synapses",
      "neuropil"
     ],
-    "shared_hit_blocks": 9075,
+    "shared_hit_blocks": 9072,
     "shared_read_blocks": 0
    },
    "checks": [
@@ -883,7 +1180,7 @@
     }
    ],
    "ok": true,
-   "seconds": 0.59
+   "seconds": 0.23
   },
   {
    "id": "q-types-gone",
@@ -931,13 +1228,13 @@
     ],
     "row_count": 20,
     "truncated": false,
-    "elapsed_ms": 318.54,
+    "elapsed_ms": 282.16,
     "status": "SELECT 20",
     "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
    },
    "plan": {
-    "planning_ms": 2.787,
-    "execution_ms": 318.944,
+    "planning_ms": 1.227,
+    "execution_ms": 229.735,
     "top_node": "Limit",
     "nodes": [
      "Append",
@@ -1039,7 +1336,7 @@
     "seq_scans": [
      "dataset_neuron"
     ],
-    "shared_hit_blocks": 21573,
+    "shared_hit_blocks": 40953,
     "shared_read_blocks": 0
    },
    "checks": [
@@ -1053,7 +1350,7 @@
     }
    ],
    "ok": true,
-   "seconds": 0.89
+   "seconds": 0.57
   },
   {
    "id": "q-shared-types",
@@ -1074,13 +1371,13 @@
     ],
     "row_count": 1,
     "truncated": false,
-    "elapsed_ms": 924.77,
+    "elapsed_ms": 669.96,
     "status": "SELECT 1",
     "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
    },
    "plan": {
-    "planning_ms": 1.656,
-    "execution_ms": 1018.407,
+    "planning_ms": 1.444,
+    "execution_ms": 714.021,
     "top_node": "Aggregate",
     "nodes": [
      "Aggregate",
@@ -1166,7 +1463,7 @@
     "seq_scans": [
      "dataset_neuron"
     ],
-    "shared_hit_blocks": 951707,
+    "shared_hit_blocks": 947849,
     "shared_read_blocks": 0
    },
    "checks": [
@@ -1176,7 +1473,7 @@
     }
    ],
    "ok": true,
-   "seconds": 2.2
+   "seconds": 1.45
   },
   {
    "id": "q-above-average",
@@ -1246,16 +1543,18 @@
     ],
     "row_count": 10,
     "truncated": false,
-    "elapsed_ms": 989.39,
+    "elapsed_ms": 1071.87,
     "status": "SELECT 10",
     "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
    },
    "plan": {
-    "planning_ms": 2.982,
-    "execution_ms": 689.912,
+    "planning_ms": 1.346,
+    "execution_ms": 540.494,
     "top_node": "Limit",
     "nodes": [
      "Aggregate",
+     "Bitmap Heap Scan",
+     "Bitmap Index Scan",
      "Gather",
      "Gather Merge",
      "Index Scan",
@@ -1280,18 +1579,32 @@
       "loops": 1
      },
      {
-      "node": "Index Scan",
+      "node": "Bitmap Heap Scan",
       "relation": "connection",
-      "index": "connection_dataset_open_idx",
+      "index": null,
       "rows": 1183468,
       "loops": 3
      },
      {
-      "node": "Index Scan",
-      "relation": "connection",
+      "node": "Bitmap Index Scan",
+      "relation": null,
       "index": "connection_dataset_open_idx",
+      "rows": 3550403,
+      "loops": 1
+     },
+     {
+      "node": "Bitmap Heap Scan",
+      "relation": "connection",
+      "index": null,
       "rows": 25,
       "loops": 3
+     },
+     {
+      "node": "Bitmap Index Scan",
+      "relation": null,
+      "index": "connection_dataset_open_idx",
+      "rows": 3550403,
+      "loops": 1
      },
      {
       "node": "Index Scan",
@@ -1314,7 +1627,7 @@
      "dataset_neuron_pkey"
     ],
     "seq_scans": [],
-    "shared_hit_blocks": 136214,
+    "shared_hit_blocks": 132358,
     "shared_read_blocks": 0
    },
    "checks": [
@@ -1332,7 +1645,7 @@
     }
    ],
    "ok": true,
-   "seconds": 1.95
+   "seconds": 1.67
   },
   {
    "id": "q-rank-partners",
@@ -1394,32 +1707,32 @@
      ],
      [
       "1160288913",
-      "758938220",
-      5,
-      1
-     ],
-     [
-      "1160288913",
       "5813054104",
       5,
       1
      ],
      [
       "1160288913",
-      "605554875",
+      "758938220",
+      5,
+      1
+     ],
+     [
+      "1160288913",
+      "5813047655",
       3,
       3
      ]
     ],
     "row_count": 395,
     "truncated": false,
-    "elapsed_ms": 119.35,
+    "elapsed_ms": 33.78,
     "status": "SELECT 395",
     "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
    },
    "plan": {
-    "planning_ms": 1.968,
-    "execution_ms": 18.394,
+    "planning_ms": 1.208,
+    "execution_ms": 10.883,
     "top_node": "Sort",
     "nodes": [
      "Index Scan",
@@ -1472,7 +1785,7 @@
      "dataset_neuron_pkey"
     ],
     "seq_scans": [],
-    "shared_hit_blocks": 13276,
+    "shared_hit_blocks": 13250,
     "shared_read_blocks": 0
    },
    "checks": [
@@ -1490,7 +1803,7 @@
     }
    ],
    "ok": true,
-   "seconds": 0.38
+   "seconds": 0.13
   },
   {
    "id": "q-weight-trend",
@@ -1525,13 +1838,13 @@
     ],
     "row_count": 3,
     "truncated": false,
-    "elapsed_ms": 26.95,
+    "elapsed_ms": 4.76,
     "status": "SELECT 3",
     "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
    },
    "plan": {
-    "planning_ms": 4.043,
-    "execution_ms": 1.946,
+    "planning_ms": 1.487,
+    "execution_ms": 0.918,
     "top_node": "WindowAgg",
     "nodes": [
      "Index Scan",
@@ -1591,7 +1904,7 @@
     }
    ],
    "ok": true,
-   "seconds": 0.3
+   "seconds": 0.06
   },
   {
    "id": "q-downstream",
@@ -1622,18 +1935,19 @@
     ],
     "row_count": 3,
     "truncated": false,
-    "elapsed_ms": 39.15,
+    "elapsed_ms": 7.99,
     "status": "SELECT 3",
     "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
    },
    "plan": {
-    "planning_ms": 1.633,
-    "execution_ms": 8.316,
+    "planning_ms": 0.542,
+    "execution_ms": 3.031,
     "top_node": "Aggregate",
     "nodes": [
      "Aggregate",
+     "Bitmap Heap Scan",
+     "Bitmap Index Scan",
      "CTE Scan",
-     "Index Scan",
      "Nested Loop",
      "Recursive Union",
      "Result",
@@ -1649,10 +1963,17 @@
       "loops": 3
      },
      {
-      "node": "Index Scan",
+      "node": "Bitmap Heap Scan",
       "relation": "connection",
-      "index": "connection_pre_idx",
+      "index": null,
       "rows": 5,
+      "loops": 20
+     },
+     {
+      "node": "Bitmap Index Scan",
+      "relation": null,
+      "index": "connection_pre_idx",
+      "rows": 1005,
       "loops": 20
      },
      {
@@ -1667,7 +1988,7 @@
      "connection_pre_idx"
     ],
     "seq_scans": [],
-    "shared_hit_blocks": 786,
+    "shared_hit_blocks": 789,
     "shared_read_blocks": 0
    },
    "checks": [
@@ -1685,7 +2006,7 @@
     }
    ],
    "ok": true,
-   "seconds": 0.44
+   "seconds": 0.08
   },
   {
    "id": "q-type-history",
@@ -1708,33 +2029,33 @@
       "v1.0",
       "still valid",
       "LC28d",
-      "2026-11-03T10:14:24.981338+00:00",
-      "2026-11-03T10:23:31.555167+00:00"
+      "2026-11-24T13:20:01.456048+00:00",
+      "2026-11-24T13:23:33.911264+00:00"
      ],
      [
       "v1.0",
       "v1.1",
       "LC28d",
-      "2026-11-03T10:23:31.555167+00:00",
+      "2026-11-24T13:23:33.911264+00:00",
       null
      ],
      [
       "v1.1",
       "still valid",
       "LC28a",
-      "2026-11-03T10:23:31.555167+00:00",
+      "2026-11-24T13:23:33.911264+00:00",
       null
      ]
     ],
     "row_count": 3,
     "truncated": false,
-    "elapsed_ms": 22.65,
+    "elapsed_ms": 4.53,
     "status": "SELECT 3",
     "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
    },
    "plan": {
-    "planning_ms": 3.477,
-    "execution_ms": 2.695,
+    "planning_ms": 1.071,
+    "execution_ms": 1.148,
     "top_node": "Sort",
     "nodes": [
      "Index Only Scan",
@@ -1763,7 +2084,7 @@
      "dataset_neuron_dataset_neuron_id_dataset_id_key"
     ],
     "seq_scans": [],
-    "shared_hit_blocks": 202,
+    "shared_hit_blocks": 207,
     "shared_read_blocks": 0
    },
    "checks": [
@@ -1777,7 +2098,7 @@
     }
    ],
    "ok": true,
-   "seconds": 0.28
+   "seconds": 0.06
   },
   {
    "id": "q-as-of",
@@ -1807,13 +2128,13 @@
     ],
     "row_count": 2,
     "truncated": false,
-    "elapsed_ms": 24.79,
+    "elapsed_ms": 4.11,
     "status": "SELECT 2",
     "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
    },
    "plan": {
-    "planning_ms": 3.823,
-    "execution_ms": 1.876,
+    "planning_ms": 1.137,
+    "execution_ms": 0.755,
     "top_node": "Append",
     "nodes": [
      "Append",
@@ -1872,7 +2193,7 @@
     }
    ],
    "ok": true,
-   "seconds": 0.26
+   "seconds": 0.06
   },
   {
    "id": "q-at-release",
@@ -1893,49 +2214,49 @@
     "rows": [
      [
       "out",
-      27207,
+      133522,
       "1200523558",
       5,
-      3197128
+      5295205
      ],
      [
       "out",
-      34097,
+      140412,
       "1377841477",
       3,
-      3197139
+      5295229
      ],
      [
       "out",
-      25507,
+      131822,
       "1345455479",
       3,
-      3197123
+      5295194
      ],
      [
       "out",
-      24033,
+      130348,
       "976571317",
       3,
-      3197120
+      5295189
      ],
      [
       "out",
-      35843,
+      142158,
       "1471600919",
       3,
-      3830620
+      6443749
      ]
     ],
     "row_count": 5,
     "truncated": false,
-    "elapsed_ms": 1509.11,
+    "elapsed_ms": 1746.09,
     "status": "SELECT 5",
     "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
    },
    "plan": {
-    "planning_ms": 1.624,
-    "execution_ms": 169.45,
+    "planning_ms": 1.776,
+    "execution_ms": 203.86,
     "top_node": "Limit",
     "nodes": [
      "Function Scan",
@@ -1974,8 +2295,8 @@
     "seq_scans": [
      "release"
     ],
-    "shared_hit_blocks": 2821,
-    "shared_read_blocks": 17939
+    "shared_hit_blocks": 63945,
+    "shared_read_blocks": 6392
    },
    "checks": [
     {
@@ -1988,7 +2309,7 @@
     }
    ],
    "ok": true,
-   "seconds": 1.92
+   "seconds": 1.99
   },
   {
    "id": "q-er-view",
@@ -2011,8 +2332,8 @@
     ],
     "rows": [
      [
-      41903,
-      1,
+      148218,
+      2,
       "1688868386",
       "LC28a(lVLPT4)_R",
       "LC28a",
@@ -2023,13 +2344,13 @@
     ],
     "row_count": 1,
     "truncated": false,
-    "elapsed_ms": 31.44,
+    "elapsed_ms": 8.44,
     "status": "SELECT 1",
     "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
    },
    "plan": {
-    "planning_ms": 4.202,
-    "execution_ms": 5.173,
+    "planning_ms": 1.426,
+    "execution_ms": 1.68,
     "top_node": "Index Scan",
     "nodes": [
      "Index Scan",
@@ -2080,7 +2401,7 @@
      "neuron_mapping_no_dup"
     ],
     "seq_scans": [],
-    "shared_hit_blocks": 494,
+    "shared_hit_blocks": 509,
     "shared_read_blocks": 0
    },
    "checks": [
@@ -2094,7 +2415,7 @@
     }
    ],
    "ok": true,
-   "seconds": 0.29
+   "seconds": 0.06
   },
   {
    "id": "q-provenance",
@@ -2112,13 +2433,13 @@
      [
       {
        "record": {
-        "dataset_id": 1,
+        "dataset_id": 2,
         "source_line": 20241,
         "provenance_id": 4,
         "metadata_doc_id": "hemibrain:1688868386",
-        "first_release_id": 1,
+        "first_release_id": 2,
         "source_neuron_id": "1688868386",
-        "dataset_neuron_id": 41903
+        "dataset_neuron_id": 148218
        },
        "dataset": {
         "code": "hemibrain",
@@ -2127,24 +2448,24 @@
         "source_url": "https://www.janelia.org/project-team/flyem/hemibrain"
        },
        "release": {
-        "loaded_at": "2026-11-03T10:14:24.981338+00:00",
-        "dataset_id": 1,
-        "release_id": 1,
+        "loaded_at": "2026-11-24T13:20:01.456048+00:00",
+        "dataset_id": 2,
+        "release_id": 2,
         "description": null,
         "release_date": null,
         "manifest_hash": "230074775c7badb591c9180920743113ebb659288ef546b45033fc28e65d8b44",
-        "registered_at": "2026-11-03T10:13:22.605511+00:00",
+        "registered_at": "2026-11-24T13:20:01.405627+00:00",
         "release_order": 1,
         "version_label": "v1.0",
         "ingestion_status": "loaded"
        },
        "provenance": {
-        "created_at": "2026-11-03T10:14:24.981338+00:00",
-        "dataset_id": 1,
+        "created_at": "2026-11-24T13:20:01.456048+00:00",
+        "dataset_id": 2,
         "parameters": {
          "id_column": "bodyId"
         },
-        "release_id": 1,
+        "release_id": 2,
         "provenance_id": 4,
         "source_file_id": 3,
         "ingestion_run_id": 2,
@@ -2154,7 +2475,7 @@
        "source_file": {
         "sha256": "fd71b617b20fa6d3a1bce9d7f971b1b47ab076df4fa03f30dfc0ede6439a6dfc",
         "row_count": 21663,
-        "release_id": 1,
+        "release_id": 2,
         "size_bytes": 47369620,
         "source_url": "https://storage.googleapis.com/hemibrain/v1.0/conn_summary.tgz",
         "member_path": "exported-traced-adjacencies/traced-neurons.csv",
@@ -2166,14 +2487,14 @@
        ],
        "ingestion_run": {
         "stats": {
-         "stage_seconds": 21.1,
-         "total_seconds": 522.3,
+         "stage_seconds": 15.7,
+         "total_seconds": 156.9,
          "neuron_ids_rows": 21663,
          "neuron_open_rows": 21663,
          "neuron_close_rows": 0,
          "neurons_in_source": 21663,
-         "neuron_ids_seconds": 0.6,
-         "neuron_open_seconds": 1.3,
+         "neuron_ids_seconds": 0.4,
+         "neuron_open_seconds": 0.6,
          "neuron_resolve_rows": -1,
          "annotation_open_rows": 39868,
          "connection_open_rows": 3413160,
@@ -2185,21 +2506,21 @@
          "connection_close_rows": 0,
          "missing_mapped_columns": {},
          "neuron_resolve_seconds": 0.1,
-         "annotation_open_seconds": 3.9,
+         "annotation_open_seconds": 1.0,
          "annotation_resolve_rows": -1,
-         "connection_open_seconds": 477.5,
+         "connection_open_seconds": 129.5,
          "connection_resolve_rows": -1,
          "annotation_close_seconds": 0.0,
          "connection_close_seconds": 0.0,
          "connection_rows_in_source": 3413160,
-         "annotation_resolve_seconds": 0.2,
-         "connection_resolve_seconds": 11.1
+         "annotation_resolve_seconds": 0.1,
+         "connection_resolve_seconds": 5.3
         },
         "run_id": 2,
         "status": "succeeded",
-        "release_id": 1,
-        "started_at": "2026-11-03T10:14:24.938892+00:00",
-        "finished_at": "2026-11-03T10:23:07.313822+00:00",
+        "release_id": 2,
+        "started_at": "2026-11-24T13:20:01.418097+00:00",
+        "finished_at": "2026-11-24T13:22:38.388202+00:00",
         "error_message": null,
         "pipeline_version": "0.1.0"
        }
@@ -2208,13 +2529,13 @@
     ],
     "row_count": 1,
     "truncated": false,
-    "elapsed_ms": 24.25,
+    "elapsed_ms": 4.38,
     "status": "SELECT 1",
     "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
    },
    "plan": {
-    "planning_ms": 0.708,
-    "execution_ms": 3.62,
+    "planning_ms": 0.301,
+    "execution_ms": 2.303,
     "top_node": "Result",
     "nodes": [
      "Result"
@@ -2222,7 +2543,7 @@
     "scans": [],
     "indexes": [],
     "seq_scans": [],
-    "shared_hit_blocks": 903,
+    "shared_hit_blocks": 925,
     "shared_read_blocks": 0
    },
    "checks": [
@@ -2236,7 +2557,7 @@
     }
    ],
    "ok": true,
-   "seconds": 0.27
+   "seconds": 0.06
   },
   {
    "id": "q-diff-summary",
@@ -2257,55 +2578,61 @@
      [
       "annotation",
       "added",
-      19,
+      426422,
       0
      ],
      [
       "annotation",
       "modified",
-      109,
+      71768,
       0
      ],
      [
       "annotation",
       "removed",
-      3,
+      133238,
       0
      ],
      [
       "connection",
       "added",
-      30722,
-      39336
+      1213830,
+      15796921
      ],
      [
       "connection",
       "modified",
-      74795,
-      148033
+      3525,
+      5775
      ],
      [
       "connection",
       "removed",
-      1482,
-      2234
+      1126446,
+      14608186
      ],
      [
       "neuron",
       "added",
-      6,
+      32470,
+      0
+     ],
+     [
+      "neuron",
+      "removed",
+      21193,
       0
      ]
     ],
-    "row_count": 7,
+    "row_count": 8,
     "truncated": false,
-    "elapsed_ms": 119.22,
-    "status": "SELECT 7",
+    "elapsed_ms": 269.14,
+    "status": "SELECT 8",
     "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
    },
    "plan": {
-    "planning_ms": 1.272,
-    "execution_ms": 104.78,
+    "planning_ms": 0.664,
+    "execution_ms": 267.459,
     "top_node": "Aggregate",
     "nodes": [
      "Aggregate",
@@ -2318,14 +2645,14 @@
       "node": "Seq Scan",
       "relation": "diff_run",
       "index": null,
-      "rows": 5,
+      "rows": 3,
       "loops": 1
      },
      {
       "node": "Seq Scan",
       "relation": "diff_event",
       "index": null,
-      "rows": 35712,
+      "rows": 1009631,
       "loops": 3
      }
     ],
@@ -2335,7 +2662,7 @@
      "diff_run"
     ],
     "shared_hit_blocks": 115,
-    "shared_read_blocks": 54499
+    "shared_read_blocks": 47544
    },
    "checks": [
     {
@@ -2348,7 +2675,7 @@
     }
    ],
    "ok": true,
-   "seconds": 0.47
+   "seconds": 0.57
   },
   {
    "id": "q-shards",
@@ -2369,67 +2696,67 @@
      [
       "anatomical",
       1,
-      61981,
+      61996,
       34.0
      ],
      [
       "anatomical",
       2,
-      85117,
+      85088,
       46.7
      ],
      [
       "anatomical",
       3,
-      35176,
+      35190,
       19.3
      ],
      [
       "community",
       1,
-      77717,
-      42.6
+      67783,
+      37.2
      ],
      [
       "community",
       2,
-      59976,
-      32.9
+      49132,
+      27.0
      ],
      [
       "community",
       3,
-      44581,
-      24.5
+      65359,
+      35.9
      ],
      [
       "hash",
       1,
-      60958,
+      60891,
       33.4
      ],
      [
       "hash",
       2,
-      60519,
-      33.2
+      60740,
+      33.3
      ],
      [
       "hash",
       3,
-      60797,
-      33.4
+      60643,
+      33.3
      ]
     ],
     "row_count": 9,
     "truncated": false,
-    "elapsed_ms": 105.57,
+    "elapsed_ms": 67.83,
     "status": "SELECT 9",
     "executed_as": "cc_reader (READ ONLY transaction, rolled back)"
    },
    "plan": {
-    "planning_ms": 0.685,
-    "execution_ms": 85.947,
+    "planning_ms": 0.478,
+    "execution_ms": 53.141,
     "top_node": "WindowAgg",
     "nodes": [
      "Aggregate",
@@ -2463,7 +2790,7 @@
     "seq_scans": [
      "partition_strategy"
     ],
-    "shared_hit_blocks": 473,
+    "shared_hit_blocks": 477,
     "shared_read_blocks": 0
    },
    "checks": [
@@ -2477,7 +2804,7 @@
     }
    ],
    "ok": true,
-   "seconds": 0.45
+   "seconds": 0.19
   },
   {
    "id": "q-trial-insert",
@@ -2496,7 +2823,7 @@
     ],
     "rows": [
      [
-      1625420,
+      1625416,
       "review_note",
       "checked by hand",
       "[3, None)"
@@ -2504,13 +2831,13 @@
     ],
     "row_count": 1,
     "truncated": false,
-    "elapsed_ms": 23.93,
+    "elapsed_ms": 5.43,
     "status": "INSERT 0 1",
     "executed_as": "cc_tryout on the real tables (transaction rolled back: nothing was saved)"
    },
    "plan": {
-    "planning_ms": 2.433,
-    "execution_ms": 3.238,
+    "planning_ms": 1.026,
+    "execution_ms": 1.186,
     "top_node": "ModifyTable",
     "nodes": [
      "Index Scan",
@@ -2529,7 +2856,7 @@
      "dataset_neuron_dataset_neuron_id_dataset_id_key"
     ],
     "seq_scans": [],
-    "shared_hit_blocks": 191,
+    "shared_hit_blocks": 194,
     "shared_read_blocks": 0
    },
    "checks": [
@@ -2543,7 +2870,7 @@
     }
    ],
    "ok": true,
-   "seconds": 0.27
+   "seconds": 0.09
   },
   {
    "id": "q-trial-overlap",
@@ -2553,7 +2880,7 @@
    "language": "sql",
    "target": "trial",
    "code": "INSERT INTO annotation (dataset_neuron_id, annotation_key, annotation_value, valid_rel, provenance_id)\nSELECT a.dataset_neuron_id, 'cell_type', 'conflicting_type', a.valid_rel, a.provenance_id\nFROM annotation a\nWHERE a.dataset_neuron_id = cc.find_neuron('hemibrain', '1688868386')\n  AND a.annotation_key = 'cell_type' AND upper_inf(a.tx)\nLIMIT 1;\n",
-   "error": "23P01 conflicting key value violates exclusion constraint \"annotation_dataset_neuron_id_annotation_key_valid_rel_tx_excl\"\nDETAIL: Key (dataset_neuron_id, annotation_key, valid_rel, tx)=(41903, cell_type, [1,2), [\"2026-11-23 13:04:33.605088+00\",)) conflicts with existing key (dataset_neuron_id, annotation_key, valid_rel, tx)=(41903, cell_type, [1,2), [\"2026-11-03 10:23:31.555167+00\",)).\nCONSTRAINT: annotation_dataset_neuron_id_annotation_key_valid_rel_tx_excl",
+   "error": "23P01 conflicting key value violates exclusion constraint \"annotation_dataset_neuron_id_annotation_key_valid_rel_tx_excl\"\nDETAIL: Key (dataset_neuron_id, annotation_key, valid_rel, tx)=(148218, cell_type, [2,), [\"2026-11-24 16:27:11.50905+00\",)) conflicts with existing key (dataset_neuron_id, annotation_key, valid_rel, tx)=(148218, cell_type, [2,), [\"2026-11-24 13:23:33.911264+00\",)).\nCONSTRAINT: annotation_dataset_neuron_id_annotation_key_valid_rel_tx_excl",
    "result": null,
    "plan": null,
    "checks": [
@@ -2563,7 +2890,7 @@
     }
    ],
    "ok": true,
-   "seconds": 0.12
+   "seconds": 0.03
   },
   {
    "id": "q-trial-delete",
@@ -2583,7 +2910,7 @@
     }
    ],
    "ok": true,
-   "seconds": 0.14
+   "seconds": 0.03
   },
   {
    "id": "q-lab-update",
@@ -2633,7 +2960,7 @@
      ]
     ],
     "row_count": 5,
-    "elapsed_ms": 121.09,
+    "elapsed_ms": 32.49,
     "statements": [
      {
       "status": "UPDATE 8",
@@ -2654,7 +2981,7 @@
     }
    ],
    "ok": true,
-   "seconds": 0.2
+   "seconds": 0.04
   },
   {
    "id": "q-lab-delete",
@@ -2674,7 +3001,7 @@
      ]
     ],
     "row_count": 1,
-    "elapsed_ms": 122.54,
+    "elapsed_ms": 36.47,
     "statements": [
      {
       "status": "SELECT 1",
@@ -2695,7 +3022,7 @@
     }
    ],
    "ok": true,
-   "seconds": 0.2
+   "seconds": 0.06
   },
   {
    "id": "m-by-id",
@@ -2721,12 +3048,12 @@
      {
       "_id": "hemibrain:1688868386",
       "dataset": "hemibrain",
-      "dataset_neuron_id": 41903,
+      "dataset_neuron_id": 148218,
       "source_neuron_id": "1688868386"
      }
     ],
     "row_count": 1,
-    "elapsed_ms": 185.45
+    "elapsed_ms": 23.26
    },
    "plan": {
     "stages": [
@@ -2755,7 +3082,7 @@
     }
    ],
    "ok": true,
-   "seconds": 0.32
+   "seconds": 0.04
   },
   {
    "id": "m-by-natural-key",
@@ -2780,11 +3107,11 @@
     "documents": [
      {
       "_id": "flywire:720575940590515268",
-      "dataset_neuron_id": 86799
+      "dataset_neuron_id": 1
      }
     ],
     "row_count": 1,
-    "elapsed_ms": 12.41
+    "elapsed_ms": 2.26
    },
    "plan": {
     "stages": [
@@ -2816,7 +3143,7 @@
     }
    ],
    "ok": true,
-   "seconds": 0.02
+   "seconds": 0.0
   },
   {
    "id": "m-from-postgres",
@@ -2839,16 +3166,32 @@
    "result": {
     "documents": [
      {
-      "_id": "hemibrain:1688868386",
+      "_id": "flywire:720575940620458461",
       "releases": {
        "1": {
-        "release": "v1.0",
+        "release": "630",
         "records": [
          {
           "fields": {
-           "bodyId": "1688868386",
-           "instance": "LC28d(lVLPT4)_R",
-           "type": "LC28d"
+           "root_id": "720575940620458461",
+           "group": "SPS",
+           "nt_type": "ACH",
+           "nt_type_score": 0.5,
+           "da_avg": 0.07,
+           "ser_avg": 0.04,
+           "gaba_avg": 0.01,
+           "glut_avg": 0.37,
+           "ach_avg": 0.5,
+           "oct_avg": 0.0
+          }
+         },
+         {
+          "fields": {
+           "root_id": "720575940620458461",
+           "flow": "intrinsic",
+           "super_class": "central",
+           "hemilineage": "DM6_central1",
+           "side": "right"
           }
          }
         ]
@@ -2857,7 +3200,7 @@
      }
     ],
     "row_count": 1,
-    "elapsed_ms": 8.94
+    "elapsed_ms": 1.27
    },
    "plan": {
     "stages": [
@@ -2889,7 +3232,7 @@
     }
    ],
    "ok": true,
-   "seconds": 0.02
+   "seconds": 0.0
   },
   {
    "id": "m-count-datasets",
@@ -2929,7 +3272,7 @@
      }
     ],
     "row_count": 2,
-    "elapsed_ms": 3048.52
+    "elapsed_ms": 116.19
    },
    "plan": {
     "stages": [
@@ -2951,7 +3294,7 @@
     }
    ],
    "ok": true,
-   "seconds": 3.17
+   "seconds": 0.18
   },
   {
    "id": "m-columns",
@@ -3061,7 +3404,7 @@
      }
     ],
     "row_count": 10,
-    "elapsed_ms": 55.54
+    "elapsed_ms": 37.16
    },
    "plan": {
     "stages": [
@@ -3095,7 +3438,7 @@
     }
    ],
    "ok": true,
-   "seconds": 0.09
+   "seconds": 0.05
   },
   {
    "id": "m-unindexed",
@@ -3118,7 +3461,7 @@
      }
     ],
     "row_count": 1,
-    "elapsed_ms": 101.33
+    "elapsed_ms": 38.92
    },
    "plan": {
     "stages": [
@@ -3147,13 +3490,13 @@
     }
    ],
    "ok": true,
-   "seconds": 0.18
+   "seconds": 0.07
   }
  ],
  "summary": {
-  "queries": 31,
-  "passed": 31,
-  "sql": 25,
+  "queries": 33,
+  "passed": 33,
+  "sql": 27,
   "mongo": 6
  }
 }
