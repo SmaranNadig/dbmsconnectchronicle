@@ -14,6 +14,23 @@ source edges, and compare results in the PostgreSQL console.
 pathway on generated odors. Fork a saved trial to reverse the association,
 run paired navigation controls, and compare two PostgreSQL replay layouts.
 
+## Start the public-data dashboard on Windows
+
+With the public datasets already prepared and `.env` configured, run this from
+the project root.
+
+```powershell
+powershell -NoProfile -File .\scripts\start-public.ps1
+```
+
+The launcher starts Docker Desktop when needed, waits for the five database
+services, applies migrations, and starts the API and dashboard. It checks all
+configured public releases, MongoDB source records, shard placements, and
+saved lab runs. Open [the dashboard](http://127.0.0.1:3000/) and
+[the API documentation](http://127.0.0.1:8200/docs). Startup logs are under
+`.dbdata/public/`. For a fresh database, follow **Setup** and **Load releases**
+below or restore a teammate's public snapshot.
+
 **Synthetic demo on Windows:** with Python 3.12, uv, Node.js and Docker Desktop
 available, run `powershell -File scripts/start-demo.ps1`. It creates separate demo
 databases and explicitly synthetic releases. The original public-data results
@@ -104,7 +121,7 @@ python -m venv .venv
 pip install -r requirements.lock
 cp .env.example .env            # then set real passwords in .env
 docker compose up -d --wait     # coordinator, 3 shards, MongoDB
-alembic upgrade head            # create schemas cc and er (migrations 0001-0012)
+alembic upgrade head            # apply the current database schema
 ```
 
 Then either load the data yourself (next sections), or restore a snapshot

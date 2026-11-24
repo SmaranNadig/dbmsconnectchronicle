@@ -1,18 +1,29 @@
-.circuit form { margin-block: 12px; }
-
-#history, #maze {
-  display: block;
-  width: 100%;
-  height: auto;
-  margin: 14px 0;
-  border-radius: 8px;
-  background: #162232;
+.lab .phase-jumps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 6px;
+  margin: 12px 0;
 }
-
-#maze { max-width: 720px; }
-#digest, #source { overflow-wrap: anywhere; }
-#digest { font-family: monospace; }
-#step { min-width: 200px; }
-#saved, #branch { max-width: 100%; }
-#storageReport[hidden] { display: none; }
-
+.lab .phase-jumps button {
+  padding: 8px 10px;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--lab-border);
+  text-align: left;
+  line-height: 1.25;
+}
+.lab .phase-jumps small { display: block; color: var(--ink-2); font-size: .75rem; margin-top: 2px; }
+.lab .phase-jumps .training { background: var(--lab-amber-soft); }
+.lab .phase-jumps button[aria-current=true] { border-color: var(--lab-teal); box-shadow: inset 0 0 0 1px var(--lab-teal); }
+.lab .phase-jumps button:disabled { opacity: .55; }
+.lab .odor-channels { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 13px; margin: 9px 0; }
+.lab .odor-metrics { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--lab-border); }
+.lab .mixture-table { table-layout: fixed; }
+.lab .mixture-table th:first-child { width: 38%; }
+.lab #decision-trace .lab-meter { margin: 5px 0; }
+.lab #maze { height: clamp(235px, 34vw, 340px); }
+.lab #event { font-size: .86rem; }
+@media (max-width: 440px) {
+  .lab .phase-jumps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lab #event { flex-basis: 100%; }
+}

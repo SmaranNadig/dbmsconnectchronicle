@@ -148,11 +148,25 @@ def trial_state(branch: Identifier, step: Annotated[int, Path(ge=0, le=LAST)]):
         trial = records(
             conn, "SELECT * FROM memory_trial WHERE branch_id = %s AND step = %s", (branch, step)
         )[0]
+        spec = load_protocol(conn, run_id)
+        explanation = None
+        if trial["phase"] != "checkpoint":
+            before = restore(conn, branch, step - 1, model)
+            explanation = model.explain(before, state, spec, step, mode)
+        checkpoint, changes = conn.execute(
+            """WITH anchor AS (
+                   SELECT max(step) AS step FROM memory_checkpoint WHERE branch_id=%s AND step<=%s
+               )
+               SELECT anchor.step, (SELECT count(*) FROM memory_change
+                   WHERE branch_id=%s AND step>anchor.step AND step<=%s) FROM anchor""",
+            (branch, step, branch, step),
+        ).fetchone()
         ranked = sorted(zip(model.ids, map(int, state)), key=lambda item: (item[1], item[0]))[:8]
         evidence = records(
             conn,
             """SELECT connection_id, source_line, regional_weight, neuropil,
-            pre_root, post_root, archive_path, sha256 FROM memory_wiring
+            pre_root, post_root, archive_path, sha256, c.pre_neuron_id AS pre_id, c.post_neuron_id AS post_id
+            FROM memory_wiring JOIN connection c USING(connection_id)
             WHERE snapshot_id = %s AND connection_id = ANY(%s)""",
             (snapshot, [i for i, _ in ranked]),
         )
@@ -160,8 +174,10 @@ def trial_state(branch: Identifier, step: Annotated[int, Path(ge=0, le=LAST)]):
         return {
             "trial": trial,
             "edges": [dict(**by_id[i], gain=value / 10000) for i, value in ranked],
-            "mixtures": model.mixtures(state, load_protocol(conn, run_id)["odors"], mode),
+            "mixtures": model.mixtures(state, spec["odors"], mode),
             "changed_from_naive": int((state != 10000).sum()),
+            "explanation": explanation,
+            "reconstruction": {"checkpoint": checkpoint, "changes": changes},
         }
 
 

@@ -20,12 +20,19 @@ test("condition the real circuit, branch its memory, and replay the paired arena
   await page.getByRole("button", { name: "Fork from here" }).click();
   await expect(page.locator("#compare")).toContainText("sustained preference for B");
   await expect(page.locator("#digest")).toHaveText(parentHash);
-  await page.getByLabel("Inspect encounter").fill("80");
+  await expect(page.locator("#store-summary")).toContainText("Same state");
+  await page.getByRole("button", {name: /Final test/}).click();
   await expect(page.locator("#event")).toContainText("Trial 80");
+  await expect(page.locator("#odor-cards")).toContainText("active Kenyon cells");
+  await expect(page.locator("#choice-detail")).toContainText("Recorded choice");
+  await expect(page.locator("#update-detail")).toContainText("Learning pauses during tests");
   await expect(page.locator("#edges tr")).toHaveCount(8);
   await expect(page.locator("#mixtures tr")).toHaveCount(5);
 
-  await page.getByLabel("Navigation condition").selectOption("combined");
+  await page.getByLabel("Navigation condition").selectOption("memory_only");
+  await expect(page.locator("#route-reference")).toBeVisible();
+  await page.getByLabel("Arena frame").fill("8");
+  await expect(page.locator("#arenaText")).toContainText("frame 9");
   await page.getByRole("button", { name: "Play route" }).click();
   await expect(page.locator("#arenaText")).toContainText("target B");
   await expect(page.locator("#arenaText")).toContainText("frame 32");

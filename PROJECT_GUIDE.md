@@ -71,15 +71,23 @@ FlyWire root IDs can change with proofreading. Apparent additions/removals can t
 
 ## Run and verify
 
-Prerequisites: **Python 3.12**, uv, Node.js 18+ and a running Docker Desktop. On Windows, from the project root:
+For the prepared **public-data installation** on Windows, run this from the project root with the project's `.env` file in place.
+
+```powershell
+powershell -NoProfile -File .\scripts\start-public.ps1
+```
+
+The launcher starts Docker Desktop when needed, waits for PostgreSQL and MongoDB, applies migrations, and runs the site on [port 3000](http://127.0.0.1:3000/) with [API docs on port 8200](http://127.0.0.1:8200/docs). It checks the loaded public releases, source documents, shard placements, and both labs. It reuses running services that pass those checks. Logs are in `.dbdata/public/`. Choose `-DashboardPort 3200` if another app uses port 3000.
+
+For a new installation, install **Python 3.12**, uv, Node.js 18+ and Docker Desktop, then use the README public-data setup or restore a prepared public snapshot. The [Circuit Lab](docs/CIRCUIT_LAB.md) and [Odor Memory Lab](docs/MEMORY_LAB.md) guides cover preparing the lab snapshots and first runs.
+
+For the isolated synthetic demo on Windows, run the following with ports 3000 and 8000 available.
 
 ```powershell
 powershell -File scripts/start-demo.ps1
 ```
 
 This installs locked dependencies, starts the five database services, creates separate `connectome_demo` / `connectome_meta_demo` databases, generates synthetic releases, syncs evidence, verifies all placements, and seeds an example comparison/model. The generator refuses database names without a `_demo` or `_review` suffix. It does not replace public data. Open **http://127.0.0.1:3000**; API docs are at **http://127.0.0.1:8000/docs**.
-
-For an existing/public installation, install `requirements.lock`, run `alembic upgrade head`, and follow README's public-data ingestion steps. After upgrading, re-sync metadata and rebuild shard placements to establish the new integrity evidence.
 
 ```powershell
 .venv\Scripts\python.exe -m pytest

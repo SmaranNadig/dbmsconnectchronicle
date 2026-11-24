@@ -76,13 +76,16 @@ class Pathway:
         drive = np.clip(patterns, 0, 1) @ self.matrix.T
         return np.maximum(0, drive - np.quantile(drive, 0.75, axis=1, keepdims=True))[:, self.post]
 
-    def preference(self, state, activity, mode):
+    def output_reduction(self, state, activity):
         weighted_activity = activity * self.weights
-        depression = (
+        return (
             weighted_activity
             @ (1 - state.astype(float) / 10000)
             / np.maximum(weighted_activity.sum(axis=1), 1e-9)
         )
+
+    def preference(self, state, activity, mode):
+        depression = self.output_reduction(state, activity)
         contrast = depression[:-1] - depression[-1]
         if mode == "silent_output":
             contrast[:] = 0
@@ -99,14 +102,43 @@ class Pathway:
             for ratio, p in zip(ratios, probabilities)
         ]
 
-    def encounter(self, state, spec, step, mode):
+    def sensory_patterns(self, spec, step):
         event = spec["events"][step - 1]
-        # Independently perturbed presentations, with greater variation in unrewarded probes.
         training = event["phase"] in ("conditioning", "retraining")
-        noisy = np.array(spec["odors"]) + np.random.default_rng(event["noise"]).normal(
+        return np.array(spec["odors"]) + np.random.default_rng(event["noise"]).normal(
             0, 0.09 if training else 0.18, (2, len(self.channels))
         )
-        active = self.activity(noisy)
+
+    def explain(self, before, after, spec, step, mode):
+        """Read-only account of the recorded sensory input and weight transition."""
+        patterns = self.sensory_patterns(spec, step)
+        active = self.activity(patterns)
+        reduction = self.output_reduction(before, active)
+        odors = []
+        for i, label in enumerate("AB"):
+            values = patterns[i].clip(0, 1)
+            strongest = np.argsort(-values, kind="stable")[:4]
+            odors.append({
+                "odor": label,
+                "channels": [
+                    {"name": self.channels[j], "value": float(values[j])}
+                    for j in strongest
+                ],
+                "active_kenyon_cells": len({self.post[j] for j in np.flatnonzero(active[i])}),
+                "output_reduction": float(reduction[i]),
+            })
+        return {
+            "odors": odors,
+            "output_silenced": mode == "silent_output",
+            "plasticity_frozen": mode == "frozen",
+            "weakened": int((after < before).sum()),
+            "recovered": int((after > before).sum()),
+        }
+
+    def encounter(self, state, spec, step, mode):
+        event = spec["events"][step - 1]
+        training = event["phase"] in ("conditioning", "retraining")
+        active = self.activity(self.sensory_patterns(spec, step))
         p_a = float(self.preference(state, active, mode)[0])
         left = event["left"]
         choose_left = event["draw"] < (p_a if left == 0 else 1 - p_a)

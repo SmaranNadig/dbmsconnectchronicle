@@ -1,28 +1,129 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Circuit Lab · ConnectomeChronicle</title><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="circuit.css"></head>
-<body><main class="wrap circuit">
-<a href="/">← ConnectomeChronicle</a> · <a href="memory.html">Odor memory and navigation →</a>
-<h1>Circuit Lab</h1><p class="lead">Can a fly’s visual wiring detect motion and steer against drift? Send a moving pattern through a reconstructed right-eye circuit and compare the same trial after silencing or rewiring it.</p>
-<section><h2>Visual motion experiment</h2>
-<form id="setup"><label>FlyWire 783 circuit<select id="patch" required></select></label>
-<label>Scene seed<input id="seed" type="number" min="0" max="999999" value="42" required></label>
-<button id="run" disabled>Run experiment</button>
-<label>Saved experiments<select id="history"><option value="">Select a run</option></select></label></form>
-<p id="status" role="status">Loading circuit snapshots…</p></section>
-<div id="report" hidden><section><h2>Trial replay</h2><p>Both panels start with the same moving grating. Each controller’s steering changes what its eye sees next.</p>
-<div class="controls"><label>Compare with<select id="condition"></select></label>
-<label>Held-out trial<select id="trial"></select></label><button type="button" id="play">Play</button>
-<label>Frame <input id="frame" type="range" min="0" max="31" value="0"></label></div>
-<div class="pair" id="panels"></div><p class="note">The strip shows brightness across the eye. The bars show mean modeled activity for T4a–d and T5a–d, on a shared scale.</p>
-</section><section><h2>Direction and steering</h2><p>Accuracy counts correct open-loop predictions across 24 balanced trials. Heading improvement measures the reduction in mean absolute drift against steering switched off. A negative value means steering increased drift.</p><div class="scroll"><table><thead><tr><th>Condition</th><th>Correct direction</th><th>Mean drift</th><th>Heading improvement</th></tr></thead><tbody id="metrics"></tbody></table></div><a id="export">Export run summary (JSON)</a> · <a id="trace">Export comparison trial (JSON)</a></section>
-<section><h2>What changed in the same trials?</h2><p id="paired"></p><h3>Bright and dark edge probe</h3><p id="probe"></p><p class="note">Mean simulated activity across both travel directions, in model units. Input polarity is assumed by the model.</p></section>
-<section><h2>Wiring evidence</h2><p id="identity"></p><p>The strongest edges below identify the original source rows. A connection retained across releases can cite an earlier archive.</p><div class="scroll"><table><thead><tr><th>Pathway</th><th>FlyWire root IDs</th><th>Synapses</th><th>Archive and source rows</th></tr></thead><tbody id="edges"></tbody></table></div>
-<details><summary>Inspect the experiment in SQL</summary><pre>SELECT condition, trials, accuracy, heading_improvement
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Circuit Lab · ConnectomeChronicle</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="circuit.css">
+</head>
+<body>
+<main class="wrap lab">
+  <nav class="lab-nav" aria-label="Lab navigation"><a href="/">← ConnectomeChronicle</a><a href="memory.html">Odor Memory Lab →</a></nav>
+  <header class="lab-hero">
+    <div>
+      <p class="lab-source">Public connectome · FlyWire 783</p>
+      <h1>Circuit Lab</h1>
+      <p class="lead">Follow a moving pattern through the fly’s right-eye circuit. Compare the same scene with and without a selected pathway.</p>
+    </div>
+    <aside class="lab-guide">
+      <h3>Watch the effect of silencing T4</h3>
+      <p>Play a paired trial, follow the eye and the steering trace, then use the wiring matrix to trace a connection back to FlyWire.</p>
+    </aside>
+  </header>
+  <nav class="lab-jump" aria-label="On this page">
+    <a href="#experiment">Experiment</a><a href="#trial-replay">Trial replay</a><a href="#outcomes">Outcomes</a>
+    <a href="#wiring">Wiring evidence</a><a href="#visual-model">Model</a>
+  </nav>
+  <section id="experiment">
+    <div class="lab-head"><h2>Experiment</h2><p>Choose a patch of the reconstructed right eye. A seed fixes the scenes and randomized controls so the same experiment can be retrieved.</p></div>
+    <form id="setup">
+      <label>FlyWire 783 circuit<select id="patch" required></select></label>
+      <label>Scene seed<input id="seed" type="number" min="0" max="999999" value="42" required></label>
+      <button id="run" disabled>Run experiment</button>
+      <label>Saved experiments<select id="history"><option value="">Select a run</option></select></label>
+    </form>
+    <p id="status" class="lab-status" role="status">Loading circuit snapshots…</p>
+  </section>
+  <div id="report" hidden>
+    <section id="trial-replay">
+      <div class="lab-head">
+        <h2>Replay the same scene</h2>
+        <p>The two runs start with the same moving pattern. When steering changes the eye’s position, the brightness reaching it changes in the following frames.</p>
+      </div>
+      <div class="controls">
+        <label>Compare with<select id="condition"></select></label>
+        <label>Held-out trial<select id="trial"></select></label>
+        <button type="button" class="ghost" id="previous-frame" aria-label="Previous replay frame">←</button>
+        <button type="button" id="play">Play</button>
+        <button type="button" class="ghost" id="next-frame" aria-label="Next replay frame">→</button>
+        <label class="range">Replay frame<input id="frame" type="range" min="0" max="31" value="0"></label>
+        <output id="frame-count" for="frame"></output>
+      </div>
+      <p id="control-description" class="note"></p>
+      <div class="lab-strip" id="scene-summary"></div>
+      <div class="lab-grid" id="panels"></div>
+      <p class="note">Each brightness image stacks frames from top to bottom. The outlined row is the selected frame. T4 and T5 bars share a scale across both panels and show mean activity by subtype.</p>
+      <div class="lab-legend"><span><i></i>Intact circuit</span><span><i class="alt"></i><span id="trace-legend"></span></span></div>
+      <div class="lab-grid">
+        <div class="lab-card"><h3>Drift across frames</h3><canvas id="drift-chart" role="img" aria-label="Signed drift in grid units over time"></canvas><p class="note">Positive is right of the starting position. Zero is the target.</p></div>
+        <div class="lab-card"><h3>Steering across frames</h3><canvas id="steering-chart" role="img" aria-label="Signed steering command in grid units per frame"></canvas><p class="note">The next frame subtracts this correction from horizontal motion.</p></div>
+      </div>
+      <p id="replay-status" role="status" class="lab-status"></p>
+      <p><a id="trace">Export selected trial (JSON)</a></p>
+    </section>
+    <section id="outcomes">
+      <div class="lab-head">
+        <h2>How did the conditions perform?</h2>
+        <p>Direction accuracy uses 24 balanced scenes with steering off. Mean drift uses the separate feedback replay and measures distance from the starting position. Drift reduction compares that error with steering off.</p>
+      </div>
+      <div id="outcome-summary" class="lab-strip"></div>
+      <div class="lab-insight"><strong>Paired comparison</strong><p id="paired"></p></div>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Condition</th><th>Correct direction</th><th>Mean drift</th><th>Drift reduction</th></tr></thead>
+          <tbody id="metrics"></tbody>
+        </table>
+      </div>
+      <div class="lab-card">
+        <h3>Bright and dark edge probe</h3>
+        <p class="note">Move a single edge in both directions and average the simulated T4 and T5 responses. Bar lengths use the same scale. The input polarity comes from the model.</p>
+        <div class="lab-grid" id="probe"></div>
+      </div>
+      <p><a id="export">Export run summary and paired metrics (JSON)</a></p>
+    </section>
+    <section id="wiring">
+      <div class="lab-head">
+        <h2>Trace the FlyWire wiring</h2>
+        <p>Rows are sending cell types and columns are receiving cell types. A cell shows the total anatomical synapses in this frozen patch. Select it to display the strongest recorded pairs for that pathway.</p>
+      </div>
+      <div class="controls">
+        <label>Pathway stage<select id="matrix-stage"><option value="0">L1 and L2 to intermediate cells</option><option value="1">Intermediate cells to T4 and T5</option></select></label>
+        <button type="button" class="ghost" id="clear-pathway">Show strongest across the patch</button>
+      </div>
+      <div class="scroll" id="pathway-matrix"></div>
+      <p id="pathway-status" role="status" class="lab-status"></p>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Pathway</th><th>FlyWire root IDs</th><th>Synapses</th><th>Archive and source rows</th></tr></thead>
+          <tbody id="edges"></tbody>
+        </table>
+      </div>
+      <details>
+        <summary>Snapshot and SQL evidence</summary>
+        <p id="identity" class="lab-hash"></p>
+        <p>The release can retain an edge whose original evidence comes from an earlier archive. Root ID links open each neuron in Explorer.</p>
+        <p><a id="column-source">Published retinal column assignments</a></p>
+        <pre>SELECT condition, trials, accuracy, heading_improvement
 FROM cc.circuit_results
 WHERE run_id = <span id="sqlid"></span>
-ORDER BY accuracy DESC;</pre><a href="/#console">Open query console →</a></details></section></div>
-<section><h2>How to interpret a run</h2><p>Real FlyWire synapse counts weight the L1/L2 → intermediate neurons → T4/T5 pathways. A simplified rate model supplies input polarity, delays and coincidence responses. A linear decoder learns from 48 separate calibration scenes and stays fixed across interventions. A conventional pixel correlator reads the same images as an engineering reference.</p>
-<p>Compare seeds, patch sizes and shuffled controls before attributing performance to particular wiring. The replay shows simulated activity and steering commands in grid units.</p>
-<a href="https://doi.org/10.1038/s41586-024-07939-3">Connectome-constrained visual modeling</a> · <a href="https://pubmed.ncbi.nlm.nih.gov/42627449/">Fixed-decoder intervention study</a> · <a href="https://github.com/hsseung/OpticLobe.jl">Optic-column coordinates</a></section>
-</main><script src="circuit.js"></script></body></html>
+ORDER BY accuracy DESC;</pre>
+        <a href="/#console">Open query console →</a>
+      </details>
+    </section>
+  </div>
+  <section id="visual-model">
+    <h2>How the model works</h2>
+    <div class="lab-grid">
+      <div class="lab-card"><h3>Brightness enters the graph</h3><p>The model samples a horizontal pattern at published eye columns. Positive brightness changes enter L1 and negative changes enter L2.</p></div>
+      <div class="lab-card"><h3>Wiring shapes the activity</h3><p>FlyWire synapse counts weight connections to eight intermediate cell types. The model combines faster and slower signals at T4 and T5, then averages each subtype for the readout.</p></div>
+      <div class="lab-card"><h3>The readout drives steering</h3><p>A linear decoder learns direction from 48 calibration scenes. Its weights stay fixed across the controls. The simulated controller converts the per-frame readout into a bounded steering correction.</p></div>
+      <div class="lab-card"><h3>Controls test contributions</h3><p>Shuffles and silencing ask which parts of this model contribute to performance. The pixel correlator provides a brightness-based reference. Compare across seeds and patches before attributing an effect to the wiring.</p></div>
+    </div>
+    <p class="lab-links"><a href="https://doi.org/10.1038/s41586-024-07939-3">Connectome-constrained visual modeling</a><a href="https://github.com/hsseung/OpticLobe.jl">Optic-column coordinates</a></p>
+  </section>
+</main>
+<script src="lab-ui.js"></script>
+<script src="circuit.js"></script>
+</body>
+</html>

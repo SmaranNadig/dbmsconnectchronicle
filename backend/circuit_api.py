@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 import numpy as np
 
 from backend.circuit_model import CONDITIONS, VERSION, experiment, rollout, wiring
-from backend.circuit_snapshot import OUTPUT, URL, load_wiring
+from backend.circuit_snapshot import INPUT, MID, OUTPUT, URL, load_wiring
 from backend.db import connect
 
 router = APIRouter(prefix="/api/v1/circuit", tags=["Circuit Lab"])
@@ -37,17 +37,27 @@ def snapshots():
 
 
 @router.get("/snapshots/{snapshot_id}/evidence")
-def evidence(snapshot_id: int):
+def evidence(snapshot_id: int, pre_type: str | None = None, post_type: str | None = None):
     with connect() as conn:
-        return {"columns": URL, "edges": records(conn, """SELECT a.source_neuron_id AS pre_root,
+        pathways = records(conn, """SELECT u.cell_type AS pre_type, v.cell_type AS post_type,
+            count(*) AS edges, sum(e.weight) AS synapses
+            FROM circuit_edge e JOIN circuit_node u ON (u.snapshot_id,u.neuron_id)=(e.snapshot_id,e.pre_id)
+            JOIN circuit_node v ON (v.snapshot_id,v.neuron_id)=(e.snapshot_id,e.post_id)
+            WHERE e.snapshot_id=%s GROUP BY u.cell_type,v.cell_type
+            ORDER BY u.cell_type,v.cell_type""", (snapshot_id,))
+        return {"columns": URL, "layers": [INPUT, MID, OUTPUT], "pathways": pathways,
+                "edges": records(conn, """SELECT a.source_neuron_id AS pre_root,
             b.source_neuron_id AS post_root, u.cell_type AS pre_type, v.cell_type AS post_type,
-            e.connection_id, e.weight, f.archive_path, f.sha256, c.source_lines
+            e.pre_id, e.post_id, e.connection_id, e.weight, f.archive_path, f.sha256, c.source_lines
             FROM circuit_edge e JOIN circuit_node u ON (u.snapshot_id,u.neuron_id)=(e.snapshot_id,e.pre_id)
             JOIN circuit_node v ON (v.snapshot_id,v.neuron_id)=(e.snapshot_id,e.post_id)
             JOIN dataset_neuron a ON a.dataset_neuron_id=e.pre_id JOIN dataset_neuron b ON b.dataset_neuron_id=e.post_id
             JOIN connection c USING(connection_id) JOIN provenance p ON p.provenance_id=c.provenance_id
-            JOIN source_file f USING(source_file_id) WHERE e.snapshot_id=%s
-            ORDER BY weight DESC, pre_id, post_id LIMIT 12""", (snapshot_id,))}
+            JOIN source_file f USING(source_file_id) WHERE e.snapshot_id=%(snapshot)s
+            AND (%(pre)s::text IS NULL OR u.cell_type=%(pre)s)
+            AND (%(post)s::text IS NULL OR v.cell_type=%(post)s)
+            ORDER BY weight DESC, pre_id, post_id LIMIT 12""",
+                    {"pre": pre_type, "post": post_type, "snapshot": snapshot_id})}
 
 
 @router.post("/runs")

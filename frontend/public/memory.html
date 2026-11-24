@@ -9,70 +9,107 @@
   <link rel="stylesheet" href="memory.css">
 </head>
 <body>
-<main class="wrap circuit">
-  <nav><a href="/">← ConnectomeChronicle</a> · <a href="circuit.html">Visual Circuit Lab</a></nav>
-  <h1>Odor Memory Lab</h1>
-  <p class="lead">Teach a reconstructed fly circuit to prefer an odor. Rewind to a saved encounter, reverse the reward, and compare the two histories.</p>
-
-  <section>
-    <h2>Experiment</h2>
+<main class="wrap lab">
+  <nav class="lab-nav" aria-label="Lab navigation"><a href="/">← ConnectomeChronicle</a><a href="circuit.html">Visual Circuit Lab →</a></nav>
+  <header class="lab-hero">
+    <div>
+      <p class="lab-source">Public connectome · FlyWire 783</p>
+      <h1>Odor Memory Lab</h1>
+      <p class="lead">Follow how a reconstructed mushroom-body circuit learns an odor preference. Fork its saved state, reverse the reward, and watch the two histories diverge.</p>
+    </div>
+    <aside class="lab-guide">
+      <h3>Reverse the reward at trial 36</h3>
+      <p>Start from the saved trial after the retention test. Choose Reward B, fork, and jump to the final test to compare with the parent.</p>
+    </aside>
+  </header>
+  <nav class="lab-jump" aria-label="On this page">
+    <a href="#conditioning">Experiment</a><a href="#timeline">Timeline</a><a href="#decision">Encounter</a>
+    <a href="#memory-outcomes">Outcomes</a><a href="#navigation">Arena</a><a href="#memory-evidence">Evidence</a><a href="#memory-model">Model</a>
+  </nav>
+  <section id="conditioning">
+    <div class="lab-head"><h2>Experiment</h2><p>The seed fixes the generated odor patterns, trial positions, and other random inputs. Each experiment saves its conditioning history and matched controls.</p></div>
     <form id="create">
       <label>Odor-pair seed<input id="seed" required type="number" min="0" max="999999" value="42"></label>
       <button>Run conditioning and controls</button>
       <label>Saved experiment<select id="saved" disabled></select></label>
     </form>
-    <p id="status" role="status">Loading saved experiments…</p>
+    <p id="status" class="lab-status" role="status">Loading saved experiments…</p>
   </section>
 
   <div id="report" hidden>
-    <section>
-      <h2>Preference across 80 encounters</h2>
-      <p>Blue shows the selected branch and gold shows its parent. The vertical axis shows the probability of choosing odor A before feedback. Shaded intervals mark training.</p>
-      <label>Learning history<select id="branch"></select></label>
-      <canvas id="history" width="860" height="200" role="img" aria-label="Odor A preference by encounter"></canvas>
+    <section id="timeline">
+      <div class="lab-head">
+        <h2>Follow learning over time</h2>
+        <p>The graph shows the probability of choosing A before feedback. Shaded intervals mark training. Use the phase buttons or slider to inspect a saved encounter.</p>
+      </div>
+      <div class="controls"><label>Learning history<select id="branch"></select></label></div>
+      <div id="phase-jumps" class="phase-jumps" aria-label="Jump to the end of a training or test phase"></div>
+      <div class="lab-legend"><span><i></i>Selected branch</span><span id="parent-legend" hidden><i class="alt"></i>Parent</span></div>
+      <canvas id="history" class="tall" role="img" aria-label="Probability of choosing odor A by trial. The slider gives the exact value."></canvas>
       <div class="controls">
-        <label>Inspect encounter<input id="step" type="range" min="0" max="80" value="36"></label>
+        <label class="range">Inspect encounter<input id="step" type="range" min="0" max="80" value="36"></label>
         <output id="event" for="step"></output>
       </div>
-      <p id="digest" class="note"></p>
-      <p id="compare"></p>
+      <div class="lab-insight"><strong>Compare the recorded histories</strong><p id="compare"></p><p id="matched-probes"></p></div>
       <form id="fork">
         <label>Intervention at this encounter<select id="mode"></select></label>
         <button>Fork from here</button>
         <button id="resume" class="secondary" type="button" hidden>Resume selected branch</button>
       </form>
-      <p class="note">The fork starts with the parent’s exact gains and uses the chosen preset for subsequent encounters. Freezing gains keeps the readout active. Silencing the readout leaves the reward schedule active.</p>
+      <p id="intervention-guide" class="note"></p>
     </section>
 
-    <section>
-      <h2>Unrewarded memory tests</h2>
-      <p>Retention follows the first training block. The final test follows retraining. These are mean probabilities of choosing A on noisy, unrewarded presentations.</p>
+    <section id="decision">
+      <div class="lab-head">
+        <h2>Explain the selected encounter</h2>
+        <p>Odor inputs drive Kenyon cells. The gains entering the encounter determine the probability of each choice. Feedback can change the gains saved for the next encounter.</p>
+      </div>
+      <p id="checkpoint-note" class="lab-insight" hidden></p>
+      <div class="lab-stack" id="decision-trace">
+        <div class="lab-grid" id="odor-cards"></div>
+        <div class="lab-grid">
+          <div class="lab-card"><h3>Choice before feedback</h3><div id="choice-detail"></div></div>
+          <div class="lab-card"><h3>Learning after feedback</h3><div id="update-detail"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="memory-outcomes">
+      <div class="lab-head">
+        <h2>Compare unrewarded memory tests</h2>
+        <p>Retention follows initial conditioning. The final test follows retraining. Values are mean probabilities of choosing A across noisy, unrewarded presentations.</p>
+      </div>
       <div class="scroll">
         <table>
           <thead><tr><th>History</th><th>Baseline</th><th>Retention</th><th>Final</th></tr></thead>
           <tbody id="metrics"></tbody>
         </table>
       </div>
-      <h3>Odor mixtures at the selected encounter</h3>
-      <div class="scroll">
-        <table><thead><tr><th>Fraction of odor A in mixture</th><th>Probability of choosing mixture over pure B</th></tr></thead>
-          <tbody id="mixtures"></tbody>
-        </table>
+      <div class="lab-card">
+        <h3>Odor mixtures at the selected state</h3>
+        <p class="note">Blend A and B in five proportions, then compare each mixture with pure B. The probe uses the saved gains after the selected encounter.</p>
+        <table class="mixture-table"><thead><tr><th>Odor A in mixture</th><th>Chance of choosing mixture over B</th></tr></thead><tbody id="mixtures"></tbody></table>
       </div>
     </section>
 
-    <section>
-      <h2>Two-arm arena</h2>
-      <p>Odor memory selects an arm. As the fly travels, drifting wall patterns drive the visual circuit and its steering controller. Success requires choosing the target odor and arriving within three units of its lane.</p>
+    <section id="navigation">
+      <div class="lab-head">
+        <h2>Compare routes in the two-arm arena</h2>
+        <p>Memory selects the arm and the visual model steers against drift. Arrival counts as success when the fly chooses the target odor and finishes within three units of the lane.</p>
+      </div>
       <p id="arenaEmpty" class="note" hidden>The arena needs a saved radius-four visual run from this release and a completed final encounter in the selected branch.</p>
       <div id="arenaReport" hidden>
         <div class="controls">
           <label>Navigation condition<select id="arenaMode"></select></label>
           <label>Final encounter<select id="arenaTrial"></select></label>
+          <label class="inline-control"><input type="checkbox" id="arenaOverlay" checked> Overlay vision + memory</label>
           <button type="button" id="play">Play route</button>
+          <label class="range">Arena frame<input id="arenaFrame" type="range" min="0" max="31" value="31"></label>
         </div>
-        <canvas id="maze" width="720" height="260" role="img" aria-label="Trajectory through a two-arm arena"></canvas>
+        <div class="lab-legend"><span><i></i><span id="route-legend"></span></span><span id="route-reference" hidden><i class="alt"></i>Vision + memory</span></div>
+        <canvas id="maze" class="tall" role="img" aria-label="Paired fly trajectories through a two-arm arena"></canvas>
         <p id="arenaText" class="note"></p>
+        <div class="lab-strip" id="arena-detail"></div>
         <div class="scroll">
           <table>
             <thead><tr><th>Condition</th><th>Target arm chosen</th><th>Reached target</th><th>Mean arrival error</th></tr></thead>
@@ -83,46 +120,55 @@
       </div>
     </section>
 
-    <section>
-      <h2>What changed in the wiring?</h2>
-      <p id="coverage"></p>
-      <p>Each effective gain below links to a regional source row. The anatomical synapse count provides the starting weight.</p>
+    <section id="memory-evidence">
+      <div class="lab-head">
+        <h2>Follow the gains back to the database</h2>
+        <p id="coverage"></p>
+        <p>These rows show the lowest gains at this saved state. A gain of 100% keeps the full anatomical weight. Smaller gains reduce the contribution of that edge to output.</p>
+      </div>
+      <div class="lab-strip" id="store-summary"></div>
+      <p id="digest" class="lab-hash"></p>
       <div class="scroll">
         <table>
           <thead><tr><th>FlyWire source → target</th><th>Anatomical synapses</th><th>Modeled gain</th><th>Source row</th></tr></thead>
           <tbody id="edges"></tbody>
         </table>
       </div>
-      <p id="source" class="note"></p>
-      <button type="button" id="benchmark">Benchmark PostgreSQL replay</button>
-      <p id="cost" role="status"></p>
-      <div id="storageReport" class="scroll" hidden>
-        <table>
-          <thead><tr><th>Measure</th><th>Full snapshots</th><th>Changes plus checkpoints</th></tr></thead>
-          <tbody id="storage"></tbody>
-        </table>
+      <p id="source" class="lab-hash"></p>
+      <div class="lab-card">
+        <h3>Replay storage benchmark</h3>
+        <p>Measure full per-trial snapshots against periodic checkpoints plus changed gains. Both strategies must reproduce the recorded SHA-256 values.</p>
+        <button type="button" id="benchmark">Benchmark PostgreSQL replay</button>
+        <p id="cost" role="status"></p>
+        <div id="storageReport" class="scroll" hidden>
+          <table>
+            <thead><tr><th>Measure</th><th>Full snapshots</th><th>Changes plus checkpoints</th></tr></thead>
+            <tbody id="storage"></tbody>
+          </table>
+        </div>
       </div>
       <details>
         <summary>Inspect this branch in SQL</summary>
-        <h3>First divergent trial</h3>
-        <pre id="divergenceSql"></pre>
-        <h3>Effective gains and their source rows</h3>
-        <pre id="stateSql"></pre>
+        <h3>First divergent trial</h3><pre id="divergenceSql"></pre>
+        <h3>Effective gains and their source rows</h3><pre id="stateSql"></pre>
         <a href="/#console">Open query console →</a>
       </details>
-      <p><a id="export">Export protocol and outcomes (JSON)</a> · <a id="states">Export selected state evidence (JSON)</a></p>
+      <p class="lab-links"><a id="export">Export protocol and outcomes (JSON)</a><a id="states">Export selected state evidence (JSON)</a></p>
     </section>
   </div>
 
-  <section>
-    <h2>Model assumptions</h2>
-    <p>Odors A and B are generated channel patterns. FlyWire inputs in the right calyx activate Kenyon cells. Modeled reinforcement changes selected outputs to MBON01 in the right medial lobe. The compartment assignment is inferred from cell types and neuropil.</p>
-    <a href="https://doi.org/10.7554/eLife.62576">Mushroom-body circuit anatomy</a> ·
-    <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC12124391/">Olfactory input wiring</a> ·
-    <a href="https://doi.org/10.1038/s41586-024-07819-w">Learning and dopamine</a>
+  <section id="memory-model">
+    <h2>How the model works</h2>
+    <div class="lab-grid">
+      <div class="lab-card"><h3>Odors excite a sparse population</h3><p>Generated activity arrives at olfactory projection channels. FlyWire synapse weights map those channels to Kenyon cells. The model passes activity above the upper-quartile cutoff.</p></div>
+      <div class="lab-card"><h3>Feedback modifies output gains</h3><p>Reward weakens active connections to MBON01 in the right medial lobe. Training without reward can partially restore gains. The dopamine pathway supplies a scalar to the modeled update.</p></div>
+      <div class="lab-card"><h3>Choice reads the current memory</h3><p>The model compares the reduction in MBON01 drive for each odor. A larger reduction raises that odor’s preference. A stored random draw then produces one choice.</p></div>
+      <div class="lab-card"><h3>Forks make experiments comparable</h3><p>A new branch starts with the same gain vector and shared trial schedule. Gain changes are stored by real connection ID. Compare with frozen, unpaired, rewired, or silenced controls to test what shaped the result.</p></div>
+    </div>
+    <p class="lab-links"><a href="https://doi.org/10.7554/eLife.62576">Mushroom-body circuit anatomy</a><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC12124391/">Olfactory input wiring</a><a href="https://doi.org/10.1038/s41586-024-07819-w">Learning and dopamine</a></p>
   </section>
 </main>
+<script src="lab-ui.js"></script>
 <script src="memory.js"></script>
 </body>
 </html>
-
